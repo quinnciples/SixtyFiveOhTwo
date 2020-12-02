@@ -6,9 +6,10 @@ class CPU6502:
     version = '0.01'
     MAX_MEMORY_SIZE = 1024 * 64  # 64k memory size
     opcodes = {0xA9: 'LDA_IM',
-               0xA5: 'LDA_ZP'}
+               0xA5: 'LDA_ZP',
+               0xEA: 'NOP'}
 
-    def __init__(self, cycle_limit=2):
+    def __init__(self, cycle_limit=5):
 
         self.program_counter = 0xFFFC
         self.stack_pointer = 0x0100
@@ -36,6 +37,10 @@ class CPU6502:
 
         self.initializeLog()
 
+    def cycleInc(self):
+        self.logState()
+        self.cycles += 1
+
     def reset(self):
         self.program_counter = 0xFFFC
         self.stack_pointer = 0x0100
@@ -50,18 +55,19 @@ class CPU6502:
         self.memory = [0] * CPU6502.MAX_MEMORY_SIZE
 
     def readMemory(self):
-        self.logState()
+        self.cycleInc()
         data = self.memory[self.program_counter]
-        self.program_counter += 1
-        self.cycles += 1
-        
+        if self.program_counter >= CPU6502.MAX_MEMORY_SIZE - 1:
+            self.program_counter = 0
+        else:
+            self.program_counter += 1
         return data
 
     def execute(self):
-        while self.cycles < self.cycle_limit:
-            # self.logState()
-            opcode = self.readMemory()
-            if CPU6502.opcodes[opcode] == 'LDA_IM':
+        while self.cycles <= self.cycle_limit:
+            data = self.readMemory()
+            opcode = CPU6502.opcodes.get(data, CPU6502.opcodes[0xEA])  # Use the NOP code as a safe default
+            if opcode == 'LDA_IM':
                 # Load memory into accumulator
                 data = self.readMemory()
                 self.registers['A'] = data
@@ -75,7 +81,8 @@ class CPU6502:
                     self.registers['N'] = 1
                 else:
                     self.registers['N'] = 0
-            self.logState()
+            elif opcode == 'NOP':
+                self.cycleInc()
 
     def printState(self):
         combined = {**{'Cycle': self.cycles}, **self.registers, **self.flags, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 4)}}
@@ -98,10 +105,20 @@ class CPU6502:
         for line in self.log:
             print(line)
 
+    def loadProgram(self, instructions=[], memoryAddress=0x0000):
+        for ins in instructions:
+            self.memory[memoryAddress] = ins
+            if memoryAddress >= CPU6502.MAX_MEMORY_SIZE - 1:
+                memoryAddress = 0
+            else:
+                memoryAddress += 1
+
 
 cpu = CPU6502()
 cpu.reset()
-cpu.memory[0xFFFC] = 0xA9
-cpu.memory[0xFFFD] = 0x20
+# cpu.memory[0xFFFC] = 0xA9
+# cpu.memory[0xFFFD] = 0x20
+# cpu.memory[0xFFFE] = 0xEA
+cpu.loadProgram(instructions=[0xA9, 0x20, 0xEA], memoryAddress=0xFFFC)
 cpu.execute()
 cpu.printLog()
