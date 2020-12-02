@@ -35,7 +35,6 @@ class CPU6502:
         self.log = []
 
         self.initializeLog()
-        self.logState()
 
     def reset(self):
         self.program_counter = 0xFFFC
@@ -59,15 +58,22 @@ class CPU6502:
 
     def execute(self):
         while self.cycles < self.cycle_limit:
+            self.logState()
             opcode = self.readMemory()
             if CPU6502.opcodes[opcode] == 'LDA_IM':
                 # Load memory into accumulator
                 data = self.readMemory()
                 self.registers['A'] = data
                 # Check to set zero flag
-                if data == 0:
+                if self.registers['A'] == 0:
                     self.registers['Z'] = 1
-            self.logState()
+                else:
+                    self.registers['Z'] = 0
+                # Check to set negative flag
+                if self.registers['A'] & 0b10000000 > 0:
+                    self.registers['N'] = 1
+                else:
+                    self.registers['N'] = 0
 
     def printState(self):
         combined = {**{'Cycle': self.cycles}, **self.registers, **self.flags, **{'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 4)}}
