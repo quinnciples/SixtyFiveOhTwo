@@ -8,10 +8,11 @@ class CPU6502:
     opcodes = {0xA9: 'LDA_IM',
                0xA5: 'LDA_ZP'}
 
-    def __init__(self):
+    def __init__(self, cycle_limit=2):
 
         self.program_counter = 0xFFFC
         self.stack_pointer = 0x0100
+        self.cycle_limit = cycle_limit
 
         self.registers = {
             'A': 0,
@@ -49,25 +50,39 @@ class CPU6502:
 
         self.memory = [0] * CPU6502.MAX_MEMORY_SIZE
 
-    def readMemory(self, location):
+    def readMemory(self):
+        data = self.memory[self.program_counter]
         self.program_counter += 1
-        data = self.memory[location]
+        self.cycles += 1
+        self.logState()
         return data
 
+    def execute(self):
+        while self.cycles < self.cycle_limit:
+            opcode = self.readMemory()
+            if CPU6502.opcodes[opcode] == 'LDA_IM':
+                # Load memory into accumulator
+                data = self.readMemory()
+                self.registers['A'] = data
+                # Check to set zero flag
+                if data == 0:
+                    self.registers['Z'] = 1
+            self.logState()
+
     def printState(self):
-        combined = {**{'Cycle': self.cycles}, **self.registers, **self.flags, **{'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4)}}
+        combined = {**{'Cycle': self.cycles}, **self.registers, **self.flags, **{'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 4)}}
         headerString = '\t'.join(combined)
         valueString = '\t'.join(str(v) for v in combined.values())
         print(headerString)
         print(valueString)
 
     def initializeLog(self):
-        combined = {**{'Cycle': self.cycles}, **self.registers, **self.flags, **{'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4)}}
+        combined = {**{'Cycle': self.cycles}, **self.registers, **self.flags, **{'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 4)}}
         headerString = '\t'.join(combined)
         self.log.append(headerString)
 
     def logState(self):
-        combined = {**{'Cycle': self.cycles}, **self.registers, **self.flags, **{'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4)}}
+        combined = {**{'Cycle': self.cycles}, **self.registers, **self.flags, **{'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 4)}}
         valueString = '\t'.join(str(v) for v in combined.values())
         self.log.append(valueString)
 
@@ -78,3 +93,7 @@ class CPU6502:
 
 cpu = CPU6502()
 cpu.reset()
+cpu.memory[0xFFFC] = 0xA9
+cpu.memory[0xFFFD] = 0x20
+cpu.execute()
+cpu.printLog()
