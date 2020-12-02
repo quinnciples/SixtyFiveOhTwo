@@ -9,7 +9,7 @@ class CPU6502:
                0xA5: 'LDA_ZP',
                0xEA: 'NOP'}
 
-    def __init__(self, cycle_limit=5):
+    def __init__(self, cycle_limit=10):
 
         self.program_counter = 0xFFFC
         self.stack_pointer = 0x0100
@@ -54,33 +54,54 @@ class CPU6502:
 
         self.memory = [0] * CPU6502.MAX_MEMORY_SIZE
 
-    def readMemory(self):
+    def readMemory(self, increment_pc=True, address=None) -> int:
         self.cycleInc()
-        data = self.memory[self.program_counter]
-        if self.program_counter >= CPU6502.MAX_MEMORY_SIZE - 1:
-            self.program_counter = 0
+        if not address:
+            data = self.memory[self.program_counter]
         else:
-            self.program_counter += 1
+            data = self.memory[address]
+
+        if increment_pc:
+            if self.program_counter >= CPU6502.MAX_MEMORY_SIZE - 1:
+                self.program_counter = 0
+            else:
+                self.program_counter += 1
         return data
 
     def execute(self):
         while self.cycles <= self.cycle_limit:
             data = self.readMemory()
-            opcode = CPU6502.opcodes.get(data, CPU6502.opcodes[0xEA])  # Use the NOP code as a safe default
+            opcode = CPU6502.opcodes.get(data, 0)  # Use the NOP code as a safe default?
             if opcode == 'LDA_IM':
                 # Load memory into accumulator
                 data = self.readMemory()
                 self.registers['A'] = data
                 # Check to set zero flag
                 if self.registers['A'] == 0:
-                    self.registers['Z'] = 1
+                    self.flags['Z'] = 1
                 else:
-                    self.registers['Z'] = 0
+                    self.flags['Z'] = 0
                 # Check to set negative flag
                 if self.registers['A'] & 0b10000000 > 0:
-                    self.registers['N'] = 1
+                    self.flags['N'] = 1
                 else:
-                    self.registers['N'] = 0
+                    self.flags['N'] = 0
+            elif opcode == 'LDA_ZP':
+                zp_address = self.readMemory()
+                data = self.readMemory(address=zp_address, increment_pc=False)
+                self.registers['A'] = data
+                # Check to set zero flag
+                if self.registers['A'] == 0:
+                    self.flags['Z'] = 1
+                else:
+                    self.flags['Z'] = 0
+                # Check to set negative flag
+                if self.registers['A'] & 0b10000000 > 0:
+                    self.flags['N'] = 1
+                else:
+                    self.flags['N'] = 0
+                
+
             elif opcode == 'NOP':
                 self.cycleInc()
 
@@ -116,9 +137,7 @@ class CPU6502:
 
 cpu = CPU6502()
 cpu.reset()
-# cpu.memory[0xFFFC] = 0xA9
-# cpu.memory[0xFFFD] = 0x20
-# cpu.memory[0xFFFE] = 0xEA
-cpu.loadProgram(instructions=[0xA9, 0x20, 0xEA], memoryAddress=0xFFFC)
+cpu.memory[0xCC] = 0xFFFF
+cpu.loadProgram(instructions=[0xA9, 0x20, 0xEA, 0xA5, 0x00CC, 0xEA], memoryAddress=0xFFFC)
 cpu.execute()
 cpu.printLog()
