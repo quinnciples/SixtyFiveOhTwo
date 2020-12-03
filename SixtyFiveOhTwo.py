@@ -15,6 +15,8 @@ class CPU6502:
         self.stack_pointer = 0x0100
         self.cycle_limit = cycle_limit
 
+        self.INS = None
+
         self.registers = {
             'A': 0,
             'X': 0,
@@ -68,6 +70,7 @@ class CPU6502:
         while self.cycles <= self.cycle_limit:
             data = self.readMemory()
             opcode = CPU6502.opcodes.get(data, 0)  # Use the NOP code as a safe default?
+            self.INS = opcode
             if opcode == 'LDA_IM':
                 # Load memory into accumulator
                 data = self.readMemory()
@@ -100,19 +103,19 @@ class CPU6502:
                 self.cycleInc()
 
     def printState(self):
-        combined = {**{'Cycle': self.cycles}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 4)}}
+        combined = {**{'Cycle': self.cycles, 'INS': self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 4)}}
         headerString = '\t'.join(combined)
         valueString = '\t'.join(str(v) for v in combined.values())
         print(headerString)
         print(valueString)
 
     def initializeLog(self):
-        combined = {**{'Cycle': self.cycles}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 4)}}
+        combined = {**{'Cycle': self.cycles, 'INS': self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 4)}}
         headerString = '\t'.join(combined)
         self.log.append(headerString)
 
     def logState(self):
-        combined = {**{'Cycle': self.cycles}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 4)}}
+        combined = {**{'Cycle': self.cycles, 'INS': self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 4)}}
         valueString = '\t'.join(str(v) for v in combined.values())
         self.log.append(valueString)
 
