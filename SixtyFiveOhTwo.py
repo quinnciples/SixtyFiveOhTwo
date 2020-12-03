@@ -7,11 +7,12 @@ class CPU6502:
     MAX_MEMORY_SIZE = 1024 * 64  # 64k memory size
     opcodes = {0xA9: 'LDA_IM',
                0xA5: 'LDA_ZP',
+               0xB5: 'LDA_ZPX',
                0xEA: 'NOP'}
 
-    def __init__(self, cycle_limit=15):
+    def __init__(self, cycle_limit=20):
 
-        self.program_counter = 0xFFFC
+        self.program_counter = 0xFFCC
         self.stack_pointer = 0x0100
         self.cycle_limit = cycle_limit
 
@@ -37,9 +38,10 @@ class CPU6502:
         self.initializeLog()
 
     def memoryDump(self, startingAddress=0x0000, endingAddress=0x0000):
+        print('\nMemory Dump:\n')
         while startingAddress <= endingAddress and startingAddress <= CPU6502.MAX_MEMORY_SIZE:
             header = '0x{0:0{1}X}'.format(startingAddress, 4) + '\t'
-            row = '\t'.join('0x{0:0{1}X}'.format(self.memory[v], 4) for v in range(startingAddress, min(startingAddress + 8, CPU6502.MAX_MEMORY_SIZE)))
+            row = '\t'.join('0x{0:0{1}X}'.format(self.memory[v], 2) for v in range(startingAddress, min(startingAddress + 8, CPU6502.MAX_MEMORY_SIZE)))
             line = header + row
             print(line)
             startingAddress += 8
@@ -54,12 +56,13 @@ class CPU6502:
             self.program_counter = 0
 
     def reset(self):
-        self.program_counter = 0xFFFC
+        self.program_counter = 0xFFCC
         self.stack_pointer = 0x0100
         self.cycles = 0
 
         # Reset all registers to zero
         self.registers = dict.fromkeys(self.registers.keys(), 0)
+        self.registers['X'] = 0xFF
 
         self.memory = [0] * CPU6502.MAX_MEMORY_SIZE
 
@@ -107,23 +110,44 @@ class CPU6502:
                     self.registers['N'] = 1
                 else:
                     self.registers['N'] = 0
+            elif opcode == 'LDA_ZPX':
+                zp_address = self.readMemory()
+                zp_address += self.registers['X']
+                # Zero Page address wraps around if the value exceeds 0xFF
+                while zp_address > 0xFF:
+                    zp_address -= 0x100
+                self.cycleInc()
+                data = self.readMemory(address=zp_address, increment_pc=False)
+                self.registers['A'] = data
+                # Check to set zero flag
+                if self.registers['A'] == 0:
+                    self.registers['Z'] = 1
+                else:
+                    self.registers['Z'] = 0
+                # Check to set negative flag
+                if self.registers['A'] & 0b10000000 > 0:
+                    self.registers['N'] = 1
+                else:
+                    self.registers['N'] = 0
+
+                pass
             elif opcode == 'NOP':
                 self.cycleInc()
 
     def printState(self):
-        combined = {**{'Cycle': self.cycles, 'INS': self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 4)}}
+        combined = {**{'Cycle': self.cycles, 'INS': self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
         headerString = '\t'.join(combined)
         valueString = '\t'.join(str(v) for v in combined.values())
         print(headerString)
         print(valueString)
 
     def initializeLog(self):
-        combined = {**{'Cycle': self.cycles, 'INS': self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 4)}}
+        combined = {**{'Cycle': self.cycles, 'INS': self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
         headerString = '\t'.join(combined)
         self.log.append(headerString)
 
     def logState(self):
-        combined = {**{'Cycle': self.cycles, 'INS': self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 4)}}
+        combined = {**{'Cycle': self.cycles, 'INS': self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
         valueString = '\t'.join(str(v) for v in combined.values())
         self.log.append(valueString)
 
@@ -134,16 +158,16 @@ class CPU6502:
     def loadProgram(self, instructions=[], memoryAddress=0x0000):
         for ins in instructions:
             self.memory[memoryAddress] = ins
-            if memoryAddress >= CPU6502.MAX_MEMORY_SIZE - 1:
+            memoryAddress += 1
+            if memoryAddress >= CPU6502.MAX_MEMORY_SIZE:
                 memoryAddress = 0
-            else:
-                memoryAddress += 1
 
 
 cpu = CPU6502()
 cpu.reset()
-cpu.memory[0xCC] = 0xFFFF
-cpu.loadProgram(instructions=[0xA9, 0x20, 0xEA, 0xA5, 0x00CC, 0xEA, 0xA9, 0x0000, 0xEA], memoryAddress=0xFFFC)
+cpu.memory[0x00CC] = 0xFFFF
+cpu.memory[0x7F] = 0x22
+cpu.loadProgram(instructions=[0xA9, 0x20, 0xEA, 0xA5, 0xCC, 0xEA, 0xA9, 0x00, 0xEA, 0xB5, 0x80], memoryAddress=0xFFCC)
 cpu.execute()
 cpu.printLog()
-cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFFFF)
+cpu.memoryDump(startingAddress=0xFFC3, endingAddress=0xFFDA)
