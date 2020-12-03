@@ -36,6 +36,14 @@ class CPU6502:
 
         self.initializeLog()
 
+    def memoryDump(self, startingAddress=0x0000, endingAddress=0x0000):
+        while startingAddress <= endingAddress and startingAddress <= CPU6502.MAX_MEMORY_SIZE:
+            header = '0x{0:0{1}X}'.format(startingAddress, 4) + '\t'
+            row = '\t'.join('0x{0:0{1}X}'.format(self.memory[v], 4) for v in range(startingAddress, min(startingAddress + 8, CPU6502.MAX_MEMORY_SIZE)))
+            line = header + row
+            print(line)
+            startingAddress += 8
+
     def cycleInc(self):
         self.logState()
         self.cycles += 1
@@ -69,7 +77,7 @@ class CPU6502:
     def execute(self):
         while self.cycles <= self.cycle_limit:
             data = self.readMemory()
-            opcode = CPU6502.opcodes.get(data, 0)  # Use the NOP code as a safe default?
+            opcode = CPU6502.opcodes.get(data, None)  # Use the NOP code as a safe default?
             self.INS = opcode
             if opcode == 'LDA_IM':
                 # Load memory into accumulator
@@ -138,3 +146,4 @@ cpu.memory[0xCC] = 0xFFFF
 cpu.loadProgram(instructions=[0xA9, 0x20, 0xEA, 0xA5, 0x00CC, 0xEA, 0xA9, 0x0000, 0xEA], memoryAddress=0xFFFC)
 cpu.execute()
 cpu.printLog()
+cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFFFF)
