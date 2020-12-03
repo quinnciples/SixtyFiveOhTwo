@@ -41,6 +41,11 @@ class CPU6502:
         self.logState()
         self.cycles += 1
 
+    def programCounterInc(self):
+        self.program_counter += 1
+        if self.program_counter >= CPU6502.MAX_MEMORY_SIZE:
+            self.program_counter = 0
+
     def reset(self):
         self.program_counter = 0xFFFC
         self.stack_pointer = 0x0100
@@ -62,10 +67,7 @@ class CPU6502:
             data = self.memory[address]
 
         if increment_pc:
-            if self.program_counter >= CPU6502.MAX_MEMORY_SIZE - 1:
-                self.program_counter = 0
-            else:
-                self.program_counter += 1
+            self.programCounterInc()
         return data
 
     def execute(self):
@@ -100,8 +102,6 @@ class CPU6502:
                     self.flags['N'] = 1
                 else:
                     self.flags['N'] = 0
-                
-
             elif opcode == 'NOP':
                 self.cycleInc()
 
