@@ -8,6 +8,7 @@ class CPU6502:
     opcodes = {0xA9: 'LDA_IM',
                0xA5: 'LDA_ZP',
                0xB5: 'LDA_ZPX',
+               0x20: 'JSR',
                0xEA: 'NOP'}
 
     def __init__(self, cycle_limit=20):
