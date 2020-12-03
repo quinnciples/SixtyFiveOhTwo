@@ -9,7 +9,7 @@ class CPU6502:
                0xA5: 'LDA_ZP',
                0xEA: 'NOP'}
 
-    def __init__(self, cycle_limit=10):
+    def __init__(self, cycle_limit=15):
 
         self.program_counter = 0xFFFC
         self.stack_pointer = 0x0100
@@ -138,6 +138,6 @@ class CPU6502:
 cpu = CPU6502()
 cpu.reset()
 cpu.memory[0xCC] = 0xFFFF
-cpu.loadProgram(instructions=[0xA9, 0x20, 0xEA, 0xA5, 0x00CC, 0xEA], memoryAddress=0xFFFC)
+cpu.loadProgram(instructions=[0xA9, 0x20, 0xEA, 0xA5, 0x00CC, 0xEA, 0xA9, 0x0000, 0xEA], memoryAddress=0xFFFC)
 cpu.execute()
 cpu.printLog()
