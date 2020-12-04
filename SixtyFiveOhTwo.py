@@ -84,7 +84,7 @@ class CPU6502:
 
     def execute(self):
         data = self.readMemory()
-        self.INS = CPU6502.opcodes.get(data, None) 
+        self.INS = CPU6502.opcodes.get(data, None)
         while self.cycles <= self.cycle_limit and self.INS is not None:
             opcode = CPU6502.opcodes.get(data, None)  # Use the NOP code as a safe default?
             self.INS = opcode
@@ -197,7 +197,7 @@ class CPU6502:
                 self.cycleInc()
 
             data = self.readMemory()
-            self.INS = CPU6502.opcodes.get(data, None) 
+            self.INS = CPU6502.opcodes.get(data, None)
 
     def printState(self):
         combined = {**{'Cycle': self.cycles, '%-10s' % 'INS': '%-10s' % self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
