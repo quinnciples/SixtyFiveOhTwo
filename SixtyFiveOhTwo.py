@@ -10,6 +10,7 @@ class CPU6502:
                0xB5: 'LDA_ZP_X',
                0xAD: 'LDA_ABS',
                0xBD: 'LDA_ABS_X',
+               0xB9: 'LDA_ABS_Y',
                0x20: 'JSR',
                0xEA: 'NOP'}
 
@@ -152,7 +153,27 @@ class CPU6502:
                 address = self.readMemory()
                 address += (self.readMemory() * 0x100)
                 address += self.registers['X']
-                self.cycleInc()  # Only if PAGE crossed
+                if int(address / 0x10) != int((address - self.registers['X']) / 0x10):
+                    self.cycleInc()  # Only if PAGE crossed
+                data = self.readMemory(address=address, increment_pc=False)
+                self.registers['A'] = data
+                # Check to set zero flag
+                if self.registers['A'] == 0:
+                    self.registers['Z'] = 1
+                else:
+                    self.registers['Z'] = 0
+                # Check to set negative flag
+                if self.registers['A'] & 0b10000000 > 0:
+                    self.registers['N'] = 1
+                else:
+                    self.registers['N'] = 0
+
+            elif opcode == 'LDA_ABS_Y':
+                address = self.readMemory()
+                address += (self.readMemory() * 0x100)
+                address += self.registers['Y']
+                if int(address / 0x10) != int((address - self.registers['Y']) / 0x10):
+                    self.cycleInc()  # Only if PAGE crossed
                 data = self.readMemory(address=address, increment_pc=False)
                 self.registers['A'] = data
                 # Check to set zero flag
@@ -168,22 +189,23 @@ class CPU6502:
 
             elif opcode == 'NOP':
                 self.cycleInc()
+
             data = self.readMemory()
 
     def printState(self):
-        combined = {**{'Cycle': self.cycles, 'INS': self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
+        combined = {**{'Cycle': self.cycles, '%-10s' % 'INS': '%-10s' % self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
         headerString = '\t'.join(combined)
         valueString = '\t'.join(str(v) for v in combined.values())
         print(headerString)
         print(valueString)
 
     def initializeLog(self):
-        combined = {**{'Cycle': self.cycles, 'INS': self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
+        combined = {**{'Cycle': self.cycles, '%-10s' % 'INS': '%-10s' % self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
         headerString = '\t'.join(combined)
         self.log.append(headerString)
 
     def logState(self):
-        combined = {**{'Cycle': self.cycles, 'INS': self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
+        combined = {**{'Cycle': self.cycles, '%-10s' % 'INS': '%-10s' % self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
         valueString = '\t'.join(str(v) for v in combined.values())
         self.log.append(valueString)
 
@@ -205,7 +227,9 @@ cpu.memory[0x00CC] = 0x02
 cpu.memory[0x0080] = 0x03
 cpu.memory[0xFFC3] = 0x04
 cpu.memory[0xFFC4] = 0x05
-cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0xC3, 0xFF, 0xBD, 0xC4, 0xFF], memoryAddress=0xFFCC)
+cpu.memory[0x0200] = 0x06
+cpu.registers['Y'] = 0x01
+cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0xC3, 0xFF, 0xBD, 0xC4, 0xFF, 0xB9, 0xFF, 0x01], memoryAddress=0xFFCC)
 cpu.execute()
 cpu.printLog()
 cpu.memoryDump(startingAddress=0xFFC3, endingAddress=0xFFDA)
