@@ -63,7 +63,6 @@ class CPU6502:
 
         # Reset all registers to zero
         self.registers = dict.fromkeys(self.registers.keys(), 0)
-        self.registers['X'] = 0xFF
 
         self.memory = [0] * CPU6502.MAX_MEMORY_SIZE
 
@@ -79,8 +78,8 @@ class CPU6502:
         return data
 
     def execute(self):
-        while self.cycles <= self.cycle_limit:
-            data = self.readMemory()
+        data = self.readMemory()
+        while self.cycles <= self.cycle_limit and CPU6502.opcodes.get(data, None) is not None:
             opcode = CPU6502.opcodes.get(data, None)  # Use the NOP code as a safe default?
             self.INS = opcode
             if opcode == 'LDA_IM':
@@ -134,6 +133,7 @@ class CPU6502:
                 pass
             elif opcode == 'NOP':
                 self.cycleInc()
+            data = self.readMemory()
 
     def printState(self):
         combined = {**{'Cycle': self.cycles, 'INS': self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
