@@ -9,6 +9,7 @@ class CPU6502:
                0xA5: 'LDA_ZP',
                0xB5: 'LDA_ZPX',
                0xAD: 'LDA_ABS',
+               0xBD: 'LDA_ABS_X',
                0x20: 'JSR',
                0xEA: 'NOP'}
 
