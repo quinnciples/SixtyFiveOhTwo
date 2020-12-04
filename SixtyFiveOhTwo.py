@@ -8,6 +8,7 @@ class CPU6502:
     opcodes = {0xA9: 'LDA_IM',
                0xA5: 'LDA_ZP',
                0xB5: 'LDA_ZPX',
+               0xAD: 'LDA_ABS',
                0x20: 'JSR',
                0xEA: 'NOP'}
 
@@ -112,7 +113,7 @@ class CPU6502:
                     self.registers['N'] = 0
             elif opcode == 'LDA_ZPX':
                 zp_address = self.readMemory()
-                zp_address += self.registers['X']
+                zp_address += int(self.registers['X'])
                 # Zero Page address wraps around if the value exceeds 0xFF
                 while zp_address > 0xFF:
                     zp_address -= 0x100
@@ -130,7 +131,22 @@ class CPU6502:
                 else:
                     self.registers['N'] = 0
 
-                pass
+            elif opcode == 'LDA_ABS':
+                address = self.readMemory()
+                address += (self.readMemory() * 0x100)
+                data = self.readMemory(address=address, increment_pc=False)
+                self.registers['A'] = data
+                # Check to set zero flag
+                if self.registers['A'] == 0:
+                    self.registers['Z'] = 1
+                else:
+                    self.registers['Z'] = 0
+                # Check to set negative flag
+                if self.registers['A'] & 0b10000000 > 0:
+                    self.registers['N'] = 1
+                else:
+                    self.registers['N'] = 0
+
             elif opcode == 'NOP':
                 self.cycleInc()
             data = self.readMemory()
@@ -166,9 +182,10 @@ class CPU6502:
 
 cpu = CPU6502()
 cpu.reset()
-cpu.memory[0x00CC] = 0xFFFF
-cpu.memory[0x7F] = 0x22
-cpu.loadProgram(instructions=[0xA9, 0x20, 0xEA, 0xA5, 0xCC, 0xEA, 0xA9, 0x00, 0xEA, 0xB5, 0x80], memoryAddress=0xFFCC)
+cpu.memory[0x00CC] = 0x02
+cpu.memory[0x0080] = 0x03
+cpu.memory[0xFFC3] = 0x04
+cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0xC3, 0xFF], memoryAddress=0xFFCC)
 cpu.execute()
 cpu.printLog()
 cpu.memoryDump(startingAddress=0xFFC3, endingAddress=0xFFDA)
