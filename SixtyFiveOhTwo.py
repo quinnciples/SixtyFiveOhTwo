@@ -11,6 +11,8 @@ class CPU6502:
                0xAD: 'LDA_ABS',
                0xBD: 'LDA_ABS_X',
                0xB9: 'LDA_ABS_Y',
+               # 0xA1: 'LDA_IND_X',
+               # 0xB1: 'LDA_IND_Y',
                0x20: 'JSR',
                0xEA: 'NOP'}
 
@@ -60,7 +62,7 @@ class CPU6502:
             self.program_counter = 0
 
     def reset(self):
-        self.program_counter = 0xFFCC
+        self.program_counter = 0xFF10
         self.stack_pointer = 0x0100
         self.cycles = 0
 
@@ -85,6 +87,7 @@ class CPU6502:
         while self.cycles <= self.cycle_limit and CPU6502.opcodes.get(data, None) is not None:
             opcode = CPU6502.opcodes.get(data, None)  # Use the NOP code as a safe default?
             self.INS = opcode
+
             if opcode == 'LDA_IM':
                 # Load memory into accumulator
                 data = self.readMemory()
@@ -99,6 +102,7 @@ class CPU6502:
                     self.registers['N'] = 1
                 else:
                     self.registers['N'] = 0
+
             elif opcode == 'LDA_ZP':
                 zp_address = self.readMemory()
                 data = self.readMemory(address=zp_address, increment_pc=False)
@@ -113,6 +117,7 @@ class CPU6502:
                     self.registers['N'] = 1
                 else:
                     self.registers['N'] = 0
+
             elif opcode == 'LDA_ZP_X':
                 zp_address = self.readMemory()
                 zp_address += self.registers['X']
@@ -225,11 +230,12 @@ cpu = CPU6502()
 cpu.reset()
 cpu.memory[0x00CC] = 0x02
 cpu.memory[0x0080] = 0x03
-cpu.memory[0xFFC3] = 0x04
-cpu.memory[0xFFC4] = 0x05
-cpu.memory[0x0200] = 0x06
-cpu.registers['Y'] = 0x01
-cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0xC3, 0xFF, 0xBD, 0xC4, 0xFF, 0xB9, 0xFF, 0x01], memoryAddress=0xFFCC)
+cpu.memory[0xFF00] = 0x04
+cpu.memory[0xFF01] = 0x05
+cpu.memory[0xFF02] = 0x06
+
+cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0x00, 0xFF, 0xBD, 0x01, 0xFF, 0xB9, 0x02, 0xFF], memoryAddress=0xFF10)
+
 cpu.execute()
 cpu.printLog()
-cpu.memoryDump(startingAddress=0xFFC3, endingAddress=0xFFDA)
+cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF28)
