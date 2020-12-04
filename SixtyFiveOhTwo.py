@@ -84,11 +84,12 @@ class CPU6502:
 
     def execute(self):
         data = self.readMemory()
-        while self.cycles <= self.cycle_limit and CPU6502.opcodes.get(data, None) is not None:
+        self.INS = CPU6502.opcodes.get(data, None) 
+        while self.cycles <= self.cycle_limit and self.INS is not None:
             opcode = CPU6502.opcodes.get(data, None)  # Use the NOP code as a safe default?
             self.INS = opcode
 
-            if opcode == 'LDA_IM':
+            if self.INS == 'LDA_IM':
                 # Load memory into accumulator
                 data = self.readMemory()
                 self.registers['A'] = data
@@ -103,7 +104,7 @@ class CPU6502:
                 else:
                     self.registers['N'] = 0
 
-            elif opcode == 'LDA_ZP':
+            elif self.INS == 'LDA_ZP':
                 zp_address = self.readMemory()
                 data = self.readMemory(address=zp_address, increment_pc=False)
                 self.registers['A'] = data
@@ -118,7 +119,7 @@ class CPU6502:
                 else:
                     self.registers['N'] = 0
 
-            elif opcode == 'LDA_ZP_X':
+            elif self.INS == 'LDA_ZP_X':
                 zp_address = self.readMemory()
                 zp_address += self.registers['X']
                 # Zero Page address wraps around if the value exceeds 0xFF
@@ -138,7 +139,7 @@ class CPU6502:
                 else:
                     self.registers['N'] = 0
 
-            elif opcode == 'LDA_ABS':
+            elif self.INS == 'LDA_ABS':
                 address = self.readMemory()
                 address += (self.readMemory() * 0x100)
                 data = self.readMemory(address=address, increment_pc=False)
@@ -154,7 +155,7 @@ class CPU6502:
                 else:
                     self.registers['N'] = 0
 
-            elif opcode == 'LDA_ABS_X':
+            elif self.INS == 'LDA_ABS_X':
                 address = self.readMemory()
                 address += (self.readMemory() * 0x100)
                 address += self.registers['X']
@@ -173,7 +174,7 @@ class CPU6502:
                 else:
                     self.registers['N'] = 0
 
-            elif opcode == 'LDA_ABS_Y':
+            elif self.INS == 'LDA_ABS_Y':
                 address = self.readMemory()
                 address += (self.readMemory() * 0x100)
                 address += self.registers['Y']
@@ -196,6 +197,7 @@ class CPU6502:
                 self.cycleInc()
 
             data = self.readMemory()
+            self.INS = CPU6502.opcodes.get(data, None) 
 
     def printState(self):
         combined = {**{'Cycle': self.cycles, '%-10s' % 'INS': '%-10s' % self.INS}, **self.registers, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
