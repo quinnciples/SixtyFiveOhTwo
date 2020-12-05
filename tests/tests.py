@@ -1,5 +1,19 @@
+import os
+import sys
+sys.path.insert(0, '..\\SixtyFiveOhTwo')
 from SixtyFiveOhTwo import CPU6502
-# import inspect
+
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 
 def TEST_0xA9_LDA_IM():
@@ -29,6 +43,7 @@ def TEST_0xA9_LDA_IM():
     assert(EXPECTED_CYCLES == cpu.cycles - 1)
     assert(cpu.registers == EXPECTED_REGISTERS)
     # print(inspect.currentframe().f_code.co_name + ' PASSED.')
+    return True
 
 
 def TEST_0xA9_LDA_IM_ZERO_FLAG_SET():
@@ -89,15 +104,17 @@ def TEST_0xA9_LDA_IM_NEGATIVE_FLAG_SET():
     # print(inspect.currentframe().f_code.co_name + ' PASSED.')
 
 
-tests = [
-    TEST_0xA9_LDA_IM
-    , TEST_0xA9_LDA_IM_ZERO_FLAG_SET
-    , TEST_0xA9_LDA_IM_NEGATIVE_FLAG_SET
-]
+if __name__ == '__main__':
+    os.system('color')
+    tests = [
+        TEST_0xA9_LDA_IM
+        , TEST_0xA9_LDA_IM_ZERO_FLAG_SET
+        , TEST_0xA9_LDA_IM_NEGATIVE_FLAG_SET
+    ]
 
-for test in tests:
-    try:
-        test()
-        print('PASSED: ' + test.__name__)
-    except Exception:
-        print('FAILED: ' + test.__name__)
+    for test in tests:
+        try:
+            test()
+            print(f"{bcolors.OKGREEN}PASSED:{bcolors.ENDC} {test.__name__}")
+        except Exception:
+            print(f"{bcolors.FAIL}FAILED:{bcolors.ENDC} {test.__name__}")
