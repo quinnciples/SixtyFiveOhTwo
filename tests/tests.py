@@ -23,7 +23,9 @@ def TEST_0xA9_LDA_IM():
     EXPECTED_REGISTERS = {
         'A': EXPECTED_VALUE,
         'X': 0,
-        'Y': 0,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
         'C': 0,
         'Z': 0,
         'I': 0,
@@ -44,6 +46,7 @@ def TEST_0xA9_LDA_IM():
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
         return True
     except AssertionError:
         cpu.printLog()
@@ -58,7 +61,9 @@ def TEST_0xA9_LDA_IM_ZERO_FLAG_SET():
     EXPECTED_REGISTERS = {
         'A': EXPECTED_VALUE,
         'X': 0,
-        'Y': 0,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
         'C': 0,
         'Z': 1,
         'I': 0,
@@ -79,6 +84,7 @@ def TEST_0xA9_LDA_IM_ZERO_FLAG_SET():
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
         return True
     except AssertionError:
         cpu.printLog()
@@ -93,7 +99,9 @@ def TEST_0xA9_LDA_IM_NEGATIVE_FLAG_SET():
     EXPECTED_REGISTERS = {
         'A': EXPECTED_VALUE,
         'X': 0,
-        'Y': 0,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
         'C': 0,
         'Z': 0,
         'I': 0,
@@ -114,6 +122,7 @@ def TEST_0xA9_LDA_IM_NEGATIVE_FLAG_SET():
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
         return True
     except AssertionError:
         cpu.printLog()
@@ -128,7 +137,9 @@ def TEST_0xA5_LDA_ZP():
     EXPECTED_REGISTERS = {
         'A': EXPECTED_VALUE,
         'X': 0,
-        'Y': 0,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
         'C': 0,
         'Z': 0,
         'I': 0,
@@ -149,6 +160,7 @@ def TEST_0xA5_LDA_ZP():
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
         return True
     except AssertionError:
         cpu.printLog()
@@ -163,7 +175,9 @@ def TEST_0xA5_LDA_ZP_X():
     EXPECTED_REGISTERS = {
         'A': EXPECTED_VALUE,
         'X': 0x05,
-        'Y': 0,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
         'C': 0,
         'Z': 0,
         'I': 0,
@@ -185,6 +199,7 @@ def TEST_0xA5_LDA_ZP_X():
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
         return True
     except AssertionError:
         cpu.printLog()
@@ -199,7 +214,9 @@ def TEST_0xAD_LDA_ABS():
     EXPECTED_REGISTERS = {
         'A': EXPECTED_VALUE,
         'X': 0,
-        'Y': 0,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
         'C': 0,
         'Z': 0,
         'I': 0,
@@ -218,6 +235,7 @@ def TEST_0xAD_LDA_ABS():
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
         return True
     except AssertionError:
         cpu.printLog()
@@ -232,7 +250,9 @@ def TEST_0xBD_LDA_ABS_X():
     EXPECTED_REGISTERS = {
         'A': EXPECTED_VALUE,
         'X': 0x05,
-        'Y': 0,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
         'C': 0,
         'Z': 0,
         'I': 0,
@@ -252,6 +272,7 @@ def TEST_0xBD_LDA_ABS_X():
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
         return True
     except AssertionError:
         cpu.printLog()
@@ -266,7 +287,9 @@ def TEST_0xBD_LDA_ABS_X_CROSS_PAGE_BOUNDARY():
     EXPECTED_REGISTERS = {
         'A': EXPECTED_VALUE,
         'X': 0x04,
-        'Y': 0,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
         'C': 0,
         'Z': 0,
         'I': 0,
@@ -286,6 +309,7 @@ def TEST_0xBD_LDA_ABS_X_CROSS_PAGE_BOUNDARY():
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
         return True
     except AssertionError:
         cpu.printLog()
@@ -300,7 +324,9 @@ def TEST_0xB9_LDA_ABS_Y():
     EXPECTED_REGISTERS = {
         'A': EXPECTED_VALUE,
         'X': 0,
-        'Y': 0x05,
+        'Y': 0x05
+    }
+    EXPECTED_FLAGS = {
         'C': 0,
         'Z': 0,
         'I': 0,
@@ -320,6 +346,7 @@ def TEST_0xB9_LDA_ABS_Y():
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
         return True
     except AssertionError:
         cpu.printLog()
@@ -334,7 +361,9 @@ def TEST_0xB9_LDA_ABS_Y_CROSS_PAGE_BOUNDARY():
     EXPECTED_REGISTERS = {
         'A': EXPECTED_VALUE,
         'X': 0,
-        'Y': 0x04,
+        'Y': 0x04
+    }
+    EXPECTED_FLAGS = {
         'C': 0,
         'Z': 0,
         'I': 0,
@@ -354,6 +383,7 @@ def TEST_0xB9_LDA_ABS_Y_CROSS_PAGE_BOUNDARY():
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
         return True
     except AssertionError:
         cpu.printLog()
@@ -368,7 +398,9 @@ def TEST_0xA1_LDA_IND_X():
     EXPECTED_REGISTERS = {
         'A': EXPECTED_VALUE,
         'X': 0x04,
-        'Y': 0,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
         'C': 0,
         'Z': 0,
         'I': 0,
@@ -390,6 +422,7 @@ def TEST_0xA1_LDA_IND_X():
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
         return True
     except AssertionError:
         cpu.printLog()
@@ -404,7 +437,9 @@ def TEST_0xB1_LDA_IND_Y():
     EXPECTED_REGISTERS = {
         'A': EXPECTED_VALUE,
         'X': 0,
-        'Y': 0x04,
+        'Y': 0x04
+    }
+    EXPECTED_FLAGS = {
         'C': 0,
         'Z': 0,
         'I': 0,
@@ -426,6 +461,7 @@ def TEST_0xB1_LDA_IND_Y():
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
         return True
     except AssertionError:
         cpu.printLog()
@@ -440,7 +476,9 @@ def TEST_0xB1_LDA_IND_Y_CROSS_PAGE_BOUNDARY():
     EXPECTED_REGISTERS = {
         'A': EXPECTED_VALUE,
         'X': 0,
-        'Y': 0x05,
+        'Y': 0x05
+    }
+    EXPECTED_FLAGS = {
         'C': 0,
         'Z': 0,
         'I': 0,
@@ -462,6 +500,7 @@ def TEST_0xB1_LDA_IND_Y_CROSS_PAGE_BOUNDARY():
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
         return True
     except AssertionError:
         cpu.printLog()
