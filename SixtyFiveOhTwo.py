@@ -159,7 +159,7 @@ class CPU6502:
                 address = self.readMemory()
                 address += (self.readMemory() * 0x100)
                 address += self.registers['X']
-                if int(address / 0x10) != int((address - self.registers['X']) / 0x10):
+                if int(address / 0x100) != int((address - self.registers['X']) / 0x100):
                     self.cycleInc()  # Only if PAGE crossed
                 data = self.readMemory(address=address, increment_pc=False)
                 self.registers['A'] = data
@@ -178,7 +178,7 @@ class CPU6502:
                 address = self.readMemory()
                 address += (self.readMemory() * 0x100)
                 address += self.registers['Y']
-                if int(address / 0x10) != int((address - self.registers['Y']) / 0x10):
+                if int(address / 0x100) != int((address - self.registers['Y']) / 0x100):
                     self.cycleInc()  # Only if PAGE crossed
                 data = self.readMemory(address=address, increment_pc=False)
                 self.registers['A'] = data
