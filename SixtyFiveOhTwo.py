@@ -323,4 +323,6 @@ def run():
     cpu.printLog()
     cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF27)
 
-run()
+
+if __name__ == '__main__':
+    run()

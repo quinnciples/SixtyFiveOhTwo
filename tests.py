@@ -1,16 +1,8 @@
 from SixtyFiveOhTwo import CPU6502
-import inspect
+# import inspect
 
 
-def add(x, y):
-    return x + y
-
-
-def test_add():
-    assert add(1, 2) == 4
-
-
-def TEST_LDA_IM_0xA9():
+def TEST_0xA9_LDA_IM():
     EXPECTED_CYCLES = 2
     EXPECTED_VALUE = 0x45
     EXPECTED_REGISTERS = {
@@ -39,7 +31,7 @@ def TEST_LDA_IM_0xA9():
     # print(inspect.currentframe().f_code.co_name + ' PASSED.')
 
 
-def TEST_LDA_IM_0xA9_ZERO_FLAG_SET():
+def TEST_0xA9_LDA_IM_ZERO_FLAG_SET():
     EXPECTED_CYCLES = 2
     EXPECTED_VALUE = 0x00
     EXPECTED_REGISTERS = {
@@ -68,7 +60,7 @@ def TEST_LDA_IM_0xA9_ZERO_FLAG_SET():
     # print(inspect.currentframe().f_code.co_name + ' PASSED.')
 
 
-def TEST_LDA_IM_0xA9_NEGATIVE_FLAG_SET():
+def TEST_0xA9_LDA_IM_NEGATIVE_FLAG_SET():
     EXPECTED_CYCLES = 2
     EXPECTED_VALUE = 0xAF
     EXPECTED_REGISTERS = {
@@ -89,7 +81,7 @@ def TEST_LDA_IM_0xA9_NEGATIVE_FLAG_SET():
     program = [0xA9, 0xAF]
     cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
     cpu.execute()
-    #cpu.printLog()
+    # cpu.printLog()
     # cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
 
     assert(EXPECTED_CYCLES == cpu.cycles - 1)
@@ -98,14 +90,14 @@ def TEST_LDA_IM_0xA9_NEGATIVE_FLAG_SET():
 
 
 tests = [
-    TEST_LDA_IM_0xA9
-, TEST_LDA_IM_0xA9_ZERO_FLAG_SET
-, TEST_LDA_IM_0xA9_NEGATIVE_FLAG_SET
+    TEST_0xA9_LDA_IM
+    , TEST_0xA9_LDA_IM_ZERO_FLAG_SET
+    , TEST_0xA9_LDA_IM_NEGATIVE_FLAG_SET
 ]
 
 for test in tests:
     try:
         test()
         print('PASSED: ' + test.__name__)
-    except:
+    except Exception:
         print('FAILED: ' + test.__name__)
