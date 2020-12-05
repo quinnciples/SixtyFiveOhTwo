@@ -46,7 +46,7 @@ class CPU6502:
 
     def __init__(self, cycle_limit=30):
 
-        self.program_counter = 0xFFCC
+        self.program_counter = 0xFF10
         self.stack_pointer = 0x0100
         self.cycle_limit = cycle_limit
 
@@ -89,8 +89,8 @@ class CPU6502:
         if self.program_counter >= CPU6502.MAX_MEMORY_SIZE:
             self.program_counter = 0
 
-    def reset(self):
-        self.program_counter = 0xFF10
+    def reset(self, program_counter=0xFF10):
+        self.program_counter = program_counter
         self.stack_pointer = 0x0100
         self.cycles = 0
 
@@ -100,7 +100,6 @@ class CPU6502:
         self.memory = [0] * CPU6502.MAX_MEMORY_SIZE
 
     def readMemory(self, increment_pc=True, address=None) -> int:
-        self.cycleInc()
         if not address:
             data = self.memory[self.program_counter]
         else:
@@ -108,6 +107,8 @@ class CPU6502:
 
         if increment_pc:
             self.programCounterInc()
+
+        self.cycleInc()
         return data
 
     def execute(self):
@@ -296,27 +297,30 @@ class CPU6502:
                 memoryAddress = 0
 
 
-cpu = CPU6502()
-cpu.reset()
-cpu.memory[0x00CC] = 0x02  # Used for LDA_ZP
+def run():
+    cpu = CPU6502()
+    cpu.reset()
+    cpu.memory[0x00CC] = 0x02  # Used for LDA_ZP
 
-cpu.memory[0x0080] = 0x03  # Used for LDA_ZP_X
+    cpu.memory[0x0080] = 0x03  # Used for LDA_ZP_X
 
-cpu.memory[0x00AA] = 0x03  # Used for LDA_IND_X
-cpu.memory[0x00AB] = 0xFF  # Used for LDA_IND_X
+    cpu.memory[0x00AA] = 0x03  # Used for LDA_IND_X
+    cpu.memory[0x00AB] = 0xFF  # Used for LDA_IND_X
 
-cpu.memory[0x00AC] = 0x01  # Used for LDA_IND_Y
-cpu.memory[0x00AD] = 0xFF  # Used for LDA_IND_Y
+    cpu.memory[0x00AC] = 0x01  # Used for LDA_IND_Y
+    cpu.memory[0x00AD] = 0xFF  # Used for LDA_IND_Y
 
-cpu.memory[0xFF00] = 0x04
-cpu.memory[0xFF01] = 0x05
-cpu.memory[0xFF02] = 0x06
-cpu.memory[0xFF03] = 0x07
-cpu.memory[0xFF04] = 0x08
+    cpu.memory[0xFF00] = 0x04
+    cpu.memory[0xFF01] = 0x05
+    cpu.memory[0xFF02] = 0x06
+    cpu.memory[0xFF03] = 0x07
+    cpu.memory[0xFF04] = 0x08
 
-cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0x00, 0xFF, 0xBD, 0x01, 0xFF, 0xB9, 0xFF, 0xFE, 0xA1, 0xAA, 0xB1, 0xAC], memoryAddress=0xFF10)
-cpu.registers['Y'] = 0x03
+    cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0x00, 0xFF, 0xBD, 0x01, 0xFF, 0xB9, 0xFF, 0xFE, 0xA1, 0xAA, 0xB1, 0xAC], memoryAddress=0xFF10)
+    cpu.registers['Y'] = 0x03
 
-cpu.execute()
-cpu.printLog()
-cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF27)
+    cpu.execute()
+    cpu.printLog()
+    cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF27)
+
+run()
