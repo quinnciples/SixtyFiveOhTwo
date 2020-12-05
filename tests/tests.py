@@ -473,19 +473,19 @@ def TEST_0xB1_LDA_IND_Y_CROSS_PAGE_BOUNDARY():
 if __name__ == '__main__':
     os.system('color')
     tests = [
-        TEST_0xA9_LDA_IM
-        , TEST_0xA9_LDA_IM_ZERO_FLAG_SET
-        , TEST_0xA9_LDA_IM_NEGATIVE_FLAG_SET
-        , TEST_0xA5_LDA_ZP
-        , TEST_0xA5_LDA_ZP_X
-        , TEST_0xAD_LDA_ABS
-        , TEST_0xBD_LDA_ABS_X
-        , TEST_0xBD_LDA_ABS_X_CROSS_PAGE_BOUNDARY
-        , TEST_0xB9_LDA_ABS_Y
-        , TEST_0xB9_LDA_ABS_Y_CROSS_PAGE_BOUNDARY
-        , TEST_0xA1_LDA_IND_X
-        , TEST_0xB1_LDA_IND_Y
-        , TEST_0xB1_LDA_IND_Y_CROSS_PAGE_BOUNDARY
+        TEST_0xA9_LDA_IM,
+        TEST_0xA9_LDA_IM_ZERO_FLAG_SET,
+        TEST_0xA9_LDA_IM_NEGATIVE_FLAG_SET,
+        TEST_0xA5_LDA_ZP,
+        TEST_0xA5_LDA_ZP_X,
+        TEST_0xAD_LDA_ABS,
+        TEST_0xBD_LDA_ABS_X,
+        TEST_0xBD_LDA_ABS_X_CROSS_PAGE_BOUNDARY,
+        TEST_0xB9_LDA_ABS_Y,
+        TEST_0xB9_LDA_ABS_Y_CROSS_PAGE_BOUNDARY,
+        TEST_0xA1_LDA_IND_X,
+        TEST_0xB1_LDA_IND_Y,
+        TEST_0xB1_LDA_IND_Y_CROSS_PAGE_BOUNDARY
     ]
 
     num_tests, passed, failed = len(tests), 0, 0

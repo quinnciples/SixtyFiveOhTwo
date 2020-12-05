@@ -19,15 +19,15 @@ class CPU6502:
 
     """
 
-              	ORA 	AND 	EOR 	ADC 	STA 	LDA 	CMP 	SBC
-        (zp,X) 	01 	21 	41 	61 	81 	A1 	C1 	E1
-        zp 	05 	25 	45 	65 	85 	A5 	C5 	E5
-        # 	09 	29 	49 	69 	  	A9 	C9 	E9
-        abs 	0D 	2D 	4D 	6D 	8D 	AD 	CD 	ED
-        (zp),Y 	11 	31 	51 	71 	91 	B1 	D1 	F1
-        zp,X 	15 	35 	55 	75 	95 	B5 	D5 	F5
-        abs,Y 	19 	39 	59 	79 	99 	B9 	D9 	F9
-        abs,X 	1D 	3D 	5D 	7D 	9D 	BD 	DD 	FD
+            ORA 	AND 	EOR 	ADC 	STA 	LDA 	CMP 	SBC
+    (zp,X) 	01 	    21 	    41 	    61 	    81 	    A1 	    C1 	    E1
+    zp 	    05 	    25 	    45 	    65 	    85 	    A5 	    C5 	    E5
+    # 	    09 	    29 	    49 	    69 	  	A9 	    C9 	    E9
+    abs 	0D 	    2D 	    4D 	    6D 	    8D 	    AD 	    CD 	    ED
+    (zp),Y 	11 	    31 	    51 	    71 	    91 	    B1 	    D1 	    F1
+    zp,X 	15 	    35 	    55 	    75 	    95 	    B5 	    D5 	    F5
+    abs,Y 	19 	    39 	    59 	    79 	    99 	    B9 	    D9 	    F9
+    abs,X 	1D 	    3D 	    5D 	    7D 	    9D 	    BD 	    DD 	    FD
 
     """
 
