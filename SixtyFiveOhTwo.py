@@ -111,6 +111,18 @@ class CPU6502:
         self.cycleInc()
         return data
 
+    def setFlags(self, register, flags=[]):
+        if 'Z' in flags:
+            if self.registers[register] == 0:
+                self.registers['Z'] = 1
+            else:
+                self.registers['Z'] = 0
+        if 'N' in flags:
+            if self.registers[register] & 0b10000000 > 0:
+                self.registers['N'] = 1
+            else:
+                self.registers['N'] = 0
+
     def execute(self):
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
@@ -122,31 +134,13 @@ class CPU6502:
                 # Load memory into accumulator
                 data = self.readMemory()
                 self.registers['A'] = data
-                # Check to set zero flag
-                if self.registers['A'] == 0:
-                    self.registers['Z'] = 1
-                else:
-                    self.registers['Z'] = 0
-                # Check to set negative flag
-                if self.registers['A'] & 0b10000000 > 0:
-                    self.registers['N'] = 1
-                else:
-                    self.registers['N'] = 0
+                self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_ZP':
                 zp_address = self.readMemory()
                 data = self.readMemory(address=zp_address, increment_pc=False)
                 self.registers['A'] = data
-                # Check to set zero flag
-                if self.registers['A'] == 0:
-                    self.registers['Z'] = 1
-                else:
-                    self.registers['Z'] = 0
-                # Check to set negative flag
-                if self.registers['A'] & 0b10000000 > 0:
-                    self.registers['N'] = 1
-                else:
-                    self.registers['N'] = 0
+                self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_ZP_X':
                 zp_address = self.readMemory()
@@ -157,32 +151,14 @@ class CPU6502:
                 self.cycleInc()
                 data = self.readMemory(address=zp_address, increment_pc=False)
                 self.registers['A'] = data
-                # Check to set zero flag
-                if self.registers['A'] == 0:
-                    self.registers['Z'] = 1
-                else:
-                    self.registers['Z'] = 0
-                # Check to set negative flag
-                if self.registers['A'] & 0b10000000 > 0:
-                    self.registers['N'] = 1
-                else:
-                    self.registers['N'] = 0
+                self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_ABS':
                 address = self.readMemory()
                 address += (self.readMemory() * 0x100)
                 data = self.readMemory(address=address, increment_pc=False)
                 self.registers['A'] = data
-                # Check to set zero flag
-                if self.registers['A'] == 0:
-                    self.registers['Z'] = 1
-                else:
-                    self.registers['Z'] = 0
-                # Check to set negative flag
-                if self.registers['A'] & 0b10000000 > 0:
-                    self.registers['N'] = 1
-                else:
-                    self.registers['N'] = 0
+                self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_ABS_X':
                 address = self.readMemory()
@@ -192,16 +168,7 @@ class CPU6502:
                     self.cycleInc()  # Only if PAGE crossed
                 data = self.readMemory(address=address, increment_pc=False)
                 self.registers['A'] = data
-                # Check to set zero flag
-                if self.registers['A'] == 0:
-                    self.registers['Z'] = 1
-                else:
-                    self.registers['Z'] = 0
-                # Check to set negative flag
-                if self.registers['A'] & 0b10000000 > 0:
-                    self.registers['N'] = 1
-                else:
-                    self.registers['N'] = 0
+                self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_ABS_Y':
                 address = self.readMemory()
@@ -211,16 +178,7 @@ class CPU6502:
                     self.cycleInc()  # Only if PAGE crossed
                 data = self.readMemory(address=address, increment_pc=False)
                 self.registers['A'] = data
-                # Check to set zero flag
-                if self.registers['A'] == 0:
-                    self.registers['Z'] = 1
-                else:
-                    self.registers['Z'] = 0
-                # Check to set negative flag
-                if self.registers['A'] & 0b10000000 > 0:
-                    self.registers['N'] = 1
-                else:
-                    self.registers['N'] = 0
+                self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_IND_X':
                 zp_address = self.readMemory()
@@ -232,16 +190,7 @@ class CPU6502:
                 data = self.readMemory(address=zp_address, increment_pc=False)
                 data += (self.readMemory(address=zp_address + 1, increment_pc=False) * 0x100)
                 self.registers['A'] = self.readMemory(address=data, increment_pc=False)
-                # Check to set zero flag
-                if self.registers['A'] == 0:
-                    self.registers['Z'] = 1
-                else:
-                    self.registers['Z'] = 0
-                # Check to set negative flag
-                if self.registers['A'] & 0b10000000 > 0:
-                    self.registers['N'] = 1
-                else:
-                    self.registers['N'] = 0
+                self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_IND_Y':
                 zp_address = self.readMemory()
@@ -252,16 +201,8 @@ class CPU6502:
                     self.cycleInc()  # Only if PAGE crossed
                 data = self.readMemory(address=address, increment_pc=False)
                 self.registers['A'] = data
-                # Check to set zero flag
-                if self.registers['A'] == 0:
-                    self.registers['Z'] = 1
-                else:
-                    self.registers['Z'] = 0
-                # Check to set negative flag
-                if self.registers['A'] & 0b10000000 > 0:
-                    self.registers['N'] = 1
-                else:
-                    self.registers['N'] = 0
+                self.setFlags(register='A', flags=['Z', 'N'])
+
             elif opcode == 'NOP':
                 self.cycleInc()
 
