@@ -224,10 +224,10 @@ class CPU6502:
             elif self.INS == 'LDA_IND_X':
                 zp_address = self.readMemory()
                 zp_address += self.registers['X']
-                self.cycleInc()
                 # Zero Page address wraps around if the value exceeds 0xFF
                 while zp_address > 0xFF:
                     zp_address -= 0x100
+                self.cycleInc()
                 data = self.readMemory(address=zp_address, increment_pc=False)
                 data += (self.readMemory(address=zp_address + 1, increment_pc=False) * 0x100)
                 self.registers['A'] = self.readMemory(address=data, increment_pc=False)
