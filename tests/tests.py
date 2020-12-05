@@ -193,7 +193,7 @@ def TEST_0xA5_LDA_ZP_X():
     return False
 
 
-def TEST_0xA5_LDA_ABS():
+def TEST_0xAD_LDA_ABS():
     EXPECTED_CYCLES = 4
     EXPECTED_VALUE = 0x33
     EXPECTED_REGISTERS = {
@@ -234,11 +234,10 @@ if __name__ == '__main__':
         , TEST_0xA9_LDA_IM_NEGATIVE_FLAG_SET
         , TEST_0xA5_LDA_ZP
         , TEST_0xA5_LDA_ZP_X
-        , TEST_0xA5_LDA_ABS
+        , TEST_0xAD_LDA_ABS
     ]
 
     for test in tests:
-        
         try:
             if test():
                 print(f"{bcolors.OKGREEN}PASSED:{bcolors.ENDC} {test.__name__}")
@@ -247,4 +246,3 @@ if __name__ == '__main__':
         except AssertionError:
             print(f"{bcolors.FAIL}FAILED:{bcolors.ENDC} {test.__name__}")
             logging.error("", exc_info=True)
-            
