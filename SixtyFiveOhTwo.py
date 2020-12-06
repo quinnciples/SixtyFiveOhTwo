@@ -44,7 +44,7 @@ class CPU6502:
                0x20: 'JSR',
                0xEA: 'NOP'}
 
-    def __init__(self, cycle_limit=30):
+    def __init__(self, cycle_limit=2):
 
         self.program_counter = 0xFF10
         self.stack_pointer = 0x0100
@@ -104,8 +104,6 @@ class CPU6502:
 
         self.memory = [0] * CPU6502.MAX_MEMORY_SIZE
 
-        self.logState()
-
     def readMemory(self, increment_pc=True, address=None, bytes=1) -> int:
         data = 0
         for byte in range(bytes):
@@ -133,11 +131,9 @@ class CPU6502:
                 self.flags['N'] = 0
 
     def execute(self):
-        data = self.readMemory()
-        self.INS = CPU6502.opcodes.get(data, None)
-        while self.cycles < self.cycle_limit and self.INS is not None:  # This was changed from <= to <
-            # opcode = CPU6502.opcodes.get(data, None)  # Use the NOP code as a safe default?
-            # self.INS = opcode
+        while self.cycles < self.cycle_limit:  # This was changed from <= to <
+            data = self.readMemory()
+            self.INS = CPU6502.opcodes.get(data, None)
 
             if self.INS == 'LDA_IM':
                 # Load memory into accumulator
@@ -212,8 +208,8 @@ class CPU6502:
                 self.registers['A'] = data
                 self.setFlags(register='A', flags=['Z', 'N'])
 
-            elif opcode == 'NOP':
-                self.cycleInc()
+            # elif self.INS == 'NOP':
+                # self.cycleInc()
 
             data = self.readMemory()
             self.INS = CPU6502.opcodes.get(data, None)
