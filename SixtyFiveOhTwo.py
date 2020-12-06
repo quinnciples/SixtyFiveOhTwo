@@ -140,6 +140,11 @@ class CPU6502:
                 self.programCounterInc()
         return data
 
+    def writeMemory(self, data, address, bytes=1):
+        for byte in range(bytes):
+            self.memory[address + byte] = data
+            self.cycleInc()
+
     def setFlags(self, register, flags=[]):
         if 'Z' in flags:
             if self.registers[register] == 0:
@@ -204,6 +209,13 @@ class CPU6502:
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None:  # self.cycles <= self.cycle_limit:  # This was changed from <= to <
+
+            if self.INS in ['STA_ZP', 'STA_ZP_X']:
+                ins_set = self.INS.split('_')
+                target = ins_set[0][2]
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
+                self.writeMemory(data=self.registers[target], address=address, bytes=1)
 
             if self.INS == 'LDA_IM':
                 data = self.readMemory()
@@ -378,13 +390,14 @@ def run():
     cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0x00, 0xFF, 0xBD, 0x01, 0xFF, 0xB9, 0xFF, 0xFE, 0xA1, 0xAA, 0xB1, 0xAC, 0x4C, 0x28, 0xFF], memoryAddress=0xFF10)
     cpu.loadProgram(instructions=[0xA9, 0x09, 0x6C, 0x30, 0xFF], memoryAddress=0xFF28)
     cpu.loadProgram(instructions=[0x38, 0xFF], memoryAddress=0xFF30)
-    cpu.loadProgram(instructions=[0xA9, 0x0A], memoryAddress=0xFF38)
+    cpu.loadProgram(instructions=[0xA9, 0x0A, 0x85, 0xB0, 0xA2, 0x01, 0xA9, 0x0B, 0x95, 0xB0], memoryAddress=0xFF38)
 
     cpu.registers['Y'] = 0x03
 
     cpu.execute()
     cpu.printLog()
     cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF3F)
+    cpu.memoryDump(startingAddress=0x0000, endingAddress=0xFF)
 
 
 if __name__ == '__main__':
