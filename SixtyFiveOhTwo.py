@@ -41,16 +41,27 @@ class CPU6502:
                0xB9: 'LDA_ABS_Y',
                0xA1: 'LDA_IND_X',
                0xB1: 'LDA_IND_Y',
+
                0xA2: 'LDX_IM',
                0xA6: 'LDX_ZP',
                0xB6: 'LDX_ZP_Y',
                0xAE: 'LDX_ABS',
                0xBE: 'LDX_ABS_Y',
+
                0xA0: 'LDY_IM',
                0xA4: 'LDY_ZP',
                0xB4: 'LDY_ZP_X',
                0xAC: 'LDY_ABS',
                0xBC: 'LDY_ABS_X',
+
+               0x85: 'STA_ZP',
+               0x95: 'STA_ZP_X',
+               0x8D: 'STA_ABS',
+               0x9D: 'STA_ABS_X',
+               0x99: 'STA_ABS_Y',
+               0x81: 'STA_IND_X',
+               0x91: 'STA_IND_Y',
+
                0x4C: 'JMP',
                0x6C: 'JMP_IND',
                0x20: 'JSR',
