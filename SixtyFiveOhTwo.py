@@ -99,11 +99,12 @@ class CPU6502:
 
         # Reset all registers to zero
         self.registers = dict.fromkeys(self.registers.keys(), 0)
-
         # Reset all flags to zero
         self.flags = dict.fromkeys(self.flags.keys(), 0)
 
         self.memory = [0] * CPU6502.MAX_MEMORY_SIZE
+
+        self.logState()
 
     def readMemory(self, increment_pc=True, address=None, bytes=1) -> int:
         data = 0
@@ -135,8 +136,8 @@ class CPU6502:
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
         while self.cycles < self.cycle_limit and self.INS is not None:  # This was changed from <= to <
-            opcode = CPU6502.opcodes.get(data, None)  # Use the NOP code as a safe default?
-            self.INS = opcode
+            # opcode = CPU6502.opcodes.get(data, None)  # Use the NOP code as a safe default?
+            # self.INS = opcode
 
             if self.INS == 'LDA_IM':
                 # Load memory into accumulator
@@ -265,7 +266,8 @@ def run():
     cpu.memory[0xFF03] = 0x07
     cpu.memory[0xFF04] = 0x08
 
-    cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0x00, 0xFF, 0xBD, 0x01, 0xFF, 0xB9, 0xFF, 0xFE, 0xA1, 0xAA, 0xB1, 0xAC], memoryAddress=0xFF10)
+    # cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0x00, 0xFF, 0xBD, 0x01, 0xFF, 0xB9, 0xFF, 0xFE, 0xA1, 0xAA, 0xB1, 0xAC], memoryAddress=0xFF10)
+    cpu.loadProgram(instructions=[0xA9, 0x01], memoryAddress=0xFF10)
     cpu.registers['Y'] = 0x03
 
     cpu.execute()
