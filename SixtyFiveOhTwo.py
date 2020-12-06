@@ -46,6 +46,11 @@ class CPU6502:
                0xB6: 'LDX_ZP_Y',
                0xAE: 'LDX_ABS',
                0xBE: 'LDX_ABS_Y',
+               0xA0: 'LDY_IM',
+               0xA4: 'LDY_ZP',
+               0xB4: 'LDY_ZP_X',
+               0xAC: 'LDY_ABS',
+               0xBC: 'LDY_ABS_X',
                0x20: 'JSR',
                0xEA: 'NOP'}
 
@@ -195,6 +200,11 @@ class CPU6502:
                 self.registers['X'] = data
                 self.setFlags(register='X', flags=['Z', 'N'])
 
+            elif self.INS == 'LDY_IM':
+                data = self.readMemory()
+                self.registers['Y'] = data
+                self.setFlags(register='Y', flags=['Z', 'N'])
+
             elif self.INS == 'LDA_ZP':
                 address = self.determineAddress(mode='ZP')
                 data = self.readMemory(address=address, increment_pc=False)
@@ -206,6 +216,12 @@ class CPU6502:
                 data = self.readMemory(address=address, increment_pc=False)
                 self.registers['X'] = data
                 self.setFlags(register='X', flags=['Z', 'N'])
+
+            elif self.INS == 'LDY_ZP':
+                address = self.determineAddress(mode='ZP')
+                data = self.readMemory(address=address, increment_pc=False)
+                self.registers['Y'] = data
+                self.setFlags(register='Y', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_ZP_X':
                 address = self.determineAddress(mode='ZP_X')
@@ -219,6 +235,12 @@ class CPU6502:
                 self.registers['X'] = data
                 self.setFlags(register='X', flags=['Z', 'N'])
 
+            elif self.INS == 'LDY_ZP_X':
+                address = self.determineAddress(mode='ZP_X')
+                data = self.readMemory(address=address, increment_pc=False)
+                self.registers['Y'] = data
+                self.setFlags(register='Y', flags=['Z', 'N'])
+
             elif self.INS == 'LDA_ABS':
                 address = self.determineAddress(mode='ABS')
                 data = self.readMemory(address=address, increment_pc=False)
@@ -231,6 +253,12 @@ class CPU6502:
                 self.registers['X'] = data
                 self.setFlags(register='X', flags=['Z', 'N'])
 
+            elif self.INS == 'LDY_ABS':
+                address = self.determineAddress(mode='ABS')
+                data = self.readMemory(address=address, increment_pc=False)
+                self.registers['Y'] = data
+                self.setFlags(register='Y', flags=['Z', 'N'])
+
             elif self.INS == 'LDA_ABS_X':
                 address = self.determineAddress(mode='ABS_X')
                 data = self.readMemory(address=address, increment_pc=False)
@@ -242,6 +270,12 @@ class CPU6502:
                 data = self.readMemory(address=address, increment_pc=False)
                 self.registers['A'] = data
                 self.setFlags(register='A', flags=['Z', 'N'])
+
+            elif self.INS == 'LDY_ABS_X':
+                address = self.determineAddress(mode='ABS_X')
+                data = self.readMemory(address=address, increment_pc=False)
+                self.registers['Y'] = data
+                self.setFlags(register='Y', flags=['Z', 'N'])
 
             elif self.INS == 'LDX_ABS_Y':
                 address = self.determineAddress(mode='ABS_Y')
