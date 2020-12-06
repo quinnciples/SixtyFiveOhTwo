@@ -41,10 +41,15 @@ class CPU6502:
                0xB9: 'LDA_ABS_Y',
                0xA1: 'LDA_IND_X',
                0xB1: 'LDA_IND_Y',
+               0xA2: 'LDX_IM',
+               0xA6: 'LDX_ZP',
+               0xB6: 'LDX_ZP_Y',
+               0xAE: 'LDX_ABS',
+               0xBE: 'LDX_ABS_Y',
                0x20: 'JSR',
                0xEA: 'NOP'}
 
-    def __init__(self, cycle_limit=30):
+    def __init__(self, cycle_limit=2):
 
         self.program_counter = 0xFF10
         self.stack_pointer = 0x0100
@@ -99,22 +104,22 @@ class CPU6502:
 
         # Reset all registers to zero
         self.registers = dict.fromkeys(self.registers.keys(), 0)
-
         # Reset all flags to zero
         self.flags = dict.fromkeys(self.flags.keys(), 0)
 
         self.memory = [0] * CPU6502.MAX_MEMORY_SIZE
 
-    def readMemory(self, increment_pc=True, address=None) -> int:
-        if not address:
-            data = self.memory[self.program_counter]
-        else:
-            data = self.memory[address]
+    def readMemory(self, increment_pc=True, address=None, bytes=1) -> int:
+        data = 0
+        for byte in range(bytes):
+            self.cycleInc()
+            if not address:
+                data += (self.memory[self.program_counter] * (0x100 ** byte))
+            else:
+                data += (self.memory[address + byte] * (0x100 ** byte))
 
-        if increment_pc:
-            self.programCounterInc()
-
-        self.cycleInc()
+            if increment_pc:
+                self.programCounterInc()
         return data
 
     def setFlags(self, register, flags=[]):
@@ -129,91 +134,104 @@ class CPU6502:
             else:
                 self.flags['N'] = 0
 
+    def determineAddress(self, mode):
+        address = 0
+        if mode == 'ZP':
+            address = self.readMemory()
+        elif mode == 'ZP_X':
+            address = self.readMemory()
+            address += self.registers['X']
+            # Zero Page address wraps around if the value exceeds 0xFF
+            while address > 0xFF:
+                address -= 0x100
+            self.cycleInc()
+        elif mode == 'ABS':
+            address = self.readMemory(bytes=2)
+        elif mode == 'ABS_X':
+            address = self.readMemory(bytes=2)
+            address += self.registers['X']
+            if int(address / 0x100) != int((address - self.registers['X']) / 0x100):
+                self.cycleInc()  # Only if PAGE crossed
+        elif mode == 'ABS_Y':
+            address = self.readMemory(bytes=2)
+            address += self.registers['Y']
+            if int(address / 0x100) != int((address - self.registers['Y']) / 0x100):
+                self.cycleInc()  # Only if PAGE crossed
+        elif mode == 'IND_X':
+            address = self.readMemory()
+            address += self.registers['X']
+            # Zero Page address wraps around if the value exceeds 0xFF
+            while address > 0xFF:
+                address -= 0x100
+            self.cycleInc()
+        elif mode == 'IND_Y':
+            address = self.readMemory()
+            address = self.readMemory(address=address, increment_pc=False, bytes=2)
+            address += self.registers['Y']
+            if int(address / 0x100) != int((address - self.registers['Y']) / 0x100):
+                self.cycleInc()  # Only if PAGE crossed
+
+        return address
+
     def execute(self):
-        data = self.readMemory()
-        self.INS = CPU6502.opcodes.get(data, None)
-        while self.cycles < self.cycle_limit and self.INS is not None:  # This was changed from <= to <
-            opcode = CPU6502.opcodes.get(data, None)  # Use the NOP code as a safe default?
-            self.INS = opcode
+        while self.cycles <= self.cycle_limit:  # This was changed from <= to <
+            data = self.readMemory()
+            self.INS = CPU6502.opcodes.get(data, None)
 
             if self.INS == 'LDA_IM':
-                # Load memory into accumulator
                 data = self.readMemory()
                 self.registers['A'] = data
                 self.setFlags(register='A', flags=['Z', 'N'])
+            
+            elif self.INS == 'LDX_IM':
+                data = self.readMemory()
+                self.registers['X'] = data
+                self.setFlags(register='X', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_ZP':
-                zp_address = self.readMemory()
-                data = self.readMemory(address=zp_address, increment_pc=False)
+                address = self.determineAddress(mode='ZP')
+                data = self.readMemory(address=address, increment_pc=False)
                 self.registers['A'] = data
                 self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_ZP_X':
-                zp_address = self.readMemory()
-                zp_address += self.registers['X']
-                # Zero Page address wraps around if the value exceeds 0xFF
-                while zp_address > 0xFF:
-                    zp_address -= 0x100
-                self.cycleInc()
-                data = self.readMemory(address=zp_address, increment_pc=False)
+                address = self.determineAddress(mode='ZP_X')
+                data = self.readMemory(address=address, increment_pc=False)
                 self.registers['A'] = data
                 self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_ABS':
-                address = self.readMemory()
-                address += (self.readMemory() * 0x100)
+                address = self.determineAddress(mode='ABS')
                 data = self.readMemory(address=address, increment_pc=False)
                 self.registers['A'] = data
                 self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_ABS_X':
-                address = self.readMemory()
-                address += (self.readMemory() * 0x100)
-                address += self.registers['X']
-                if int(address / 0x100) != int((address - self.registers['X']) / 0x100):
-                    self.cycleInc()  # Only if PAGE crossed
+                address = self.determineAddress(mode='ABS_X')
                 data = self.readMemory(address=address, increment_pc=False)
                 self.registers['A'] = data
                 self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_ABS_Y':
-                address = self.readMemory()
-                address += (self.readMemory() * 0x100)
-                address += self.registers['Y']
-                if int(address / 0x100) != int((address - self.registers['Y']) / 0x100):
-                    self.cycleInc()  # Only if PAGE crossed
+                address = self.determineAddress(mode='ABS_Y')
                 data = self.readMemory(address=address, increment_pc=False)
                 self.registers['A'] = data
                 self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_IND_X':
-                zp_address = self.readMemory()
-                zp_address += self.registers['X']
-                # Zero Page address wraps around if the value exceeds 0xFF
-                while zp_address > 0xFF:
-                    zp_address -= 0x100
-                self.cycleInc()
-                data = self.readMemory(address=zp_address, increment_pc=False)
-                data += (self.readMemory(address=zp_address + 1, increment_pc=False) * 0x100)
+                address = self.determineAddress(mode='IND_X')
+                data = self.readMemory(address=address, increment_pc=False, bytes=2)
                 self.registers['A'] = self.readMemory(address=data, increment_pc=False)
                 self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_IND_Y':
-                zp_address = self.readMemory()
-                address = self.readMemory(address=zp_address, increment_pc=False)
-                address += (self.readMemory(address=zp_address + 1, increment_pc=False) * 0x100)
-                address += self.registers['Y']
-                if int(address / 0x100) != int((address - self.registers['Y']) / 0x100):
-                    self.cycleInc()  # Only if PAGE crossed
+                address = self.determineAddress(mode='IND_Y')
                 data = self.readMemory(address=address, increment_pc=False)
                 self.registers['A'] = data
                 self.setFlags(register='A', flags=['Z', 'N'])
 
-            elif opcode == 'NOP':
+            elif self.INS == 'NOP':
                 self.cycleInc()
-
-            data = self.readMemory()
-            self.INS = CPU6502.opcodes.get(data, None)
 
     def printState(self):
         combined = {**{'Cycle': self.cycles, '%-10s' % 'INS': '%-10s' % self.INS}, **self.registers, **self.flags, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
@@ -263,7 +281,8 @@ def run():
     cpu.memory[0xFF03] = 0x07
     cpu.memory[0xFF04] = 0x08
 
-    cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0x00, 0xFF, 0xBD, 0x01, 0xFF, 0xB9, 0xFF, 0xFE, 0xA1, 0xAA, 0xB1, 0xAC], memoryAddress=0xFF10)
+    # cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0x00, 0xFF, 0xBD, 0x01, 0xFF, 0xB9, 0xFF, 0xFE, 0xA1, 0xAA, 0xB1, 0xAC], memoryAddress=0xFF10)
+    cpu.loadProgram(instructions=[0xA9, 0x01], memoryAddress=0xFF10)
     cpu.registers['Y'] = 0x03
 
     cpu.execute()
