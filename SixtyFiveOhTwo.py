@@ -186,9 +186,9 @@ class CPU6502:
         return address
 
     def execute(self):
-        while self.cycles <= self.cycle_limit:  # This was changed from <= to <
-            data = self.readMemory()
-            self.INS = CPU6502.opcodes.get(data, None)
+        data = self.readMemory()
+        self.INS = CPU6502.opcodes.get(data, None)
+        while self.INS is not None:  # self.cycles <= self.cycle_limit:  # This was changed from <= to <
 
             if self.INS == 'LDA_IM':
                 data = self.readMemory()
@@ -298,6 +298,9 @@ class CPU6502:
             elif self.INS == 'NOP':
                 self.cycleInc()
 
+            data = self.readMemory()
+            self.INS = CPU6502.opcodes.get(data, None)
+
     def printState(self):
         combined = {**{'Cycle': self.cycles, '%-10s' % 'INS': '%-10s' % self.INS}, **self.registers, **self.flags, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
         headerString = '\t'.join(combined)
@@ -346,8 +349,8 @@ def run():
     cpu.memory[0xFF03] = 0x07
     cpu.memory[0xFF04] = 0x08
 
-    # cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0x00, 0xFF, 0xBD, 0x01, 0xFF, 0xB9, 0xFF, 0xFE, 0xA1, 0xAA, 0xB1, 0xAC], memoryAddress=0xFF10)
-    cpu.loadProgram(instructions=[0xA9, 0x01], memoryAddress=0xFF10)
+    cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0x00, 0xFF, 0xBD, 0x01, 0xFF, 0xB9, 0xFF, 0xFE, 0xA1, 0xAA, 0xB1, 0xAC], memoryAddress=0xFF10)
+    
     cpu.registers['Y'] = 0x03
 
     cpu.execute()
