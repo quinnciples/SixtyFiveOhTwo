@@ -51,6 +51,7 @@ def TEST_0xA9_LDA_IM():
         raise
     return False
 
+
 def TEST_0xA2_LDX_IM():
     EXPECTED_CYCLES = 2
     EXPECTED_VALUE = 0x45
@@ -120,6 +121,7 @@ def TEST_0xA9_LDA_IM_ZERO_FLAG_SET():
         cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
         raise
     return False
+
 
 def TEST_0xA2_LDX_IM_ZERO_FLAG_SET():
     EXPECTED_CYCLES = 2
@@ -192,6 +194,7 @@ def TEST_0xA9_LDA_IM_NEGATIVE_FLAG_SET():
         raise
     return False
 
+
 def TEST_0xA2_LDX_IM_NEGATIVE_FLAG_SET():
     EXPECTED_CYCLES = 2
     EXPECTED_VALUE = 0xAF
@@ -251,8 +254,6 @@ def TEST_0xA5_LDA_ZP():
     program = [0xA5, 0xCC]
     cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
     cpu.execute()
-    # cpu.printLog()
-    # cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
 
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
@@ -266,7 +267,43 @@ def TEST_0xA5_LDA_ZP():
     return False
 
 
-def TEST_0xA5_LDA_ZP_X():
+def TEST_0xA6_LDX_ZP():
+    EXPECTED_CYCLES = 3
+    EXPECTED_VALUE = 0x45
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': EXPECTED_VALUE,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    cpu.memory[0xCC] = 0x45
+    program = [0xA6, 0xCC]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.execute()
+
+    try:
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+
+def TEST_0xB5_LDA_ZP_X():
     EXPECTED_CYCLES = 4
     EXPECTED_VALUE = 0x15
     EXPECTED_REGISTERS = {
@@ -290,8 +327,43 @@ def TEST_0xA5_LDA_ZP_X():
     program = [0xB5, 0xDD]
     cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
     cpu.execute()
-    # cpu.printLog()
-    # cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+
+    try:
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+
+def TEST_0xB6_LDX_ZP_Y():
+    EXPECTED_CYCLES = 3
+    EXPECTED_VALUE = 0x15
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': EXPECTED_VALUE,
+        'Y': 0x05
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    cpu.registers['Y'] = 0x05
+    cpu.memory[0xE2] = 0x15
+    program = [0xB6, 0xDD]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.execute()
 
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
@@ -326,6 +398,42 @@ def TEST_0xAD_LDA_ABS():
     cpu.reset(program_counter=0xFF00)
     cpu.memory[0xDD00] = 0x33
     program = [0xAD, 0x00, 0xDD]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.execute()
+
+    try:
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+
+def TEST_0xAE_LDX_ABS():
+    EXPECTED_CYCLES = 4
+    EXPECTED_VALUE = 0x33
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': EXPECTED_VALUE,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    cpu.memory[0xDD00] = 0x33
+    program = [0xAE, 0x00, 0xDD]
     cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
     cpu.execute()
 
@@ -452,6 +560,43 @@ def TEST_0xB9_LDA_ABS_Y():
     return False
 
 
+def TEST_0xBE_LDX_ABS_Y():
+    EXPECTED_CYCLES = 4
+    EXPECTED_VALUE = 0x0A
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': EXPECTED_VALUE,
+        'Y': 0x05
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    cpu.registers['Y'] = 0x05
+    cpu.memory[0xFF05] = 0x0A
+    program = [0xBE, 0x00, 0xFF]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.execute()
+
+    try:
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+
 def TEST_0xB9_LDA_ABS_Y_CROSS_PAGE_BOUNDARY():
     EXPECTED_CYCLES = 5
     EXPECTED_VALUE = 0x0B
@@ -474,6 +619,43 @@ def TEST_0xB9_LDA_ABS_Y_CROSS_PAGE_BOUNDARY():
     cpu.registers['Y'] = 0x04
     cpu.memory[0xEE02] = 0x0B
     program = [0xB9, 0xFE, 0xED]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.execute()
+
+    try:
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+
+def TEST_0xBE_LDX_ABS_Y_CROSS_PAGE_BOUNDARY():
+    EXPECTED_CYCLES = 5
+    EXPECTED_VALUE = 0x0B
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': EXPECTED_VALUE,
+        'Y': 0x04
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    cpu.registers['Y'] = 0x04
+    cpu.memory[0xEE02] = 0x0B
+    program = [0xBE, 0xFE, 0xED]
     cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
     cpu.execute()
 
@@ -613,7 +795,7 @@ if __name__ == '__main__':
         TEST_0xA9_LDA_IM_ZERO_FLAG_SET,
         TEST_0xA9_LDA_IM_NEGATIVE_FLAG_SET,
         TEST_0xA5_LDA_ZP,
-        TEST_0xA5_LDA_ZP_X,
+        TEST_0xB5_LDA_ZP_X,
         TEST_0xAD_LDA_ABS,
         TEST_0xBD_LDA_ABS_X,
         TEST_0xBD_LDA_ABS_X_CROSS_PAGE_BOUNDARY,
@@ -625,6 +807,11 @@ if __name__ == '__main__':
         TEST_0xA2_LDX_IM,
         TEST_0xA2_LDX_IM_ZERO_FLAG_SET,
         TEST_0xA2_LDX_IM_NEGATIVE_FLAG_SET,
+        TEST_0xA6_LDX_ZP,
+        TEST_0xB6_LDX_ZP_Y,
+        TEST_0xAE_LDX_ABS,
+        TEST_0xBE_LDX_ABS_Y,
+        TEST_0xBE_LDX_ABS_Y_CROSS_PAGE_BOUNDARY
     ]
 
     num_tests, passed, failed = len(tests), 0, 0
