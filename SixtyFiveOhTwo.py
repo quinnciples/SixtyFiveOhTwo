@@ -105,16 +105,18 @@ class CPU6502:
 
         self.memory = [0] * CPU6502.MAX_MEMORY_SIZE
 
-    def readMemory(self, increment_pc=True, address=None) -> int:
-        if not address:
-            data = self.memory[self.program_counter]
-        else:
-            data = self.memory[address]
+    def readMemory(self, increment_pc=True, address=None, bytes=1) -> int:
+        data = 0
+        for byte in range(bytes):
+            if not address:
+                data += (self.memory[self.program_counter] * (0x100 ** byte))
+            else:
+                data += (self.memory[address + byte] * (0x100 ** byte))
 
-        if increment_pc:
-            self.programCounterInc()
+            if increment_pc:
+                self.programCounterInc()
 
-        self.cycleInc()
+            self.cycleInc()
         return data
 
     def setFlags(self, register, flags=[]):
@@ -160,15 +162,15 @@ class CPU6502:
                 self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_ABS':
-                address = self.readMemory()
-                address += (self.readMemory() * 0x100)
+                address = self.readMemory(bytes=2)
+                # address += (self.readMemory() * 0x100)
                 data = self.readMemory(address=address, increment_pc=False)
                 self.registers['A'] = data
                 self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_ABS_X':
-                address = self.readMemory()
-                address += (self.readMemory() * 0x100)
+                address = self.readMemory(bytes=2)
+                # address += (self.readMemory() * 0x100)
                 address += self.registers['X']
                 if int(address / 0x100) != int((address - self.registers['X']) / 0x100):
                     self.cycleInc()  # Only if PAGE crossed
@@ -177,8 +179,8 @@ class CPU6502:
                 self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_ABS_Y':
-                address = self.readMemory()
-                address += (self.readMemory() * 0x100)
+                address = self.readMemory(bytes=2)
+                # address += (self.readMemory() * 0x100)
                 address += self.registers['Y']
                 if int(address / 0x100) != int((address - self.registers['Y']) / 0x100):
                     self.cycleInc()  # Only if PAGE crossed
@@ -193,15 +195,15 @@ class CPU6502:
                 while zp_address > 0xFF:
                     zp_address -= 0x100
                 self.cycleInc()
-                data = self.readMemory(address=zp_address, increment_pc=False)
-                data += (self.readMemory(address=zp_address + 1, increment_pc=False) * 0x100)
+                data = self.readMemory(address=zp_address, increment_pc=False, bytes=2)
+                # data += (self.readMemory(address=zp_address + 1, increment_pc=False) * 0x100)
                 self.registers['A'] = self.readMemory(address=data, increment_pc=False)
                 self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_IND_Y':
                 zp_address = self.readMemory()
-                address = self.readMemory(address=zp_address, increment_pc=False)
-                address += (self.readMemory(address=zp_address + 1, increment_pc=False) * 0x100)
+                address = self.readMemory(address=zp_address, increment_pc=False, bytes=2)
+                # address += (self.readMemory(address=zp_address + 1, increment_pc=False) * 0x100)
                 address += self.registers['Y']
                 if int(address / 0x100) != int((address - self.registers['Y']) / 0x100):
                     self.cycleInc()  # Only if PAGE crossed

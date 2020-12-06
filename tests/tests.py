@@ -544,5 +544,5 @@ if __name__ == '__main__':
             continue
 
     print('TEST SUMMARY')
-    print(f"{bcolors.OKGREEN}{'▓' * passed}{bcolors.ENDC} {passed} tests PASSED'")
-    print(f"{bcolors.FAIL}{'▓' * failed}{bcolors.ENDC} {failed} tests FAILED'")
+    print(f"{bcolors.OKGREEN}{'▓' * passed}{bcolors.ENDC} {passed} tests PASSED")
+    print(f"{bcolors.FAIL}{'▓' * failed}{bcolors.ENDC} {failed} tests FAILED")
