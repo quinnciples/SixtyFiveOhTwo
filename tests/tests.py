@@ -36,12 +36,43 @@ def TEST_0xA9_LDA_IM():
     }
     cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
     cpu.reset(program_counter=0xFF00)
-
     program = [0xA9, 0x45]
     cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
     cpu.execute()
-    # cpu.printLog()
-    # cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+
+    try:
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+def TEST_0xA2_LDX_IM():
+    EXPECTED_CYCLES = 2
+    EXPECTED_VALUE = 0x45
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': EXPECTED_VALUE,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0xA2, 0x45]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.execute()
 
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
@@ -78,8 +109,41 @@ def TEST_0xA9_LDA_IM_ZERO_FLAG_SET():
     program = [0xA9, 0x00]
     cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
     cpu.execute()
-    # cpu.printLog()
-    # cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+
+    try:
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+def TEST_0xA2_LDX_IM_ZERO_FLAG_SET():
+    EXPECTED_CYCLES = 2
+    EXPECTED_VALUE = 0x00
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': EXPECTED_VALUE,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 1,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+
+    program = [0xA2, 0x00]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.execute()
 
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
@@ -116,8 +180,41 @@ def TEST_0xA9_LDA_IM_NEGATIVE_FLAG_SET():
     program = [0xA9, 0xAF]
     cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
     cpu.execute()
-    # cpu.printLog()
-    # cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+
+    try:
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+def TEST_0xA2_LDX_IM_NEGATIVE_FLAG_SET():
+    EXPECTED_CYCLES = 2
+    EXPECTED_VALUE = 0xAF
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': EXPECTED_VALUE,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 1
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+
+    program = [0xA2, 0xAF]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.execute()
 
     try:
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
@@ -524,7 +621,10 @@ if __name__ == '__main__':
         TEST_0xB9_LDA_ABS_Y_CROSS_PAGE_BOUNDARY,
         TEST_0xA1_LDA_IND_X,
         TEST_0xB1_LDA_IND_Y,
-        TEST_0xB1_LDA_IND_Y_CROSS_PAGE_BOUNDARY
+        TEST_0xB1_LDA_IND_Y_CROSS_PAGE_BOUNDARY,
+        TEST_0xA2_LDX_IM,
+        TEST_0xA2_LDX_IM_ZERO_FLAG_SET,
+        TEST_0xA2_LDX_IM_NEGATIVE_FLAG_SET,
     ]
 
     num_tests, passed, failed = len(tests), 0, 0
