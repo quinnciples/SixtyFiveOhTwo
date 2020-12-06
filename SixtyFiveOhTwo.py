@@ -132,7 +132,7 @@ class CPU6502:
     def execute(self):
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
-        while self.cycles < self.cycle_limit and self.INS is not None:
+        while self.cycles < self.cycle_limit and self.INS is not None:  # This was changed from <= to <
             opcode = CPU6502.opcodes.get(data, None)  # Use the NOP code as a safe default?
             self.INS = opcode
 
