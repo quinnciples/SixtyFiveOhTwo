@@ -484,7 +484,7 @@ def TEST_0xB5_LDA_ZP_X():
 
 
 def TEST_0xB6_LDX_ZP_Y():
-    EXPECTED_CYCLES = 3
+    EXPECTED_CYCLES = 4
     EXPECTED_VALUE = 0x15
     EXPECTED_REGISTERS = {
         'A': 0,
@@ -1041,6 +1041,82 @@ def TEST_0xB1_LDA_IND_Y_CROSS_PAGE_BOUNDARY():
     return False
 
 
+def TEST_0x4C_JMP_ABS():
+    EXPECTED_CYCLES = 3 + 2
+    EXPECTED_VALUE = 0x45
+    EXPECTED_REGISTERS = {
+        'A': EXPECTED_VALUE,
+        'X': 0,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0x4C, 0x10, 0xFF]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    program = [0xA9, 0x45]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF10)
+    cpu.execute()
+
+    try:
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+
+def TEST_0x6C_JMP_IND():
+    EXPECTED_CYCLES = 5 + 2
+    EXPECTED_VALUE = 0xFE
+    EXPECTED_REGISTERS = {
+        'A': EXPECTED_VALUE,
+        'X': 0,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 1
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0x6C, 0x10, 0xFF]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    program = [0x20, 0xFF]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF10)
+    program = [0xA9, 0xFE]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF20)
+    cpu.execute()
+
+    try:
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+
 if __name__ == '__main__':
     os.system('color')
     tests = [
@@ -1072,6 +1148,8 @@ if __name__ == '__main__':
         TEST_0xB4_LDY_ZP_X,
         TEST_0xAC_LDY_ABS,
         TEST_0xBC_LDY_ABS_X_CROSS_PAGE_BOUNDARY,
+        TEST_0x4C_JMP_ABS,
+        TEST_0x6C_JMP_IND,
     ]
 
     num_tests, passed, failed = len(tests), 0, 0
