@@ -107,6 +107,7 @@ class CPU6502:
     def readMemory(self, increment_pc=True, address=None, bytes=1) -> int:
         data = 0
         for byte in range(bytes):
+            self.cycleInc()
             if not address:
                 data += (self.memory[self.program_counter] * (0x100 ** byte))
             else:
@@ -114,8 +115,6 @@ class CPU6502:
 
             if increment_pc:
                 self.programCounterInc()
-
-            self.cycleInc()
         return data
 
     def setFlags(self, register, flags=[]):
