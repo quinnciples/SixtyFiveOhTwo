@@ -51,6 +51,8 @@ class CPU6502:
                0xB4: 'LDY_ZP_X',
                0xAC: 'LDY_ABS',
                0xBC: 'LDY_ABS_X',
+               0x4C: 'JMP',
+               0x6C: 'JMP_IND',
                0x20: 'JSR',
                0xEA: 'NOP'}
 
@@ -169,6 +171,8 @@ class CPU6502:
             address += self.registers['Y']
             if int(address / 0x100) != int((address - self.registers['Y']) / 0x100):
                 self.cycleInc()  # Only if PAGE crossed
+        elif mode == 'IND':  # Indirect
+            address = self.readMemory(bytes=2)
         elif mode == 'IND_X':
             address = self.readMemory()
             address += self.registers['X']
@@ -295,6 +299,17 @@ class CPU6502:
                 self.registers['A'] = data
                 self.setFlags(register='A', flags=['Z', 'N'])
 
+            elif self.INS == 'JMP':
+                address = self.determineAddress(mode='ABS')
+                self.program_counter = address
+                pass
+
+            elif self.INS == 'JMP_IND':
+                address = self.determineAddress(mode='IND')
+                address = self.readMemory(address=address, increment_pc=False, bytes=2)
+                self.program_counter = address
+                pass
+
             elif self.INS == 'NOP':
                 self.cycleInc()
 
@@ -349,13 +364,16 @@ def run():
     cpu.memory[0xFF03] = 0x07
     cpu.memory[0xFF04] = 0x08
 
-    cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0x00, 0xFF, 0xBD, 0x01, 0xFF, 0xB9, 0xFF, 0xFE, 0xA1, 0xAA, 0xB1, 0xAC], memoryAddress=0xFF10)
-    
+    cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0x00, 0xFF, 0xBD, 0x01, 0xFF, 0xB9, 0xFF, 0xFE, 0xA1, 0xAA, 0xB1, 0xAC, 0x4C, 0x28, 0xFF], memoryAddress=0xFF10)
+    cpu.loadProgram(instructions=[0xA9, 0x09, 0x6C, 0x30, 0xFF], memoryAddress=0xFF28)
+    cpu.loadProgram(instructions=[0x38, 0xFF], memoryAddress=0xFF30)
+    cpu.loadProgram(instructions=[0xA9, 0x0A], memoryAddress=0xFF38)
+
     cpu.registers['Y'] = 0x03
 
     cpu.execute()
     cpu.printLog()
-    cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF27)
+    cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF3F)
 
 
 if __name__ == '__main__':
