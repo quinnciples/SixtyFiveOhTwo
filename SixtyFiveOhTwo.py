@@ -62,6 +62,14 @@ class CPU6502:
                0x81: 'STA_IND_X',
                0x91: 'STA_IND_Y',
 
+               0x86: 'STX_ZP',
+               0x96: 'STX_ZP_Y',
+               0x8E: 'STX_ABS',
+
+               0x84: 'STY_ZP',
+               0x94: 'STY_ZP_X',
+               0x8c: 'STY_ABS',
+
                0x4C: 'JMP',
                0x6C: 'JMP_IND',
                0x20: 'JSR',
@@ -211,13 +219,26 @@ class CPU6502:
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None:  # self.cycles <= self.cycle_limit:  # This was changed from <= to <
 
-            if self.INS in ['STA_ZP', 'STA_ZP_X', 'STA_ABS', 'STA_ABS_X', 'STA_ABS_Y', 'STA_IND_X', 'STA_IND_Y']:
+            if self.INS.startswith('STA'):
                 ins_set = self.INS.split('_')
                 target = ins_set[0][2]
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
                 self.writeMemory(data=self.registers[target], address=address, bytes=1)
-                # print(self.INS, ins_set, target, address_mode, address, data)
+
+            if self.INS.startswith('STX'):
+                ins_set = self.INS.split('_')
+                target = ins_set[0][2]
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
+                self.writeMemory(data=self.registers[target], address=address, bytes=1)
+
+            if self.INS.startswith('STY'):
+                ins_set = self.INS.split('_')
+                target = ins_set[0][2]
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
+                self.writeMemory(data=self.registers[target], address=address, bytes=1)
 
             if self.INS == 'LDA_IM':
                 data = self.readMemory()
