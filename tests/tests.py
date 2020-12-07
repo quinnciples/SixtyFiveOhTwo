@@ -13,7 +13,6 @@ Need to investigate STA ABSX, ABSY, and INDY cycle counts. These have been manua
 """
 
 
-
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -1381,7 +1380,6 @@ def TEST_0x91_STA_INDY():
     cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
     cpu.registers['A'] = EXPECTED_REGISTERS['A']
     cpu.registers['Y'] = EXPECTED_REGISTERS['Y']
-    
     cpu.execute()
 
     try:
