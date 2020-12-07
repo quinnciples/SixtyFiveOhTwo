@@ -1304,6 +1304,7 @@ def TEST_0x99_STA_ABSY():
         raise
     return False
 
+
 def TEST_0x81_STA_INDX():
     EXPECTED_CYCLES = 6
     EXPECTED_VALUE = 0x1B
@@ -1347,7 +1348,7 @@ def TEST_0x81_STA_INDX():
 
 
 def TEST_0x91_STA_INDY():
-    EXPECTED_CYCLES = 6
+    EXPECTED_CYCLES = 5  # 6
     EXPECTED_VALUE = 0x23
     EXPECTED_REGISTERS = {
         'A': EXPECTED_VALUE,
@@ -1365,20 +1366,24 @@ def TEST_0x91_STA_INDY():
     }
     cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
     cpu.reset(program_counter=0xFF00)
-    program = [0x99, 0x00, 0x50]
-    cpu.registers['A'] = EXPECTED_VALUE
-    cpu.registers['Y'] = 0x05
+    cpu.memory[0x0008] = 0x00
+    cpu.memory[0x0009] = 0x50
+    program = [0x91, 0x08]
     cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers['A'] = EXPECTED_REGISTERS['A']
+    cpu.registers['Y'] = EXPECTED_REGISTERS['Y']
+    
     cpu.execute()
 
     try:
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        assert(cpu.memory[0x5005] == EXPECTED_VALUE)
         assert(cpu.registers == EXPECTED_REGISTERS)
         assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.memory[0x5005] == EXPECTED_VALUE)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         return True
     except AssertionError:
         cpu.printLog()
+        cpu.memoryDump(startingAddress=0x5000, endingAddress=0x5007)
         cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
         raise
     return False
@@ -1422,7 +1427,7 @@ if __name__ == '__main__':
         TEST_0x9D_STA_ABSX,
         TEST_0x99_STA_ABSY,
         TEST_0x81_STA_INDX,
-        #TEST_0x91_STA_INDY,
+        TEST_0x91_STA_INDY,
     ]
 
     num_tests, passed, failed = len(tests), 0, 0
