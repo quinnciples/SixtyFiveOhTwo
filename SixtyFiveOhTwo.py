@@ -196,6 +196,7 @@ class CPU6502:
             while address > 0xFF:
                 address -= 0x100
             self.cycleInc()
+            address = self.readMemory(address=address, increment_pc=False, bytes=2)
         elif mode == 'IND_Y':
             address = self.readMemory()
             address = self.readMemory(address=address, increment_pc=False, bytes=2)
@@ -210,12 +211,13 @@ class CPU6502:
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None:  # self.cycles <= self.cycle_limit:  # This was changed from <= to <
 
-            if self.INS in ['STA_ZP', 'STA_ZP_X']:
+            if self.INS in ['STA_ZP', 'STA_ZP_X', 'STA_ABS', 'STA_ABS_X', 'STA_ABS_Y', 'STA_IND_X', 'STA_IND_Y']:
                 ins_set = self.INS.split('_')
                 target = ins_set[0][2]
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
                 self.writeMemory(data=self.registers[target], address=address, bytes=1)
+                # print(self.INS, ins_set, target, address_mode, address, data)
 
             if self.INS == 'LDA_IM':
                 data = self.readMemory()
@@ -312,8 +314,8 @@ class CPU6502:
 
             elif self.INS == 'LDA_IND_X':
                 address = self.determineAddress(mode='IND_X')
-                data = self.readMemory(address=address, increment_pc=False, bytes=2)
-                self.registers['A'] = self.readMemory(address=data, increment_pc=False)
+                data = self.readMemory(address=address, increment_pc=False)
+                self.registers['A'] = data
                 self.setFlags(register='A', flags=['Z', 'N'])
 
             elif self.INS == 'LDA_IND_Y':
