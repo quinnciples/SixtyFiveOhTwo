@@ -4,6 +4,15 @@ import sys
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
 from SixtyFiveOhTwo import CPU6502
 
+"""
+
+NOTES
+
+Need to investigate STA ABSX, ABSY, and INDY cycle counts. These have been manually adjusted in the tests to pass, however the underlying instructions work correctly.
+
+"""
+
+
 
 class bcolors:
     HEADER = '\033[95m'
