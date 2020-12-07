@@ -173,15 +173,17 @@ class CPU6502:
             address = self.readMemory()
             address += self.registers['X']
             # Zero Page address wraps around if the value exceeds 0xFF
-            while address > 0xFF:
-                address -= 0x100
+            # while address > 0xFF:
+                # address -= 0x100
+            address = address % 0x100
             self.cycleInc()
         elif mode == 'ZP_Y':
             address = self.readMemory()
             address += self.registers['Y']
             # Zero Page address wraps around if the value exceeds 0xFF
-            while address > 0xFF:
-                address -= 0x100
+            # while address > 0xFF:
+                # address -= 0x100
+            address = address % 0x100
             self.cycleInc()
         elif mode == 'ABS':
             address = self.readMemory(bytes=2)
@@ -201,8 +203,9 @@ class CPU6502:
             address = self.readMemory()
             address += self.registers['X']
             # Zero Page address wraps around if the value exceeds 0xFF
-            while address > 0xFF:
-                address -= 0x100
+            # while address > 0xFF:
+                # address -= 0x100
+            address = address % 0x100
             self.cycleInc()
             address = self.readMemory(address=address, increment_pc=False, bytes=2)
         elif mode == 'IND_Y':

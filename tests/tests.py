@@ -382,6 +382,43 @@ def TEST_0xA5_LDA_ZP():
     return False
 
 
+def TEST_0xB5_LDA_ZP_X_WRAPAROUND():
+    EXPECTED_CYCLES = 4
+    EXPECTED_VALUE = 0x15
+    EXPECTED_REGISTERS = {
+        'A': EXPECTED_VALUE,
+        'X': 0x05,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    cpu.registers['X'] = 0x05
+    cpu.memory[0x02] = 0x15
+    program = [0xB5, 0xFD]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.execute()
+
+    try:
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+
 def TEST_0xA6_LDX_ZP():
     EXPECTED_CYCLES = 3
     EXPECTED_VALUE = 0x45
@@ -1628,6 +1665,7 @@ if __name__ == '__main__':
         TEST_0xA9_LDA_IM_NEGATIVE_FLAG_SET,
         TEST_0xA5_LDA_ZP,
         TEST_0xB5_LDA_ZP_X,
+        TEST_0xB5_LDA_ZP_X_WRAPAROUND,
         TEST_0xAD_LDA_ABS,
         TEST_0xBD_LDA_ABS_X,
         TEST_0xBD_LDA_ABS_X_CROSS_PAGE_BOUNDARY,
