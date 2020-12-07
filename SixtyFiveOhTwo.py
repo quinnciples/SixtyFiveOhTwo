@@ -31,7 +31,7 @@ class CPU6502:
 
     """
 
-    version = '0.01'
+    version = '0.10'
     MAX_MEMORY_SIZE = 1024 * 64  # 64k memory size
     opcodes = {0xA9: 'LDA_IM',
                0xA5: 'LDA_ZP',

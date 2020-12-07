@@ -1350,6 +1350,43 @@ def TEST_0x96_STX_ZPY():
     return False
 
 
+def TEST_0x8C_STY_ABS():
+    EXPECTED_CYCLES = 4
+    EXPECTED_VALUE = 0xB3
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': 0,
+        'Y': EXPECTED_VALUE
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0x8C, 0xDA, 0x74]
+    cpu.registers['Y'] = EXPECTED_REGISTERS['Y']
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.execute()
+
+    try:
+        assert(cpu.memory[0x74DA] == EXPECTED_VALUE)
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+
 def TEST_0x8D_STA_ABS():
     EXPECTED_CYCLES = 4
     EXPECTED_VALUE = 0xB3
@@ -1379,6 +1416,43 @@ def TEST_0x8D_STA_ABS():
         assert(cpu.registers == EXPECTED_REGISTERS)
         assert(cpu.flags == EXPECTED_FLAGS)
         assert(cpu.memory[0x74DA] == EXPECTED_VALUE)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+
+def TEST_0x8E_STX_ABS():
+    EXPECTED_CYCLES = 4
+    EXPECTED_VALUE = 0xB3
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': EXPECTED_VALUE,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0x8E, 0xDA, 0x74]
+    cpu.registers['X'] = EXPECTED_REGISTERS['X']
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.execute()
+
+    try:
+        assert(cpu.memory[0x74DA] == EXPECTED_VALUE)
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         return True
     except AssertionError:
         cpu.printLog()
@@ -1590,6 +1664,8 @@ if __name__ == '__main__':
         TEST_0x86_STX_ZP,
         TEST_0x96_STX_ZPY,
         TEST_0x94_STY_ZPX,
+        TEST_0x8C_STY_ABS,
+        TEST_0x8E_STX_ABS
     ]
 
     num_tests, passed, failed = len(tests), 0, 0
