@@ -125,6 +125,56 @@ def TEST_0x58_CLI():
     return False
 
 
+def TEST_0xB8_CLV():
+    EXPECTED_CYCLES = 2
+    INITIAL_REGISTERS = {
+        'A': 0,
+        'X': 0,
+        'Y': 0
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': 0,
+        'Y': 0
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 1,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0xB8]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+
 def TEST_0xD8_CLD():
     EXPECTED_CYCLES = 2
     INITIAL_REGISTERS = {
@@ -1961,6 +2011,7 @@ if __name__ == '__main__':
         TEST_0xF8_SED,
         TEST_0x18_CLC,
         TEST_0x58_CLI,
+        TEST_0xB8_CLV,
         TEST_0xD8_CLD,
     ]
 

@@ -80,6 +80,7 @@ class CPU6502:
 
                0x18: 'CLC',
                0x58: 'CLI',
+               0xB8: 'CLV',
                0xD8: 'CLD',
 
                0xEA: 'NOP'}
@@ -183,6 +184,9 @@ class CPU6502:
         if 'I' in flags and value is not None:
             self.flags['I'] = value
 
+        if 'V' in flags and value is not None:
+            self.flags['V'] = value
+
     def determineAddress(self, mode):
         address = 0
         if mode == 'ZP':
@@ -261,8 +265,8 @@ class CPU6502:
                 address = self.determineAddress(mode=address_mode)
                 self.writeMemory(data=self.registers[target], address=address, bytes=1)
 
-            if self.INS in ['CLC', 'CLI', 'CLD', 'SEC', 'SED', 'SEI']:
-                if self.INS in ['CLC', 'CLI', 'CLD']:
+            if self.INS in ['CLC', 'CLI', 'CLD', 'CLV', 'SEC', 'SED', 'SEI']:
+                if self.INS in ['CLC', 'CLI', 'CLD', 'CLV']:
                     self.setFlags(register=None, flags=[self.INS[2]], value=0)
                 else:
                     self.setFlags(register=None, flags=[self.INS[2]], value=1)
