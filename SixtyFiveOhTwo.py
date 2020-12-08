@@ -78,6 +78,11 @@ class CPU6502:
                0xF8: 'SED',
                0x78: 'SEI',
 
+               0x18: 'CLC',
+               0x58: 'CLI',
+               0xD8: 'CLD',
+               
+
                0xEA: 'NOP'}
 
     def __init__(self, cycle_limit=2):
@@ -257,8 +262,11 @@ class CPU6502:
                 address = self.determineAddress(mode=address_mode)
                 self.writeMemory(data=self.registers[target], address=address, bytes=1)
 
-            if self.INS in ['SEC', 'SED', 'SEI']:
-                self.setFlags(register=None, flags=[self.INS[2]], value=1)
+            if self.INS in ['CLC', 'CLI', 'CLD', 'SEC', 'SED', 'SEI']:
+                if self.INS in ['CLC', 'CLI', 'CLD']:
+                    self.setFlags(register=None, flags=[self.INS[2]], value=0)
+                else:
+                    self.setFlags(register=None, flags=[self.INS[2]], value=1)
                 self.cycleInc()
                 pass
 
