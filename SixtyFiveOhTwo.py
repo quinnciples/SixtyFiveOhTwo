@@ -85,6 +85,10 @@ class CPU6502:
 
                0xEA: 'NOP',
 
+               0xE6: 'INC_ZP',
+               0xF6: 'INC_ZP_X',
+               0xEE: 'INC_ABS',
+               0xFE: 'INC_ABS_X',
                0xC8: 'INY',
                0xE8: 'INX'}
 
@@ -172,6 +176,7 @@ class CPU6502:
                 self.flags['Z'] = 1
             else:
                 self.flags['Z'] = 0
+
         if 'N' in flags and register is not None:
             if self.registers[register] & 0b10000000 > 0:
                 self.flags['N'] = 1
@@ -246,6 +251,14 @@ class CPU6502:
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None:  # self.cycles <= self.cycle_limit:  # This was changed from <= to <
+
+            if self.INS in ['INC_ZP', 'INC_ZP_X', 'INC_ABS', 'INC_ABS_X']:
+                ins_set = self.INS.split('_')
+                target = ins_set[0][2]
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
+                value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                
 
             if self.INS in ['INX', 'INY']:
                 value = self.registers[self.INS[2]]

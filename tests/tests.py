@@ -76,7 +76,7 @@ def TEST_0xC8_INY():
     return False
 
 
-def TEST_0xC8_INY_OVERFLOW():
+def TEST_0xC8_INY_WRAPAROUND():
     EXPECTED_CYCLES = 2
     INITIAL_REGISTERS = {
         'A': 0,
@@ -176,7 +176,7 @@ def TEST_0xE8_INX():
     return False
 
 
-def TEST_0xE8_INX_OVERFLOW():
+def TEST_0xE8_INX_WRAPAROUND():
     EXPECTED_CYCLES = 2
     INITIAL_REGISTERS = {
         'A': 0,
@@ -2215,9 +2215,9 @@ if __name__ == '__main__':
         TEST_0xB8_CLV,
         TEST_0xD8_CLD,
         TEST_0xC8_INY,
-        TEST_0xC8_INY_OVERFLOW,
+        TEST_0xC8_INY_WRAPAROUND,
         TEST_0xE8_INX,
-        TEST_0xE8_INX_OVERFLOW,
+        TEST_0xE8_INX_WRAPAROUND,
            ]
 
     num_tests, passed, failed = len(tests), 0, 0
