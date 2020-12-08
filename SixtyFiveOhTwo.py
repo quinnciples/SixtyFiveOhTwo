@@ -81,7 +81,6 @@ class CPU6502:
                0x18: 'CLC',
                0x58: 'CLI',
                0xD8: 'CLD',
-               
 
                0xEA: 'NOP'}
 
@@ -268,7 +267,6 @@ class CPU6502:
                 else:
                     self.setFlags(register=None, flags=[self.INS[2]], value=1)
                 self.cycleInc()
-                pass
 
             if self.INS == 'LDA_IM':
                 data = self.readMemory()
