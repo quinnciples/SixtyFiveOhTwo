@@ -25,6 +25,108 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
+def TEST_0x38_SEC():
+    EXPECTED_CYCLES = 2
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': 0,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 1,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0x38]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+
+def TEST_0x78_SEI():
+    EXPECTED_CYCLES = 2
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': 0,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 1,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0x78]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+
+def TEST_0xF8_SED():
+    EXPECTED_CYCLES = 2
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': 0,
+        'Y': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 1,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0xF8]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+
 def TEST_0xA9_LDA_IM():
     EXPECTED_CYCLES = 2
     EXPECTED_VALUE = 0x45
@@ -1703,7 +1805,11 @@ if __name__ == '__main__':
         TEST_0x96_STX_ZPY,
         TEST_0x94_STY_ZPX,
         TEST_0x8C_STY_ABS,
-        TEST_0x8E_STX_ABS
+        TEST_0x8E_STX_ABS,
+        TEST_0x38_SEC,
+        TEST_0x78_SEI,
+        TEST_0xF8_SED,
+        
     ]
 
     num_tests, passed, failed = len(tests), 0, 0

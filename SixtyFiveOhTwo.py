@@ -73,6 +73,11 @@ class CPU6502:
                0x4C: 'JMP',
                0x6C: 'JMP_IND',
                0x20: 'JSR',
+
+               0x38: 'SEC',
+               0xF8: 'SED',
+               0x78: 'SEI',
+
                0xEA: 'NOP'}
 
     def __init__(self, cycle_limit=2):
@@ -153,17 +158,26 @@ class CPU6502:
             self.memory[address + byte] = data
             self.cycleInc()
 
-    def setFlags(self, register, flags=[]):
-        if 'Z' in flags:
+    def setFlags(self, register=None, flags=[], value=None):
+        if 'Z' in flags and register is not None:
             if self.registers[register] == 0:
                 self.flags['Z'] = 1
             else:
                 self.flags['Z'] = 0
-        if 'N' in flags:
+        if 'N' in flags and register is not None:
             if self.registers[register] & 0b10000000 > 0:
                 self.flags['N'] = 1
             else:
                 self.flags['N'] = 0
+
+        if 'C' in flags and value is not None:
+            self.flags['C'] = value
+
+        if 'D' in flags and value is not None:
+            self.flags['D'] = value
+
+        if 'I' in flags and value is not None:
+            self.flags['I'] = value
 
     def determineAddress(self, mode):
         address = 0
@@ -242,6 +256,11 @@ class CPU6502:
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
                 self.writeMemory(data=self.registers[target], address=address, bytes=1)
+
+            if self.INS in ['SEC', 'SED', 'SEI']:
+                self.setFlags(register=None, flags=[self.INS[2]], value=1)
+                self.cycleInc()
+                pass
 
             if self.INS == 'LDA_IM':
                 data = self.readMemory()
