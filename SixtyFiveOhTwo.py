@@ -83,7 +83,10 @@ class CPU6502:
                0xB8: 'CLV',
                0xD8: 'CLD',
 
-               0xEA: 'NOP'}
+               0xEA: 'NOP',
+
+               0xC8: 'INY',
+               0xE8: 'INX'}
 
     def __init__(self, cycle_limit=2):
 
@@ -243,6 +246,14 @@ class CPU6502:
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None:  # self.cycles <= self.cycle_limit:  # This was changed from <= to <
+
+            if self.INS in ['INX', 'INY']:
+                value = self.registers[self.INS[2]]
+                value += 1
+                value = value % 0x100
+                self.registers[self.INS[2]] = value
+                self.setFlags(register=self.INS[2], flags=['N', 'Z'])
+                self.cycleInc()
 
             if self.INS.startswith('STA'):
                 ins_set = self.INS.split('_')

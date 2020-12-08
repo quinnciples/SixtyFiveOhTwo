@@ -9,6 +9,7 @@ from SixtyFiveOhTwo import CPU6502
 NOTES
 
 Need to investigate STA ABSX, ABSY, and INDY cycle counts. These have been manually adjusted in the tests to pass, however the underlying instructions work correctly.
+INX, INY wrap around 0xFF
 
 """
 
@@ -23,6 +24,206 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+def TEST_0xC8_INY():
+    EXPECTED_CYCLES = 2
+    INITIAL_REGISTERS = {
+        'A': 0,
+        'X': 0,
+        'Y': 0xA5
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': 0,
+        'Y': 0xA6
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 1
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0xC8]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+
+def TEST_0xC8_INY_OVERFLOW():
+    EXPECTED_CYCLES = 2
+    INITIAL_REGISTERS = {
+        'A': 0,
+        'X': 0,
+        'Y': 0xFF
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': 0,
+        'Y': 0x00
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 1,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0xC8]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+
+def TEST_0xE8_INX():
+    EXPECTED_CYCLES = 2
+    INITIAL_REGISTERS = {
+        'A': 0,
+        'X': 0xB6,
+        'Y': 0
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': 0xB7,
+        'Y': 0
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 1
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0xE8]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
+
+
+def TEST_0xE8_INX_OVERFLOW():
+    EXPECTED_CYCLES = 2
+    INITIAL_REGISTERS = {
+        'A': 0,
+        'X': 0xFF,
+        'Y': 0
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0,
+        'X': 0x00,
+        'Y': 0
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 1,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0xE8]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        raise
+    return False
 
 
 def TEST_0x18_CLC():
@@ -2013,7 +2214,11 @@ if __name__ == '__main__':
         TEST_0x58_CLI,
         TEST_0xB8_CLV,
         TEST_0xD8_CLD,
-    ]
+        TEST_0xC8_INY,
+        TEST_0xC8_INY_OVERFLOW,
+        TEST_0xE8_INX,
+        TEST_0xE8_INX_OVERFLOW,
+           ]
 
     num_tests, passed, failed = len(tests), 0, 0
 
