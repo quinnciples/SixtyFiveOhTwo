@@ -10,6 +10,7 @@ NOTES
 
 Need to investigate STA ABSX, ABSY, and INDY cycle counts. These have been manually adjusted in the tests to pass, however the underlying instructions work correctly.
 INX, INY wrap around 0xFF
+Fibonacci - https://www.youtube.com/watch?v=a73ZXDJtU48
 
 """
 

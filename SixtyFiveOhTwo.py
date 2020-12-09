@@ -169,7 +169,6 @@ class CPU6502:
         for byte in range(bytes):
             self.cycleInc()
             self.memory[address + byte] = data
-            
 
     def setFlags(self, check=None, flags=[], value=None):
         if 'Z' in flags:
