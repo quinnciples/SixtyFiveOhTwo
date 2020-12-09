@@ -7,7 +7,7 @@ class CPU6502:
 
     All single-byte instructions waste a cycle reading and ignoring the byte that comes immediately after the instruction (this means no instruction can take less than two cycles).
     Zero page,X, zero page,Y, and (zero page,X) addressing modes spend an extra cycle reading the unindexed zero page address.
-    Absolute,X, absolute,Y, and (zero page),Y addressing modes need an extra cycle if the indexing crosses a page boundary, or if the instruction writes to memory.
+    Absolute,X, absolute,Y, and (zero page),Y addressing modes need an extra cycle if the indexing crosses a page boundary, ********** or if the instruction writes to memory **********.
     The conditional branch instructions require an extra cycle if the branch actually happens, and a second extra cycle if the branch happens and crosses a page boundary.
     Read-modify-write instructions (ASL, DEC, INC, LSR, ROL, ROR) need a cycle for the modify stage (except in accumulator mode, which doesn't access memory).
     Instructions that pull data off the stack (PLA, PLP, RTI, RTS) need an extra cycle to increment the stack pointer (because the stack pointer points to the first empty address on the stack, not the last used address).
@@ -162,6 +162,7 @@ class CPU6502:
             self.stack_pointer = 0xFF
 
     def stackPointerInc(self):
+        self.cycleInc()
         self.stack_pointer += 1
         if self.stack_pointer > 0xFF:
             self.stack_pointer = 0x00
@@ -187,11 +188,11 @@ class CPU6502:
         lo_byte = self.readMemory(increment_pc=False, address=self.getStackPointerAddress(), bytes=1)
         self.stackPointerInc()
         hi_byte = self.readMemory(increment_pc=False, address=self.getStackPointerAddress(), bytes=1)
-        address = lo_byte + (hi_byte << 8)
+        # address = lo_byte + (hi_byte << 8)
         self.program_counter = lo_byte
-        self.cycleInc()
+        # self.cycleInc()
         self.program_counter += (hi_byte << 8)
-        self.cycleInc()
+        # self.cycleInc()
         pass
 
     def reset(self, program_counter=0xFF10):
@@ -348,7 +349,9 @@ class CPU6502:
                 value = self.readMemory(address=address, increment_pc=False, bytes=1)
                 value += 1
                 value = value % 0x10000
-                self.cycleInc()  # Is this really necessary?
+                self.cycleInc()  # Is this really necessary? -- apparently, yes
+                if self.INS == 'INC_ABS_X':
+                    self.cycleInc()  # Also necessary according to comments above
                 self.writeMemory(data=value, address=address, bytes=1)
                 self.setFlags(check=value, flags=['N', 'Z'])
 
@@ -589,13 +592,14 @@ def fibonacci_test():
                0x85, 0x21,  # STA_ZP [0x2E]
                0xA5, 0x20,  # LDA_ZP [0x2D]
                0x4C, 0x06, 0x00  # JMP 0x0006
-    ]
+               ]
     cpu.loadProgram(instructions=program, memoryAddress=0x0000)
     cpu.execute()
     cpu.printLog()
     cpu.memoryDump(startingAddress=0x0000, endingAddress=0x001F)
     cpu.memoryDump(startingAddress=0x0020, endingAddress=0x0022, display_format='Dec')
     cpu.memoryDump(startingAddress=0x0030, endingAddress=0x003F, display_format='Dec')
+
 
 if __name__ == '__main__':
     # run()
