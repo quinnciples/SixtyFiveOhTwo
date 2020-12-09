@@ -577,24 +577,24 @@ def fibonacci_test():
     cpu.reset(program_counter=0x0000)
 
     program = [0xA9, 0x01,  # LDA_IM 1
-               0x85, 0x2E,  # STA_ZP [0x2E]
+               0x85, 0x21,  # STA_ZP [0x2E]
                0xA9, 0x00,  # LDA_IM 0
-               0x65, 0x2E,  # ADC [0x2E]
+               0x65, 0x21,  # ADC [0x2E]
                0x95, 0x30,  # STA_ZP_X [0x30]
                0xE8,        # INX
-               0x85, 0x2F,  # STA_ZP [0x2F]
-               0xA5, 0x2E,  # LDA_ZP [0x2E]
-               0x85, 0x2D,  # STA_ZP [0x2D]
-               0xA5, 0x2F,  # LDA_ZP [0x2F]
-               0x85, 0x2E,  # STA_ZP [0x2E]
-               0xA5, 0x2D,  # LDA_ZP [0x2D]
+               0x85, 0x22,  # STA_ZP [0x2F]
+               0xA5, 0x21,  # LDA_ZP [0x2E]
+               0x85, 0x20,  # STA_ZP [0x2D]
+               0xA5, 0x22,  # LDA_ZP [0x2F]
+               0x85, 0x21,  # STA_ZP [0x2E]
+               0xA5, 0x20,  # LDA_ZP [0x2D]
                0x4C, 0x06, 0x00  # JMP 0x0006
     ]
     cpu.loadProgram(instructions=program, memoryAddress=0x0000)
     cpu.execute()
     cpu.printLog()
     cpu.memoryDump(startingAddress=0x0000, endingAddress=0x001F)
-    cpu.memoryDump(startingAddress=0x002D, endingAddress=0x002F, display_format='Dec')
+    cpu.memoryDump(startingAddress=0x0020, endingAddress=0x0022, display_format='Dec')
     cpu.memoryDump(startingAddress=0x0030, endingAddress=0x003F, display_format='Dec')
 
 if __name__ == '__main__':
