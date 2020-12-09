@@ -72,7 +72,7 @@ class CPU6502:
 
                0x4C: 'JMP',
                0x6C: 'JMP_IND',
-               0x20: 'JSR',
+               0x20: 'JSR_ABS',
                0x60: 'RTS',
 
                0x38: 'SEC',
@@ -96,7 +96,7 @@ class CPU6502:
     def __init__(self, cycle_limit=2):
 
         self.program_counter = 0xFF10
-        self.stack_pointer = 0x01FF
+        self.stack_pointer = 0xFF  # This is technically 0x01FF since the stack pointer lives on page 01.
         self.cycle_limit = cycle_limit
 
         self.INS = None
@@ -143,12 +143,45 @@ class CPU6502:
 
     def stackPointerDec(self):
         self.stack_pointer -= 1
-        if self.stack_pointer < 0x0100:
-            self.stack_pointer = 0x01FF
+        if self.stack_pointer < 0x00:
+            self.stack_pointer = 0xFF
+
+    def stackPointerInc(self):
+        self.stack_pointer += 1
+        if self.stack_pointer > 0xFF:
+            self.stack_pointer = 0x00
+
+    def getStackPointerAddress(self):
+        return self.stack_pointer | 0x0100
+
+    def saveAtStackPointer(self):
+        # hi_byte = self.program_counter >> 8
+        # lo_byte = self.program_counter - (hi_byte * 0x0100)
+        # print('0x{0:0{1}X}'.format(hi_byte, 2), '0x{0:0{1}X}'.format(lo_byte, 2), '0x{0:0{1}X}'.format(self.program_counter, 4))
+        hi_byte = ((self.program_counter - 1) & 0b1111111100000000) >> 8
+        lo_byte = (self.program_counter - 1) & 0b0000000011111111
+        # print('0x{0:0{1}X}'.format(hi_byte, 2), '0x{0:0{1}X}'.format(lo_byte, 2), '0x{0:0{1}X}'.format(self.program_counter, 4))
+        self.writeMemory(data=hi_byte, address=self.getStackPointerAddress(), bytes=1)
+        self.stackPointerDec()
+        self.writeMemory(data=lo_byte, address=self.getStackPointerAddress(), bytes=1)
+        self.stackPointerDec()
+        pass
+
+    def loadFromStackPointer(self):
+        self.stackPointerInc()
+        lo_byte = self.readMemory(increment_pc=False, address=self.getStackPointerAddress(), bytes=1)
+        self.stackPointerInc()
+        hi_byte = self.readMemory(increment_pc=False, address=self.getStackPointerAddress(), bytes=1)
+        address = lo_byte + (hi_byte << 8)
+        self.program_counter = lo_byte
+        self.cycleInc()
+        self.program_counter += (hi_byte << 8)
+        self.cycleInc()
+        pass
 
     def reset(self, program_counter=0xFF10):
         self.program_counter = program_counter
-        self.stack_pointer = 0x01FF
+        self.stack_pointer = 0xFF
         self.cycles = 0
 
         # Reset all registers to zero
@@ -251,6 +284,20 @@ class CPU6502:
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None:  # self.cycles <= self.cycle_limit:  # This was changed from <= to <
+
+            if self.INS == 'JSR_ABS':
+                ins_set = self.INS.split('_')
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
+                self.saveAtStackPointer()
+                self.program_counter = address
+                self.cycleInc()
+
+            if self.INS == 'RTS':
+                self.loadFromStackPointer()
+                self.programCounterInc()
+                self.cycleInc()
+                # Increment program counter to offset -1?
 
             if self.INS in ['INC_ZP', 'INC_ZP_X', 'INC_ABS', 'INC_ABS_X']:
                 ins_set = self.INS.split('_')
@@ -480,6 +527,8 @@ def run():
     cpu.printLog()
     cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF3F)
     cpu.memoryDump(startingAddress=0x0000, endingAddress=0xFF)
+    print(' ')
+    cpu.saveAtStackPointer()
 
 
 if __name__ == '__main__':
