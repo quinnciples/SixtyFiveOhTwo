@@ -134,11 +134,15 @@ class CPU6502:
 
         self.initializeLog()
 
-    def memoryDump(self, startingAddress=0x0000, endingAddress=0x0000):
+    def memoryDump(self, startingAddress=0x0000, endingAddress=0x0000, display_format='Hex'):
         print('\nMemory Dump:\n')
         while startingAddress <= endingAddress and startingAddress <= CPU6502.MAX_MEMORY_SIZE:
-            header = '0x{0:0{1}X}'.format(startingAddress, 4) + '\t'
-            row = '\t'.join('0x{0:0{1}X}'.format(self.memory[v], 2) for v in range(startingAddress, min(startingAddress + 8, CPU6502.MAX_MEMORY_SIZE)))
+            if display_format == 'Hex':
+                header = '0x{0:0{1}X}'.format(startingAddress, 4) + '\t'
+                row = '\t'.join('0x{0:0{1}X}'.format(self.memory[v], 2) for v in range(startingAddress, min(startingAddress + 8, CPU6502.MAX_MEMORY_SIZE)))
+            elif display_format == 'Dec':
+                header = '0x{0:0{1}X}'.format(startingAddress, 4) + '\t'
+                row = '\t'.join('%-5s' % str(self.memory[v]) for v in range(startingAddress, min(startingAddress + 8, CPU6502.MAX_MEMORY_SIZE)))
             line = header + row
             print(line)
             startingAddress += 8
@@ -567,5 +571,32 @@ def run():
     cpu.memoryDump(startingAddress=0x0000, endingAddress=0x00FF)
     cpu.memoryDump(startingAddress=0x00, endingAddress=0x0F)
 
+
+def fibonacci_test():
+    cpu = CPU6502(cycle_limit=349)
+    cpu.reset(program_counter=0x0000)
+
+    program = [0xA9, 0x01,  # LDA_IM 1
+               0x85, 0x2E,  # STA_ZP [0x2E]
+               0xA9, 0x00,  # LDA_IM 0
+               0x65, 0x2E,  # ADC [0x2E]
+               0x95, 0x30,  # STA_ZP_X [0x30]
+               0xE8,        # INX
+               0x85, 0x2F,  # STA_ZP [0x2F]
+               0xA5, 0x2E,  # LDA_ZP [0x2E]
+               0x85, 0x2D,  # STA_ZP [0x2D]
+               0xA5, 0x2F,  # LDA_ZP [0x2F]
+               0x85, 0x2E,  # STA_ZP [0x2E]
+               0xA5, 0x2D,  # LDA_ZP [0x2D]
+               0x4C, 0x06, 0x00  # JMP 0x0006
+    ]
+    cpu.loadProgram(instructions=program, memoryAddress=0x0000)
+    cpu.execute()
+    cpu.printLog()
+    cpu.memoryDump(startingAddress=0x0000, endingAddress=0x001F)
+    cpu.memoryDump(startingAddress=0x002D, endingAddress=0x002F, display_format='Dec')
+    cpu.memoryDump(startingAddress=0x0030, endingAddress=0x003F, display_format='Dec')
+
 if __name__ == '__main__':
-    run()
+    # run()
+    fibonacci_test()
