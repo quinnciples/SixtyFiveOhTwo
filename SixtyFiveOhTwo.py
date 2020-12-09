@@ -93,7 +93,7 @@ class CPU6502:
                0xC8: 'INY',
                0xE8: 'INX'}
 
-    def __init__(self, cycle_limit=2):
+    def __init__(self, cycle_limit=0):
 
         self.program_counter = 0xFF10
         self.stack_pointer = 0xFF  # This is technically 0x01FF since the stack pointer lives on page 01.
@@ -283,7 +283,7 @@ class CPU6502:
     def execute(self):
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
-        while self.INS is not None:  # self.cycles <= self.cycle_limit:  # This was changed from <= to <
+        while self.INS is not None and self.cycles <= max(self.cycle_limit, 100):
 
             if self.INS == 'JSR_ABS':
                 ins_set = self.INS.split('_')
@@ -297,7 +297,6 @@ class CPU6502:
                 self.loadFromStackPointer()
                 self.programCounterInc()
                 self.cycleInc()
-                # Increment program counter to offset -1?
 
             if self.INS in ['INC_ZP', 'INC_ZP_X', 'INC_ABS', 'INC_ABS_X']:
                 ins_set = self.INS.split('_')
@@ -526,10 +525,8 @@ def run():
     cpu.execute()
     cpu.printLog()
     cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF3F)
-    cpu.memoryDump(startingAddress=0x0000, endingAddress=0xFF)
-    print(' ')
-    cpu.saveAtStackPointer()
-
+    cpu.memoryDump(startingAddress=0x0000, endingAddress=0x00FF)
+    cpu.memoryDump(startingAddress=0x00, endingAddress=0x0F)
 
 if __name__ == '__main__':
     run()
