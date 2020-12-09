@@ -91,7 +91,18 @@ class CPU6502:
                0xEE: 'INC_ABS',
                0xFE: 'INC_ABS_X',
                0xC8: 'INY',
-               0xE8: 'INX'}
+               0xE8: 'INX',
+
+               0x69: 'ADD_IM',
+               0x65: 'ADD_ZP',
+               0x75: 'ADD_ZP_X',
+               0x6D: 'ADD_ABS',
+               0x7D: 'ADD_ABS_X',
+               0x79: 'ADD_ABS_Y',
+               0x61: 'ADD_IND_X',
+               0x71: 'ADD_IND_Y',
+
+               }
 
     def __init__(self, cycle_limit=0):
 
@@ -231,8 +242,11 @@ class CPU6502:
         if 'I' in flags and value is not None:
             self.flags['I'] = value
 
-        if 'V' in flags and value is not None:
-            self.flags['V'] = value
+        if 'V' in flags:  # NEED TO IMPLEMENT
+            if value is not None:
+                self.flags['V'] = value
+            else:
+                pass
 
     def determineAddress(self, mode):
         address = 0
@@ -284,6 +298,31 @@ class CPU6502:
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 100):
+
+            if self.INS == 'ADD_IM':
+                value = self.readMemory()
+                self.registers['A'] += value
+                if self.registers['A'] & 0b100000000 > 0:
+                    self.setFlags(check=None, flags=['C'], value=1)
+                    self.registers['A'] = self.registers['A'] % 0x0100
+                else:
+                    self.setFlags(check=None, flags=['C'], value=0)
+                # self.setFlags(check=self.registers['A'], flags=['V'])  # NEED TO IMPLEMENT
+                self.setFlags(check=self.registers['A'], flags=['Z', 'N'])
+
+            if self.INS in ['ADD_ZP', 'ADD_ZP_X', 'ADD_ABS', 'ADD_ABS_X', 'ADD_ABS_Y', 'ADD_IND_X', 'ADD_IND_Y']:
+                ins_set = self.INS.split('_')
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
+                value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                self.registers['A'] += value
+                if self.registers['A'] & 0b100000000 > 0:
+                    self.setFlags(check=None, flags=['C'], value=1)
+                    self.registers['A'] = self.registers['A'] % 0x0100
+                else:
+                    self.setFlags(check=None, flags=['C'], value=0)
+                # self.setFlags(check=self.registers['A'], flags=['V'])  # NEED TO IMPLEMENT
+                self.setFlags(check=self.registers['A'], flags=['Z', 'N'])
 
             if self.INS == 'JSR_ABS':
                 ins_set = self.INS.split('_')
