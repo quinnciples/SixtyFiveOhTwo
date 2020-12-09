@@ -73,6 +73,7 @@ class CPU6502:
                0x4C: 'JMP',
                0x6C: 'JMP_IND',
                0x20: 'JSR',
+               0x60: 'RTS',
 
                0x38: 'SEC',
                0xF8: 'SED',
@@ -95,7 +96,7 @@ class CPU6502:
     def __init__(self, cycle_limit=2):
 
         self.program_counter = 0xFF10
-        self.stack_pointer = 0x0100
+        self.stack_pointer = 0x01FF
         self.cycle_limit = cycle_limit
 
         self.INS = None
@@ -140,9 +141,14 @@ class CPU6502:
         if self.program_counter >= CPU6502.MAX_MEMORY_SIZE:
             self.program_counter = 0
 
+    def stackPointerDec(self):
+        self.stack_pointer -= 1
+        if self.stack_pointer < 0x0100:
+            self.stack_pointer = 0x01FF
+
     def reset(self, program_counter=0xFF10):
         self.program_counter = program_counter
-        self.stack_pointer = 0x0100
+        self.stack_pointer = 0x01FF
         self.cycles = 0
 
         # Reset all registers to zero
