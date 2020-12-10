@@ -7,7 +7,7 @@ class CPU6502:
 
     All single-byte instructions waste a cycle reading and ignoring the byte that comes immediately after the instruction (this means no instruction can take less than two cycles).
     Zero page,X, zero page,Y, and (zero page,X) addressing modes spend an extra cycle reading the unindexed zero page address.
-    Absolute,X, absolute,Y, and (zero page),Y addressing modes need an extra cycle if the indexing crosses a page boundary, or if the instruction writes to memory.
+    Absolute,X, absolute,Y, and (zero page),Y addressing modes need an extra cycle if the indexing crosses a page boundary, ********** or if the instruction writes to memory **********.
     The conditional branch instructions require an extra cycle if the branch actually happens, and a second extra cycle if the branch happens and crosses a page boundary.
     Read-modify-write instructions (ASL, DEC, INC, LSR, ROL, ROR) need a cycle for the modify stage (except in accumulator mode, which doesn't access memory).
     Instructions that pull data off the stack (PLA, PLP, RTI, RTS) need an extra cycle to increment the stack pointer (because the stack pointer points to the first empty address on the stack, not the last used address).
@@ -91,7 +91,18 @@ class CPU6502:
                0xEE: 'INC_ABS',
                0xFE: 'INC_ABS_X',
                0xC8: 'INY',
-               0xE8: 'INX'}
+               0xE8: 'INX',
+
+               0x69: 'ADC_IM',
+               0x65: 'ADC_ZP',
+               0x75: 'ADC_ZP_X',
+               0x6D: 'ADC_ABS',
+               0x7D: 'ADC_ABS_X',
+               0x79: 'ADC_ABS_Y',
+               0x61: 'ADC_IND_X',
+               0x71: 'ADC_IND_Y',
+
+               }
 
     def __init__(self, cycle_limit=0):
 
@@ -123,11 +134,15 @@ class CPU6502:
 
         self.initializeLog()
 
-    def memoryDump(self, startingAddress=0x0000, endingAddress=0x0000):
+    def memoryDump(self, startingAddress=0x0000, endingAddress=0x0000, display_format='Hex'):
         print('\nMemory Dump:\n')
         while startingAddress <= endingAddress and startingAddress <= CPU6502.MAX_MEMORY_SIZE:
-            header = '0x{0:0{1}X}'.format(startingAddress, 4) + '\t'
-            row = '\t'.join('0x{0:0{1}X}'.format(self.memory[v], 2) for v in range(startingAddress, min(startingAddress + 8, CPU6502.MAX_MEMORY_SIZE)))
+            if display_format == 'Hex':
+                header = '0x{0:0{1}X}'.format(startingAddress, 4) + '\t'
+                row = '\t'.join('0x{0:0{1}X}'.format(self.memory[v], 2) for v in range(startingAddress, min(startingAddress + 8, CPU6502.MAX_MEMORY_SIZE)))
+            elif display_format == 'Dec':
+                header = '0x{0:0{1}X}'.format(startingAddress, 4) + '\t'
+                row = '\t'.join('%-5s' % str(self.memory[v]) for v in range(startingAddress, min(startingAddress + 8, CPU6502.MAX_MEMORY_SIZE)))
             line = header + row
             print(line)
             startingAddress += 8
@@ -147,6 +162,7 @@ class CPU6502:
             self.stack_pointer = 0xFF
 
     def stackPointerInc(self):
+        self.cycleInc()
         self.stack_pointer += 1
         if self.stack_pointer > 0xFF:
             self.stack_pointer = 0x00
@@ -172,11 +188,11 @@ class CPU6502:
         lo_byte = self.readMemory(increment_pc=False, address=self.getStackPointerAddress(), bytes=1)
         self.stackPointerInc()
         hi_byte = self.readMemory(increment_pc=False, address=self.getStackPointerAddress(), bytes=1)
-        address = lo_byte + (hi_byte << 8)
+        # address = lo_byte + (hi_byte << 8)
         self.program_counter = lo_byte
-        self.cycleInc()
+        # self.cycleInc()
         self.program_counter += (hi_byte << 8)
-        self.cycleInc()
+        # self.cycleInc()
         pass
 
     def reset(self, program_counter=0xFF10):
@@ -231,8 +247,11 @@ class CPU6502:
         if 'I' in flags and value is not None:
             self.flags['I'] = value
 
-        if 'V' in flags and value is not None:
-            self.flags['V'] = value
+        if 'V' in flags:  # NEED TO IMPLEMENT
+            if value is not None:
+                self.flags['V'] = value
+            else:
+                pass
 
     def determineAddress(self, mode):
         address = 0
@@ -285,6 +304,31 @@ class CPU6502:
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 100):
 
+            if self.INS == 'ADC_IM':
+                value = self.readMemory()
+                self.registers['A'] += value
+                if self.registers['A'] & 0b100000000 > 0:
+                    self.setFlags(check=None, flags=['C'], value=1)
+                    self.registers['A'] = self.registers['A'] % 0x0100
+                else:
+                    self.setFlags(check=None, flags=['C'], value=0)
+                # self.setFlags(check=self.registers['A'], flags=['V'])  # NEED TO IMPLEMENT
+                self.setFlags(check=self.registers['A'], flags=['Z', 'N'])
+
+            if self.INS in ['ADC_ZP', 'ADC_ZP_X', 'ADC_ABS', 'ADC_ABS_X', 'ADC_ABS_Y', 'ADC_IND_X', 'ADC_IND_Y']:
+                ins_set = self.INS.split('_')
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
+                value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                self.registers['A'] += value
+                if self.registers['A'] & 0b100000000 > 0:
+                    self.setFlags(check=None, flags=['C'], value=1)
+                    self.registers['A'] = self.registers['A'] % 0x0100
+                else:
+                    self.setFlags(check=None, flags=['C'], value=0)
+                # self.setFlags(check=self.registers['A'], flags=['V'])  # NEED TO IMPLEMENT
+                self.setFlags(check=self.registers['A'], flags=['Z', 'N'])
+
             if self.INS == 'JSR_ABS':
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
@@ -305,7 +349,9 @@ class CPU6502:
                 value = self.readMemory(address=address, increment_pc=False, bytes=1)
                 value += 1
                 value = value % 0x10000
-                self.cycleInc()  # Is this really necessary?
+                self.cycleInc()  # Is this really necessary? -- apparently, yes
+                if self.INS == 'INC_ABS_X':
+                    self.cycleInc()  # Also necessary according to comments above
                 self.writeMemory(data=value, address=address, bytes=1)
                 self.setFlags(check=value, flags=['N', 'Z'])
 
@@ -528,5 +574,33 @@ def run():
     cpu.memoryDump(startingAddress=0x0000, endingAddress=0x00FF)
     cpu.memoryDump(startingAddress=0x00, endingAddress=0x0F)
 
+
+def fibonacci_test():
+    cpu = CPU6502(cycle_limit=349)
+    cpu.reset(program_counter=0x0000)
+
+    program = [0xA9, 0x01,  # LDA_IM 1
+               0x85, 0x21,  # STA_ZP [0x2E]
+               0xA9, 0x00,  # LDA_IM 0
+               0x65, 0x21,  # ADC [0x2E]
+               0x95, 0x30,  # STA_ZP_X [0x30]
+               0xE8,        # INX
+               0x85, 0x22,  # STA_ZP [0x2F]
+               0xA5, 0x21,  # LDA_ZP [0x2E]
+               0x85, 0x20,  # STA_ZP [0x2D]
+               0xA5, 0x22,  # LDA_ZP [0x2F]
+               0x85, 0x21,  # STA_ZP [0x2E]
+               0xA5, 0x20,  # LDA_ZP [0x2D]
+               0x4C, 0x06, 0x00  # JMP 0x0006
+               ]
+    cpu.loadProgram(instructions=program, memoryAddress=0x0000)
+    cpu.execute()
+    cpu.printLog()
+    cpu.memoryDump(startingAddress=0x0000, endingAddress=0x001F)
+    cpu.memoryDump(startingAddress=0x0020, endingAddress=0x0022, display_format='Dec')
+    cpu.memoryDump(startingAddress=0x0030, endingAddress=0x003F, display_format='Dec')
+
+
 if __name__ == '__main__':
-    run()
+    # run()
+    fibonacci_test()
