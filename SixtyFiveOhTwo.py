@@ -85,6 +85,13 @@ class CPU6502:
                0x94: 'STY_ZP_X',
                0x8c: 'STY_ABS',
 
+               0xAA: 'TAX',
+               0x8A: 'TXA',
+               0xA8: 'TAY',
+               0x98: 'TYA',
+               0x9A: 'TXS',
+               0xBA: 'TSX',
+
                0x4C: 'JMP',
                0x6C: 'JMP_IND',
                0x20: 'JSR_ABS',
@@ -326,6 +333,24 @@ class CPU6502:
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 100):
+
+            if self.INS in ['TAX', 'TXA', 'TAY', 'TYA']:
+                source = self.INS[1]
+                dest = self.INS[2]
+                self.registers[dest] = self.registers[source]
+                self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
+                self.cycleInc()  # 1 byte instruction
+
+            if self.INS in ['TXS', 'TSX']:
+                source = self.INS[1]
+                dest = self.INS[2]
+                if dest == 'X':
+                    self.registers[dest] = self.stack_pointer
+                    self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
+                elif dest == 'S':
+                    self.stack_pointer = self.registers[source] 
+
+                self.cycleInc()  # 1 byte instruction
 
             if self.INS in ['ASL_ACC', 'ASL_ZP', 'ASL_ZP_X', 'ASL_ABS', 'ASL_ABS_X']:
                 if self.INS == 'ASL_ACC':
