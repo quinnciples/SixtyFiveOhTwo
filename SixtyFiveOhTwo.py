@@ -134,13 +134,13 @@ class CPU6502:
         }
 
         self.flags = {
-            'C': 0,
-            'Z': 0,
-            'I': 0,
-            'D': 0,
-            'B': 0,
-            'V': 0,
-            'N': 0
+            'C': 0,  # Carry flag
+            'Z': 0,  # Zero flag
+            'I': 0,  # Interrupt flag
+            'D': 0,  # Decimal mode flag
+            'B': 0,  # Break flag
+            'V': 0,  # Overflow flag
+            'N': 0   # Negative flag
         }
 
         self.memory = [0] * CPU6502.MAX_MEMORY_SIZE
@@ -237,6 +237,7 @@ class CPU6502:
             self.memory[address + byte] = data
 
     def setFlagsByRegister(self, register=None, flags=[]):
+        # Carry flag must be checked first, because it can alter the register value which can then be tested against other criteria in this same subroutine
         if 'C' in flags:
             if self.registers[register] & 0b100000000 > 0:
                 self.flags['C'] = 1
@@ -251,10 +252,6 @@ class CPU6502:
                 self.flags['Z'] = 0
 
         if 'N' in flags:
-            #if self.registers[register] & 0b10000000 > 0:
-                #self.flags['N'] = 1
-            #else:
-                #self.flags['N'] = 0
             self.flags['N'] = self.registers[register] >> 7 & 1
 
     def setFlagsByValue(self, value=None, flags=[]):
@@ -400,7 +397,7 @@ class CPU6502:
                 address = self.determineAddress(mode=address_mode)
                 value = self.readMemory(address=address, increment_pc=False, bytes=1)
                 value += 1
-                value = value % 0x10000
+                value = value % 0x100
                 self.cycleInc()  # Is this really necessary? -- apparently, yes
                 if self.INS == 'INC_ABS_X':
                     self.cycleInc()  # Also necessary according to comments above
