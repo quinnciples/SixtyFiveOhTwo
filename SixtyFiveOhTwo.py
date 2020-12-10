@@ -171,12 +171,8 @@ class CPU6502:
         return self.stack_pointer | 0x0100
 
     def saveAtStackPointer(self):
-        # hi_byte = self.program_counter >> 8
-        # lo_byte = self.program_counter - (hi_byte * 0x0100)
-        # print('0x{0:0{1}X}'.format(hi_byte, 2), '0x{0:0{1}X}'.format(lo_byte, 2), '0x{0:0{1}X}'.format(self.program_counter, 4))
         hi_byte = ((self.program_counter - 1) & 0b1111111100000000) >> 8
         lo_byte = (self.program_counter - 1) & 0b0000000011111111
-        # print('0x{0:0{1}X}'.format(hi_byte, 2), '0x{0:0{1}X}'.format(lo_byte, 2), '0x{0:0{1}X}'.format(self.program_counter, 4))
         self.writeMemory(data=hi_byte, address=self.getStackPointerAddress(), bytes=1)
         self.stackPointerDec()
         self.writeMemory(data=lo_byte, address=self.getStackPointerAddress(), bytes=1)
@@ -514,19 +510,19 @@ class CPU6502:
             self.INS = CPU6502.opcodes.get(data, None)
 
     def printState(self):
-        combined = {**{'Cycle': self.cycles, '%-10s' % 'INS': '%-10s' % self.INS}, **self.registers, **self.flags, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
+        combined = {**{'Cycle': self.cycles, '%-10s' % 'INS': '%-10s' % self.INS}, **self.registers, **self.flags, **{'SP': '0x{0:0{1}X}'.format(self.getStackPointerAddress(), 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
         headerString = '\t'.join(combined)
         valueString = '\t'.join(str(v) for v in combined.values())
         print(headerString)
         print(valueString)
 
     def initializeLog(self):
-        combined = {**{'Cycle': self.cycles, '%-10s' % 'INS': '%-10s' % self.INS}, **self.registers, **self.flags, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
+        combined = {**{'Cycle': self.cycles, '%-10s' % 'INS': '%-10s' % self.INS}, **self.registers, **self.flags, **{'SP': '0x{0:0{1}X}'.format(self.getStackPointerAddress(), 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
         headerString = '\t'.join(combined)
         self.log.append(headerString)
 
     def logState(self):
-        combined = {**{'Cycle': self.cycles, '%-10s' % 'INS': '%-10s' % self.INS}, **self.registers, **self.flags, **{'SP': '0x{0:0{1}X}'.format(self.stack_pointer, 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
+        combined = {**{'Cycle': self.cycles, '%-10s' % 'INS': '%-10s' % self.INS}, **self.registers, **self.flags, **{'SP': '0x{0:0{1}X}'.format(self.getStackPointerAddress(), 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
         valueString = '\t'.join(str(v) for v in combined.values())
         self.log.append(valueString)
 
