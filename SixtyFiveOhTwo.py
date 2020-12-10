@@ -93,14 +93,14 @@ class CPU6502:
                0xC8: 'INY',
                0xE8: 'INX',
 
-               0x69: 'ADD_IM',
-               0x65: 'ADD_ZP',
-               0x75: 'ADD_ZP_X',
-               0x6D: 'ADD_ABS',
-               0x7D: 'ADD_ABS_X',
-               0x79: 'ADD_ABS_Y',
-               0x61: 'ADD_IND_X',
-               0x71: 'ADD_IND_Y',
+               0x69: 'ADC_IM',
+               0x65: 'ADC_ZP',
+               0x75: 'ADC_ZP_X',
+               0x6D: 'ADC_ABS',
+               0x7D: 'ADC_ABS_X',
+               0x79: 'ADC_ABS_Y',
+               0x61: 'ADC_IND_X',
+               0x71: 'ADC_IND_Y',
 
                }
 
@@ -304,7 +304,7 @@ class CPU6502:
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 100):
 
-            if self.INS == 'ADD_IM':
+            if self.INS == 'ADC_IM':
                 value = self.readMemory()
                 self.registers['A'] += value
                 if self.registers['A'] & 0b100000000 > 0:
@@ -315,7 +315,7 @@ class CPU6502:
                 # self.setFlags(check=self.registers['A'], flags=['V'])  # NEED TO IMPLEMENT
                 self.setFlags(check=self.registers['A'], flags=['Z', 'N'])
 
-            if self.INS in ['ADD_ZP', 'ADD_ZP_X', 'ADD_ABS', 'ADD_ABS_X', 'ADD_ABS_Y', 'ADD_IND_X', 'ADD_IND_Y']:
+            if self.INS in ['ADC_ZP', 'ADC_ZP_X', 'ADC_ABS', 'ADC_ABS_X', 'ADC_ABS_Y', 'ADC_IND_X', 'ADC_IND_Y']:
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
