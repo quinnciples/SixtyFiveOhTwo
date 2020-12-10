@@ -132,6 +132,58 @@ def TEST_0x69_ADC_IM():
     return False
 
 
+def TEST_0x69_ADC_IM_CARRY_FLAG_SET():
+    EXPECTED_VALUE = 0x01
+    EXPECTED_CYCLES = 2
+    INITIAL_REGISTERS = {
+        'A': 0xFF,
+        'X': 0,
+        'Y': 0
+    }
+    EXPECTED_REGISTERS = {
+        'A': EXPECTED_VALUE,
+        'X': 0,
+        'Y': 0
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 1,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0x69, 0x02]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        print(f'Cycles: {cpu.cycles-1}')
+        raise
+    return False
+
+
 def TEST_0x75_ADC_ZP_X():
     EXPECTED_VALUE = 0x25
     EXPECTED_CYCLES = 4
@@ -3052,6 +3104,7 @@ if __name__ == '__main__':
         TEST_0x61_ADC_IND_X,
         TEST_0x71_ADC_IND_Y,
         TEST_0x71_ADC_IND_Y_CROSS_PAGE_BOUNDARY,
+        TEST_0x69_ADC_IM_CARRY_FLAG_SET,
         ]
 
     num_tests, passed, failed = len(tests), 0, 0
