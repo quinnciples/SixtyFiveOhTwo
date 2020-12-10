@@ -33,7 +33,22 @@ class CPU6502:
 
     version = '0.10'
     MAX_MEMORY_SIZE = 1024 * 64  # 64k memory size
-    opcodes = {0xA9: 'LDA_IM',
+    opcodes = {0x29: 'AND_IM',
+               0x25: 'AND_ZP',
+               0x35: 'AND_ZP_X',
+               0x2D: 'AND_ABS',
+               0x3D: 'AND_ABS_X',
+               0x39: 'AND_ABS_Y',
+               0x21: 'AND_IND_X',
+               0x31: 'AND_IND_Y',
+
+               0x0A: 'ASL_ACC',
+               0x06: 'ASL_ZP',
+               0x16: 'ASL_ZP_X',
+               0x0E: 'ASL_ABS',
+               0x1E: 'ASL_ABS_X',
+
+               0xA9: 'LDA_IM',
                0xA5: 'LDA_ZP',
                0xB5: 'LDA_ZP_X',
                0xAD: 'LDA_ABS',
@@ -236,10 +251,11 @@ class CPU6502:
                 self.flags['Z'] = 0
 
         if 'N' in flags:
-            if self.registers[register] & 0b10000000 > 0:
-                self.flags['N'] = 1
-            else:
-                self.flags['N'] = 0
+            #if self.registers[register] & 0b10000000 > 0:
+                #self.flags['N'] = 1
+            #else:
+                #self.flags['N'] = 0
+            self.flags['N'] = self.registers[register] >> 7 & 1
 
     def setFlagsByValue(self, value=None, flags=[]):
         if value is None or len(flags) == 0:
@@ -313,6 +329,44 @@ class CPU6502:
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 100):
+
+            if self.INS in ['ASL_ACC', 'ASL_ZP', 'ASL_ZP_X', 'ASL_ABS', 'ASL_ABS_X']:
+                if self.INS == 'ASL_ACC':
+                    value = self.registers['A']
+                    carry_flag = 1 if (value & 0b10000000) > 0 else 0
+                    value = value << 1
+                    value = value & 0b0000000011111111
+                    self.registers['A'] = value
+                    self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                    self.setFlagsManually(flags=['C'], value=carry_flag)
+                    self.cycleInc()  # 1 byte instruction per notes at top
+                else:
+                    ins_set = self.INS.split('_')
+                    address_mode = '_'.join(_ for _ in ins_set[1:])
+                    address = self.determineAddress(mode=address_mode)
+                    value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                    carry_flag = 1 if (value & 0b10000000) > 0 else 0
+                    value = value << 1
+                    value = value & 0b0000000011111111
+                    self.cycleInc()  # Extra cycle for modify stage in RMW instruction per note at top.
+                    self.writeMemory(data=value, address=address, bytes=1)
+                    self.setFlagsByValue(value=value, flags=['Z', 'N'])
+                    self.setFlagsManually(flags=['C'], value=carry_flag)
+
+            if self.INS == 'AND_IM':
+                value = self.readMemory()
+                result = self.registers['A'] & value
+                self.registers['A'] = result
+                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+
+            if self.INS in ['AND_ZP', 'AND_ZP_X', 'AND_ABS', 'AND_ABS_X', 'AND_ABS_Y', 'AND_IND_X', 'AND_IND_Y']:
+                ins_set = self.INS.split('_')
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
+                value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                result = self.registers['A'] & value
+                self.registers['A'] = result
+                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
             if self.INS == 'ADC_IM':
                 value = self.readMemory()
@@ -490,17 +544,17 @@ def fibonacci_test():
     cpu.reset(program_counter=0x0000)
 
     program = [0xA9, 0x01,  # LDA_IM 1
-               0x85, 0x21,  # STA_ZP [0x2E]
+               0x85, 0x21,  # STA_ZP [0x21]
                0xA9, 0x00,  # LDA_IM 0
-               0x65, 0x21,  # ADC [0x2E]
+               0x65, 0x21,  # ADC [0x21]  -- This is the main loop; the jump ins below should point to the address of this line
                0x95, 0x30,  # STA_ZP_X [0x30]
                0xE8,        # INX
-               0x85, 0x22,  # STA_ZP [0x2F]
-               0xA5, 0x21,  # LDA_ZP [0x2E]
-               0x85, 0x20,  # STA_ZP [0x2D]
-               0xA5, 0x22,  # LDA_ZP [0x2F]
-               0x85, 0x21,  # STA_ZP [0x2E]
-               0xA5, 0x20,  # LDA_ZP [0x2D]
+               0x85, 0x22,  # STA_ZP [0x22]
+               0xA5, 0x21,  # LDA_ZP [0x21]
+               0x85, 0x20,  # STA_ZP [0x20]
+               0xA5, 0x22,  # LDA_ZP [0x22]
+               0x85, 0x21,  # STA_ZP [0x21]
+               0xA5, 0x20,  # LDA_ZP [0x20]
                0x4C, 0x06, 0x00  # JMP 0x0006
                ]
     cpu.loadProgram(instructions=program, memoryAddress=0x0000)
