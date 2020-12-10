@@ -389,110 +389,22 @@ class CPU6502:
                     self.setFlagsManually(flags=[self.INS[2]], value=1)
                 self.cycleInc()
 
-            if self.INS == 'LDA_IM':
+            if self.INS in ['LDA_IM', 'LDX_IM', 'LDY_IM']:
+                register = self.INS[2]
                 data = self.readMemory()
-                self.registers['A'] = data
-                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                self.registers[register] = data
+                self.setFlagsByRegister(register=register, flags=['Z', 'N'])
 
-            elif self.INS == 'LDX_IM':
-                data = self.readMemory()
-                self.registers['X'] = data
-                self.setFlagsByRegister(register='X', flags=['Z', 'N'])
-
-            elif self.INS == 'LDY_IM':
-                data = self.readMemory()
-                self.registers['Y'] = data
-                self.setFlagsByRegister(register='Y', flags=['Z', 'N'])
-
-            elif self.INS == 'LDA_ZP':
-                address = self.determineAddress(mode='ZP')
+            elif self.INS in ['LDA_ZP', 'LDA_ZP_X',             'LDA_ABS', 'LDA_ABS_X', 'LDA_ABS_Y', 'LDA_IND_X', 'LDA_IND_Y',
+                              'LDX_ZP',             'LDX_ZP_Y', 'LDX_ABS',              'LDX_ABS_Y',
+                              'LDY_ZP', 'LDY_ZP_X',             'LDY_ABS', 'LDY_ABS_X']:
+                ins_set = self.INS.split('_')
+                register = ins_set[0][2]
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
                 data = self.readMemory(address=address, increment_pc=False)
-                self.registers['A'] = data
-                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-
-            elif self.INS == 'LDX_ZP':
-                address = self.determineAddress(mode='ZP')
-                data = self.readMemory(address=address, increment_pc=False)
-                self.registers['X'] = data
-                self.setFlagsByRegister(register='X', flags=['Z', 'N'])
-
-            elif self.INS == 'LDY_ZP':
-                address = self.determineAddress(mode='ZP')
-                data = self.readMemory(address=address, increment_pc=False)
-                self.registers['Y'] = data
-                self.setFlagsByRegister(register='Y', flags=['Z', 'N'])
-
-            elif self.INS == 'LDA_ZP_X':
-                address = self.determineAddress(mode='ZP_X')
-                data = self.readMemory(address=address, increment_pc=False)
-                self.registers['A'] = data
-                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-
-            elif self.INS == 'LDX_ZP_Y':
-                address = self.determineAddress(mode='ZP_Y')
-                data = self.readMemory(address=address, increment_pc=False)
-                self.registers['X'] = data
-                self.setFlagsByRegister(register='X', flags=['Z', 'N'])
-
-            elif self.INS == 'LDY_ZP_X':
-                address = self.determineAddress(mode='ZP_X')
-                data = self.readMemory(address=address, increment_pc=False)
-                self.registers['Y'] = data
-                self.setFlagsByRegister(register='Y', flags=['Z', 'N'])
-
-            elif self.INS == 'LDA_ABS':
-                address = self.determineAddress(mode='ABS')
-                data = self.readMemory(address=address, increment_pc=False)
-                self.registers['A'] = data
-                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-
-            elif self.INS == 'LDX_ABS':
-                address = self.determineAddress(mode='ABS')
-                data = self.readMemory(address=address, increment_pc=False)
-                self.registers['X'] = data
-                self.setFlagsByRegister(register='X', flags=['Z', 'N'])
-
-            elif self.INS == 'LDY_ABS':
-                address = self.determineAddress(mode='ABS')
-                data = self.readMemory(address=address, increment_pc=False)
-                self.registers['Y'] = data
-                self.setFlagsByRegister(register='Y', flags=['Z', 'N'])
-
-            elif self.INS == 'LDA_ABS_X':
-                address = self.determineAddress(mode='ABS_X')
-                data = self.readMemory(address=address, increment_pc=False)
-                self.registers['A'] = data
-                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-
-            elif self.INS == 'LDA_ABS_Y':
-                address = self.determineAddress(mode='ABS_Y')
-                data = self.readMemory(address=address, increment_pc=False)
-                self.registers['A'] = data
-                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-
-            elif self.INS == 'LDY_ABS_X':
-                address = self.determineAddress(mode='ABS_X')
-                data = self.readMemory(address=address, increment_pc=False)
-                self.registers['Y'] = data
-                self.setFlagsByRegister(register='Y', flags=['Z', 'N'])
-
-            elif self.INS == 'LDX_ABS_Y':
-                address = self.determineAddress(mode='ABS_Y')
-                data = self.readMemory(address=address, increment_pc=False)
-                self.registers['X'] = data
-                self.setFlagsByRegister(register='X', flags=['Z', 'N'])
-
-            elif self.INS == 'LDA_IND_X':
-                address = self.determineAddress(mode='IND_X')
-                data = self.readMemory(address=address, increment_pc=False)
-                self.registers['A'] = data
-                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-
-            elif self.INS == 'LDA_IND_Y':
-                address = self.determineAddress(mode='IND_Y')
-                data = self.readMemory(address=address, increment_pc=False)
-                self.registers['A'] = data
-                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                self.registers[register] = data
+                self.setFlagsByRegister(register=register, flags=['Z', 'N'])
 
             elif self.INS == 'JMP':
                 address = self.determineAddress(mode='ABS')
