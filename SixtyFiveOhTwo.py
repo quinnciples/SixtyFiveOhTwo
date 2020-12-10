@@ -339,7 +339,7 @@ class CPU6502:
                 dest = self.INS[2]
                 self.registers[dest] = self.registers[source]
                 self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
-                self.cycleInc()  # 1 byte instruction
+                self.readMemory()  # 1 byte instruction -- read next byte and ignore
 
             if self.INS in ['TXS', 'TSX']:
                 source = self.INS[1]
@@ -350,7 +350,7 @@ class CPU6502:
                 elif dest == 'S':
                     self.stack_pointer = self.registers[source] 
 
-                self.cycleInc()  # 1 byte instruction
+                self.readMemory()  # 1 byte instruction -- read next byte and ignore
 
             if self.INS in ['ASL_ACC', 'ASL_ZP', 'ASL_ZP_X', 'ASL_ABS', 'ASL_ABS_X']:
                 if self.INS == 'ASL_ACC':
@@ -361,7 +361,7 @@ class CPU6502:
                     self.registers['A'] = value
                     self.setFlagsByRegister(register='A', flags=['Z', 'N'])
                     self.setFlagsManually(flags=['C'], value=carry_flag)
-                    self.cycleInc()  # 1 byte instruction per notes at top
+                    self.readMemory()  # 1 byte instruction -- read next byte and ignore
                 else:
                     ins_set = self.INS.split('_')
                     address_mode = '_'.join(_ for _ in ins_set[1:])
@@ -494,7 +494,7 @@ class CPU6502:
                 pass
 
             elif self.INS == 'NOP':
-                self.cycleInc()
+                self.readMemory()
 
             data = self.readMemory()
             self.INS = CPU6502.opcodes.get(data, None)
