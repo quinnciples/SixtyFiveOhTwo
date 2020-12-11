@@ -27,6 +27,165 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
+def TEST_0xD0_BNE():
+    EXPECTED_CYCLES = 2
+    INITIAL_REGISTERS = {
+        'A': 0x7F,
+        'X': 0xDD,
+        'Y': 0xCC
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0x7F,
+        'X': 0xDD,
+        'Y': 0xCC
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 1,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 1,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0xD0, 0x02, 0x00, 0x00, 0xA9, 0x05]  # ACC
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        print(f'Cycles: {cpu.cycles-1}')
+        print(f'Expected Registers: {EXPECTED_REGISTERS}')
+        raise
+        return False
+    return True
+
+
+def TEST_0xD0_BNE_SUCCESSFUL_BRANCH():
+    EXPECTED_CYCLES = 3 + 2
+    INITIAL_REGISTERS = {
+        'A': 0x7F,
+        'X': 0xDD,
+        'Y': 0xCC
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0x05,
+        'X': 0xDD,
+        'Y': 0xCC
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0xD0, 0x02, 0x00, 0x00, 0xA9, 0x05]  # ACC
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        print(f'Cycles: {cpu.cycles-1}')
+        print(f'Expected Registers: {EXPECTED_REGISTERS}')
+        raise
+        return False
+    return True
+
+
+def TEST_0xD0_BNE_SUCCESSFUL_BRANCH_CROSS_PAGE_BOUNDARY():
+    EXPECTED_CYCLES = 4 + 2
+    INITIAL_REGISTERS = {
+        'A': 0x7F,
+        'X': 0xDD,
+        'Y': 0xCC
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0x05,
+        'X': 0xDD,
+        'Y': 0xCC
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xAAFB)
+    program = [0xD0, 0x04, 0x00, 0x00, 0x00, 0x00, 0xA9, 0x05]  # ACC
+    cpu.loadProgram(instructions=program, memoryAddress=0xAAFB)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xAAF0, endingAddress=0xAB07)
+        print(f'Cycles: {cpu.cycles-1}')
+        print(f'Expected Registers: {EXPECTED_REGISTERS}')
+        raise
+        return False
+    return True
+
+
 def TEST_0x4A_LSR_ACC():
     EXPECTED_CYCLES = 2
     INITIAL_REGISTERS = {
@@ -249,7 +408,7 @@ def TEST_0x4E_LSR_ABS():
 
 
 def TEST_0x5E_LSR_ABS_X():
-    EXPECTED_CYCLES = 7
+    EXPECTED_CYCLES = 6  # 7
     INITIAL_REGISTERS = {
         'A': 0x13,
         'X': 0xDD,
@@ -4738,6 +4897,9 @@ if __name__ == '__main__':
         TEST_0x56_LSR_ZP_X,
         TEST_0x4E_LSR_ABS,
         TEST_0x5E_LSR_ABS_X,
+        TEST_0xD0_BNE,
+        TEST_0xD0_BNE_SUCCESSFUL_BRANCH,
+        TEST_0xD0_BNE_SUCCESSFUL_BRANCH_CROSS_PAGE_BOUNDARY,
     ]
 
     num_tests, passed, failed = len(tests), 0, 0

@@ -48,6 +48,8 @@ class CPU6502:
                0x0E: 'ASL_ABS',
                0x1E: 'ASL_ABS_X',
 
+               0xD0: 'BNE',
+
                0x4A: 'LSR_ACC',
                0x46: 'LSR_ZP',
                0x56: 'LSR_ZP_X',
@@ -338,6 +340,15 @@ class CPU6502:
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 100):
+
+            if self.INS == 'BNE':
+                offset = self.readMemory()
+                if self.flags['Z'] == 0:
+                    self.program_counter += offset
+                    # Check if page was crossed
+                    if ((self.program_counter - offset) & 0b11110000) != (self.program_counter & 0b11110000):
+                        self.cycleInc()
+                    self.cycleInc()
 
             if self.INS in ['TAX', 'TXA', 'TAY', 'TYA']:
                 source = self.INS[1]
