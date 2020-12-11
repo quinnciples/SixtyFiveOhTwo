@@ -31,7 +31,7 @@ class CPU6502:
 
     """
 
-    version = '0.10'
+    version = '0.20'
     MAX_MEMORY_SIZE = 1024 * 64  # 64k memory size
     opcodes = {0x29: 'AND_IM',
                0x25: 'AND_ZP',
@@ -47,6 +47,12 @@ class CPU6502:
                0x16: 'ASL_ZP_X',
                0x0E: 'ASL_ABS',
                0x1E: 'ASL_ABS_X',
+
+               0x4A: 'LSR_ACC',
+               0x46: 'LSR_ZP',
+               0x56: 'LSR_ZP_X',
+               0x4E: 'LSR_ABS',
+               0x5E: 'LSR_ABS_X',
 
                0xA9: 'LDA_IM',
                0xA5: 'LDA_ZP',
@@ -199,7 +205,6 @@ class CPU6502:
         self.stackPointerDec()
         self.writeMemory(data=lo_byte, address=self.getStackPointerAddress(), bytes=1)
         self.stackPointerDec()
-        pass
 
     def loadFromStackPointer(self):
         self.stackPointerInc()
@@ -357,7 +362,7 @@ class CPU6502:
                     value = self.registers['A']
                     carry_flag = 1 if (value & 0b10000000) > 0 else 0
                     value = value << 1
-                    value = value & 0b0000000011111111
+                    value = value & 0b0000000011111110
                     self.registers['A'] = value
                     self.setFlagsByRegister(register='A', flags=['Z', 'N'])
                     self.setFlagsManually(flags=['C'], value=carry_flag)
@@ -369,11 +374,35 @@ class CPU6502:
                     value = self.readMemory(address=address, increment_pc=False, bytes=1)
                     carry_flag = 1 if (value & 0b10000000) > 0 else 0
                     value = value << 1
-                    value = value & 0b0000000011111111
+                    value = value & 0b0000000011111110
                     self.cycleInc()  # Extra cycle for modify stage in RMW instruction per note at top.
                     self.writeMemory(data=value, address=address, bytes=1)
                     self.setFlagsByValue(value=value, flags=['Z', 'N'])
                     self.setFlagsManually(flags=['C'], value=carry_flag)
+
+            if self.INS in ['LSR_ACC', 'LSR_ZP', 'LSR_ZP_X', 'LSR_ABS', 'LSR_ABS_X']:
+                if self.INS == 'LSR_ACC':
+                    value = self.registers['A']
+                    carry_flag = 1 if (value & 0b00000001) > 0 else 0
+                    value = value >> 1
+                    value = value & 0b0000000001111111
+                    self.registers['A'] = value
+                    self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                    self.setFlagsManually(flags=['C'], value=carry_flag)
+                    self.readMemory()  # 1 byte instruction -- read next byte and ignore
+                else:
+                    ins_set = self.INS.split('_')
+                    address_mode = '_'.join(_ for _ in ins_set[1:])
+                    address = self.determineAddress(mode=address_mode)
+                    value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                    carry_flag = 1 if (value & 0b00000001) > 0 else 0
+                    value = value >> 1
+                    value = value & 0b0000000001111111
+                    self.cycleInc()  # Extra cycle for modify stage in RMW instruction per note at top.
+                    self.writeMemory(data=value, address=address, bytes=1)
+                    self.setFlagsByValue(value=value, flags=['Z', 'N'])
+                    self.setFlagsManually(flags=['C'], value=carry_flag)
+
 
             if self.INS == 'AND_IM':
                 value = self.readMemory()
