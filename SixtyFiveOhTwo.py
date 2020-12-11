@@ -353,7 +353,7 @@ class CPU6502:
                     self.registers[dest] = self.stack_pointer
                     self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
                 elif dest == 'S':
-                    self.stack_pointer = self.registers[source] 
+                    self.stack_pointer = self.registers[source]
 
                 self.readMemory()  # 1 byte instruction -- read next byte and ignore
 
@@ -402,7 +402,6 @@ class CPU6502:
                     self.writeMemory(data=value, address=address, bytes=1)
                     self.setFlagsByValue(value=value, flags=['Z', 'N'])
                     self.setFlagsManually(flags=['C'], value=carry_flag)
-
 
             if self.INS == 'AND_IM':
                 value = self.readMemory()
