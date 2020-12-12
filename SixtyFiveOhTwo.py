@@ -48,6 +48,7 @@ class CPU6502:
                0x0E: 'ASL_ABS',
                0x1E: 'ASL_ABS_X',
 
+               0xF0: 'BEQ',
                0xD0: 'BNE',
 
                0x4A: 'LSR_ACC',
