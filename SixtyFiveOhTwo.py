@@ -54,6 +54,7 @@ class CPU6502:
                0xD0: 'BNE',
                0x50: 'BVC',
                0x70: 'BVS',
+               0x10: 'BPL',
 
                0x4A: 'LSR_ACC',
                0x46: 'LSR_ZP',
