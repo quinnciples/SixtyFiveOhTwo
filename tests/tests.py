@@ -27,6 +27,218 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
+def TEST_0xC9_CMP_GREATER_THAN():
+    EXPECTED_CYCLES = 2
+    INITIAL_REGISTERS = {
+        'A': 0x20,
+        'X': 0x00,
+        'Y': 0x00
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0x20,
+        'X': 0x00,
+        'Y': 0x00
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 1,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0xC9, 0x10]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        print(f'Cycles: {cpu.cycles-1}')
+        print(f'Expected Registers: {EXPECTED_REGISTERS}')
+        raise
+        return False
+    return True
+
+
+def TEST_0xC9_CMP_LESS_THAN():
+    EXPECTED_CYCLES = 2
+    INITIAL_REGISTERS = {
+        'A': 0x05,
+        'X': 0x00,
+        'Y': 0x00
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0x05,
+        'X': 0x00,
+        'Y': 0x00
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0xC9, 0xFF]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        print(f'Cycles: {cpu.cycles-1}')
+        print(f'Expected Registers: {EXPECTED_REGISTERS}')
+        raise
+        return False
+    return True
+
+
+def TEST_0xC9_CMP_LESS_THAN_NEGATIVE():
+    EXPECTED_CYCLES = 2
+    INITIAL_REGISTERS = {
+        'A': 0x01,
+        'X': 0x00,
+        'Y': 0x00
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0x01,
+        'X': 0x00,
+        'Y': 0x00
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 1
+    }
+
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0xC9, 0x10]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        print(f'Cycles: {cpu.cycles-1}')
+        print(f'Expected Registers: {EXPECTED_REGISTERS}')
+        raise
+        return False
+    return True
+
+
+def TEST_0xC9_CMP_EQUAL():
+    EXPECTED_CYCLES = 2
+    INITIAL_REGISTERS = {
+        'A': 0x10,
+        'X': 0x00,
+        'Y': 0x00
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0x10,
+        'X': 0x00,
+        'Y': 0x00
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 1,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0xC9, 0x10]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        print(f'Cycles: {cpu.cycles-1}')
+        print(f'Expected Registers: {EXPECTED_REGISTERS}')
+        raise
+        return False
+    return True
+
+
 def TEST_0x10_BPL_DOES_NOT_BRANCH():
     EXPECTED_CYCLES = 2
     INITIAL_REGISTERS = {
@@ -6035,6 +6247,10 @@ if __name__ == '__main__':
         TEST_0x10_BPL_DOES_NOT_BRANCH,
         TEST_0x10_BPL_SUCCESSFUL_BRANCH,
         TEST_0x10_BPL_SUCCESSFUL_BRANCH_CROSS_PAGE_BOUNDARY,
+        TEST_0xC9_CMP_GREATER_THAN,
+        TEST_0xC9_CMP_LESS_THAN,
+        TEST_0xC9_CMP_LESS_THAN_NEGATIVE,
+        TEST_0xC9_CMP_EQUAL,
     ]
 
     num_tests, passed, failed = len(tests), 0, 0

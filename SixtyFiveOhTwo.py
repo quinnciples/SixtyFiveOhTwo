@@ -21,23 +21,23 @@ class CPU6502:
     CLD - Done
     CLI - Done
     CLV - Done
-    CMP
-    CPX
-    CPY
-    DEC
-    DEX
-    DEY
+    CMP - Need to test
+    CPX - Need to test
+    CPY - Need to test
+    DEC - Done
+    DEX - Done
+    DEY - Done
     EOR
-    INC
-    INX
-    INY
-    JMP
-    JSR
-    LDA
-    LDX
-    LDY
+    INC - Done
+    INX - Done
+    INY - Done
+    JMP - Done
+    JSR - Done
+    LDA - Done
+    LDX - Done
+    LDY - Done
     LSR
-    NOP
+    NOP - Done
     ORA
     PHA
     PHP
@@ -51,15 +51,15 @@ class CPU6502:
     SEC
     SED
     SEI
-    STA
-    STX
-    STY
-    TAX
-    TAY
-    TSX
-    TXA
-    TXS
-    TYA
+    STA - Done
+    STX - Done
+    STY - Done
+    TAX - Done
+    TAY - Done
+    TSX - Done
+    TXA - Done
+    TXS - Done
+    TYA - Done
     """
 
     """
@@ -423,14 +423,17 @@ class CPU6502:
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 400):
 
-            if self.INS in ['CMP_IM', 'CMP_ZP', 'CMP_ZPX', 'CMP_ABS', 'CMP_ABS_X', 'CMP_IND_X', 'CMP_IND_Y',
+            if self.INS in ['CMP_IM', 'CMP_ZP', 'CMP_ZP_X', 'CMP_ABS', 'CMP_ABS_X', 'CMP_IND_X', 'CMP_IND_Y',
                             'CPX_IM', 'CPX_ZP', 'CPX_ABS'
                             'CPY_IM', 'CPY_ZP', 'CPY_ABS']:
                 target = 'A' if self.INS[2] == 'P' else self.INS[2]
-                ins_set = self.INS.split('_')
-                address_mode = '_'.join(_ for _ in ins_set[1:])
-                address = self.determineAddress(mode=address_mode)
-                value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                if self.INS in ['CMP_IM', 'CPX_IM', 'CPY_IM']:
+                    value = self.readMemory()
+                else:
+                    ins_set = self.INS.split('_')
+                    address_mode = '_'.join(_ for _ in ins_set[1:])
+                    address = self.determineAddress(mode=address_mode)
+                    value = self.readMemory(address=address, increment_pc=False, bytes=1)
                 compare = self.registers[target]
                 if compare > value:
                     self.setFlagsManually(['C'], 1)
