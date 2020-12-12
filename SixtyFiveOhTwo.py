@@ -342,9 +342,12 @@ class CPU6502:
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 100):
 
-            if self.INS == 'BNE':
+            if self.INS in ['BEQ', 'BNE']:
                 offset = self.readMemory()
-                if self.flags['Z'] == 0:
+                # BNE goes if zero flag is not set (0).
+                # BEQ goes if zero flag is set (1).
+                test_value = 1 if self.INS == 'BEQ' else 0
+                if self.flags['Z'] == test_value:
                     self.program_counter += offset
                     self.cycleInc()
                     # Check if page was crossed
