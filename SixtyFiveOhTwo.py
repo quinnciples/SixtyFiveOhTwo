@@ -48,6 +48,8 @@ class CPU6502:
                0x0E: 'ASL_ABS',
                0x1E: 'ASL_ABS_X',
 
+               0x90: 'BCC',
+               0xB0: 'BCS',
                0xF0: 'BEQ',
                0xD0: 'BNE',
 
@@ -342,12 +344,14 @@ class CPU6502:
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 100):
 
-            if self.INS in ['BEQ', 'BNE']:
+            if self.INS in ['BEQ', 'BNE',
+                            'BCC', 'BCS']:
                 offset = self.readMemory()
                 # BNE goes if zero flag is not set (0).
                 # BEQ goes if zero flag is set (1).
-                test_value = 1 if self.INS == 'BEQ' else 0
-                if self.flags['Z'] == test_value:
+                test_value = 1 if self.INS in ['BEQ', 'BCS'] else 0
+                flag = 'Z' if self.INS in ['BEQ', 'BNE'] else 'C'
+                if self.flags[flag] == test_value:
                     self.program_counter += offset
                     self.cycleInc()
                     # Check if page was crossed
