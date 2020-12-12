@@ -60,7 +60,7 @@ def TEST_0xD0_BNE():
 
     cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
     cpu.reset(program_counter=0xFF00)
-    program = [0xD0, 0x02, 0x00, 0x00, 0xA9, 0x05]  # ACC
+    program = [0xD0, 0x02, 0x00, 0x00, 0xA9, 0x05]  
     cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
     cpu.registers = INITIAL_REGISTERS
     cpu.flags = INITIAL_FLAGS
@@ -113,7 +113,7 @@ def TEST_0xD0_BNE_SUCCESSFUL_BRANCH():
 
     cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
     cpu.reset(program_counter=0xFF00)
-    program = [0xD0, 0x02, 0x00, 0x00, 0xA9, 0x05]  # ACC
+    program = [0xD0, 0x02, 0x00, 0x00, 0xA9, 0x05]  
     cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
     cpu.registers = INITIAL_REGISTERS
     cpu.flags = INITIAL_FLAGS
@@ -166,7 +166,7 @@ def TEST_0xD0_BNE_SUCCESSFUL_BRANCH_CROSS_PAGE_BOUNDARY():
 
     cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
     cpu.reset(program_counter=0xAAFB)
-    program = [0xD0, 0x04, 0x00, 0x00, 0x00, 0x00, 0xA9, 0x05]  # ACC
+    program = [0xD0, 0x04, 0x00, 0x00, 0x00, 0x00, 0xA9, 0x05]  
     cpu.loadProgram(instructions=program, memoryAddress=0xAAFB)
     cpu.registers = INITIAL_REGISTERS
     cpu.flags = INITIAL_FLAGS
@@ -513,6 +513,7 @@ def TEST_0xAA_TAX():
         print(f'Expected Registers: {EXPECTED_REGISTERS}')
         raise
     return False
+
 
 def TEST_0xAA_TAX_ZERO_FLAG():
     EXPECTED_CYCLES = 2
