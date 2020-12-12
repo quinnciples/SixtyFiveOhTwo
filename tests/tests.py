@@ -94,7 +94,7 @@ def TEST_0xB0_BCS_SUCCESSFUL_BRANCH():
     }
     INITIAL_FLAGS = {
         'C': 1,
-        'Z': 1,
+        'Z': 0,
         'I': 0,
         'D': 0,
         'B': 0,
@@ -147,7 +147,7 @@ def TEST_0xB0_BCS_SUCCESSFUL_BRANCH_CROSS_PAGE_BOUNDARY():
     }
     INITIAL_FLAGS = {
         'C': 1,
-        'Z': 1,
+        'Z': 0,
         'I': 0,
         'D': 0,
         'B': 0,

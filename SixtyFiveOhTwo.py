@@ -52,6 +52,8 @@ class CPU6502:
                0xB0: 'BCS',
                0xF0: 'BEQ',
                0xD0: 'BNE',
+               0x50: 'BVC',
+               0x70: 'BVS',
 
                0x4A: 'LSR_ACC',
                0x46: 'LSR_ZP',
@@ -342,20 +344,31 @@ class CPU6502:
     def execute(self):
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
-        while self.INS is not None and self.cycles <= max(self.cycle_limit, 100):
+        while self.INS is not None and self.cycles <= max(self.cycle_limit, 400):
 
             if self.INS in ['BEQ', 'BNE',
-                            'BCC', 'BCS']:
+                            'BCC', 'BCS',
+                            'BMI', 'BPL',
+                            'BVC', 'BVS']:
+
+                # Instruction: [Flag, Value to Test]
+                comparisons = {'BEQ': ['Z', 1],
+                               'BNE': ['Z', 0],
+                               'BCC': ['C', 0],
+                               'BCS': ['C', 1],
+                               'BMI': ['N', 1],
+                               'BPL': ['N', 0],
+                               'BVS': ['V', 1],
+                               'BVC': ['V', 0],
+                               }
                 offset = self.readMemory()
-                # BNE goes if zero flag is not set (0).
-                # BEQ goes if zero flag is set (1).
-                test_value = 1 if self.INS in ['BEQ', 'BCS'] else 0
-                flag = 'Z' if self.INS in ['BEQ', 'BNE'] else 'C'
+                flag = comparisons[self.INS][0]
+                test_value = comparisons[self.INS][1]
                 if self.flags[flag] == test_value:
                     self.program_counter += offset
                     self.cycleInc()
                     # Check if page was crossed
-                    if ((self.program_counter - offset) & 0b11110000) != (self.program_counter & 0b11110000):
+                    if ((self.program_counter & 0b1111111100000000) != ((self.program_counter  - offset) & 0b1111111100000000)):
                         self.cycleInc()
 
             if self.INS in ['TAX', 'TXA', 'TAY', 'TYA']:
@@ -634,6 +647,32 @@ def fibonacci_test():
     cpu.memoryDump(startingAddress=0x0030, endingAddress=0x003F, display_format='Dec')
 
 
+def fibonacci_test2():
+    cpu = CPU6502(cycle_limit=10000)
+    cpu.reset(program_counter=0x0000)
+
+    program = [0xA9, 0x01,  # LDA_IM 1
+               0x85, 0x21,  # STA_ZP [0x21]
+               0xA9, 0x00,  # LDA_IM 0
+               0x65, 0x21,  # ADC [0x21]  -- This is the main loop; the jump ins below should point to the address of this line
+               0xB0, 0x1A,  # BCS 0x1B  ; Jump to end of program if value exceeds 0xFF
+               0x95, 0x30,  # STA_ZP_X [0x30]
+               0xE8,        # INX
+               0x85, 0x22,  # STA_ZP [0x22]
+               0xA5, 0x21,  # LDA_ZP [0x21]
+               0x85, 0x20,  # STA_ZP [0x20]
+               0xA5, 0x22,  # LDA_ZP [0x22]
+               0x85, 0x21,  # STA_ZP [0x21]
+               0xA5, 0x20,  # LDA_ZP [0x20]
+               0x4C, 0x06, 0x00  # JMP 0x0006
+               ]
+    cpu.loadProgram(instructions=program, memoryAddress=0x0000)
+    cpu.execute()
+    cpu.printLog()
+    cpu.memoryDump(startingAddress=0x0000, endingAddress=0x001F)
+    cpu.memoryDump(startingAddress=0x0020, endingAddress=0x0022, display_format='Dec')
+    cpu.memoryDump(startingAddress=0x0030, endingAddress=0x003F, display_format='Dec')
+
 if __name__ == '__main__':
     # run()
-    fibonacci_test()
+    fibonacci_test2()
