@@ -4,6 +4,65 @@
 class CPU6502:
 
     """
+    ADC
+    AND - Done
+    ASL - Done
+    BCC - Done
+    BCS - Done
+    BEQ - Done
+    BIT
+    BMI - Done
+    BNE - Done
+    BPL - Done
+    BRK
+    BVC - Done
+    BVS - Done
+    CLC - Done
+    CLD - Done
+    CLI - Done
+    CLV - Done
+    CMP
+    CPX
+    CPY
+    DEC
+    DEX
+    DEY
+    EOR
+    INC
+    INX
+    INY
+    JMP
+    JSR
+    LDA
+    LDX
+    LDY
+    LSR
+    NOP
+    ORA
+    PHA
+    PHP
+    PLA
+    PLP
+    ROL
+    ROR
+    RTI
+    RTS
+    SBC
+    SEC
+    SED
+    SEI
+    STA
+    STX
+    STY
+    TAX
+    TAY
+    TSX
+    TXA
+    TXS
+    TYA
+    """
+
+    """
 
     All single-byte instructions waste a cycle reading and ignoring the byte that comes immediately after the instruction (this means no instruction can take less than two cycles).
     Zero page,X, zero page,Y, and (zero page,X) addressing modes spend an extra cycle reading the unindexed zero page address.
@@ -31,7 +90,7 @@ class CPU6502:
 
     """
 
-    version = '0.20'
+    version = '0.30'
     MAX_MEMORY_SIZE = 1024 * 64  # 64k memory size
     opcodes = {0x29: 'AND_IM',
                0x25: 'AND_ZP',
@@ -56,6 +115,22 @@ class CPU6502:
                0x70: 'BVS',
                0x10: 'BPL',
                0x30: 'BMI',
+
+               0xC9: 'CMP_IM',
+               0xC5: 'CMP_ZP',
+               0xD5: 'CMP_ZP_X',
+               0xCD: 'CMP_ABS',
+               0xDD: 'CMP_ABS_X',
+               0xC1: 'CMP_IND_X',
+               0xD1: 'CMP_IND_Y',
+
+               0xE0: 'CMX_IM',
+               0xE4: 'CPX_ZP',
+               0xEC: 'CPX_ABS',
+
+               0xC0: 'CPY_IM',
+               0xC4: 'CPY_ZP',
+               0xCC: 'CPY_ABS',
 
                0x4A: 'LSR_ACC',
                0x46: 'LSR_ZP',
@@ -347,6 +422,26 @@ class CPU6502:
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 400):
+
+            if self.INS in ['CMP_IM', 'CMP_ZP', 'CMP_ZPX', 'CMP_ABS', 'CMP_ABS_X', 'CMP_IND_X', 'CMP_IND_Y',
+                            'CPX_IM', 'CPX_ZP', 'CPX_ABS'
+                            'CPY_IM', 'CPY_ZP', 'CPY_ABS']:
+                target = 'A' if self.INS[2] == 'P' else self.INS[2]
+                ins_set = self.INS.split('_')
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
+                value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                compare = self.registers[target]
+                if compare > value:
+                    self.setFlagsManually(['C'], 1)
+                    self.setFlagsManually(['Z'], 0)
+                elif compare == value:
+                    self.setFlagsManually(['C'], 0)
+                    self.setFlagsManually(['Z'], 1)
+                elif compare < value:
+                    self.setFlagsManually(['C'], 0)
+                    self.setFlagsManually(['Z'], 0)
+                self.setFlagsByValue(value=(compare - value), flags=['N'])
 
             if self.INS in ['BEQ', 'BNE',
                             'BCC', 'BCS',
