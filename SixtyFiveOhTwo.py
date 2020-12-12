@@ -345,10 +345,10 @@ class CPU6502:
                 offset = self.readMemory()
                 if self.flags['Z'] == 0:
                     self.program_counter += offset
+                    self.cycleInc()
                     # Check if page was crossed
                     if ((self.program_counter - offset) & 0b11110000) != (self.program_counter & 0b11110000):
                         self.cycleInc()
-                    self.cycleInc()
 
             if self.INS in ['TAX', 'TXA', 'TAY', 'TYA']:
                 source = self.INS[1]
