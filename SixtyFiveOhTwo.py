@@ -449,19 +449,19 @@ class CPU6502:
                     value = self.readMemory(address=address, increment_pc=False, bytes=1)
 
                 # Carry flag
-                old_bit_7 = (value & 0b10000000) >> 8
                 if self.INS in ['ROL_ACC', 'ROL_ZP', 'ROL_ZP_X', 'ROL_ABS', 'ROL_ABS_X']:
+                    determine_carry_flag = (value & 0b10000000) >> 8
                     current_carry_flag = self.flags['C']
                     value = value << 1
                     value = value & 0b0000000011111111  # 8 bit mask
                     value = value | 0b00000001 if current_carry_flag == 1 else value & 0b11111110
                 elif self.INS in ['ROR_ACC', 'ROR_ZP', 'ROR_ZP_X', 'ROR_ABS', 'ROR_ABS_X']:
+                    determine_carry_flag = value & 0b00000001
                     current_carry_flag = self.flags['C']
                     value = value >> 1
                     value = value & 0b0000000011111111  # 8 bit mask
                     value = value | 0b10000000 if current_carry_flag == 1 else value & 0b01111111
-
-                self.setFlagsManually(value=old_bit_7, flags=['C'])
+                self.setFlagsManually(value=determine_carry_flag, flags=['C'])
 
                 # Negative flag and Zero flag
                 self.setFlagsByValue(value=value, flags=['N', 'Z'])

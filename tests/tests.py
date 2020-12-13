@@ -30,12 +30,12 @@ class bcolors:
 def TEST_0x6A_ROR_ACC_CARRY_FLAG_NOT_SET():
     EXPECTED_CYCLES = 2
     INITIAL_REGISTERS = {
-        'A': 0x0F,
+        'A': 0b00000111,
         'X': 0x00,
         'Y': 0x00
     }
     EXPECTED_REGISTERS = {
-        'A': 0x07,
+        'A': 0b00000011,
         'X': 0x00,
         'Y': 0x00
     }
@@ -49,7 +49,7 @@ def TEST_0x6A_ROR_ACC_CARRY_FLAG_NOT_SET():
         'N': 0
     }
     EXPECTED_FLAGS = {
-        'C': 0,
+        'C': 1,
         'Z': 0,
         'I': 0,
         'D': 0,
@@ -83,12 +83,12 @@ def TEST_0x6A_ROR_ACC_CARRY_FLAG_NOT_SET():
 def TEST_0x6A_ROR_ACC_CARRY_FLAG_SET():
     EXPECTED_CYCLES = 2
     INITIAL_REGISTERS = {
-        'A': 0x0F,
+        'A': 0b00000111,
         'X': 0x00,
         'Y': 0x00
     }
     EXPECTED_REGISTERS = {
-        'A': 0x87,
+        'A': 0b10000011,
         'X': 0x00,
         'Y': 0x00
     }
@@ -102,7 +102,7 @@ def TEST_0x6A_ROR_ACC_CARRY_FLAG_SET():
         'N': 0
     }
     EXPECTED_FLAGS = {
-        'C': 0,
+        'C': 1,
         'Z': 0,
         'I': 0,
         'D': 0,
