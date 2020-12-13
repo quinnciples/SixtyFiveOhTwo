@@ -159,6 +159,18 @@ class CPU6502:
                0xAC: 'LDY_ABS',
                0xBC: 'LDY_ABS_X',
 
+               0x2A: 'ROL_ACC',
+               0X26: 'ROL_ZP',
+               0X36: 'ROL_ZP_X',
+               0X2E: 'ROL_ABS',
+               0X3E: 'ROL_ABS_X',
+
+               0x6A: 'ROR_ACC',
+               0X66: 'ROR_ZP',
+               0X76: 'ROR_ZP_X',
+               0X6E: 'ROR_ABS',
+               0X7E: 'ROR_ABS_X',
+
                0x85: 'STA_ZP',
                0x95: 'STA_ZP_X',
                0x8D: 'STA_ABS',
@@ -426,6 +438,39 @@ class CPU6502:
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 400):
 
+            if self.INS in ['ROL_ACC', 'ROL_ZP', 'ROL_ZP_X', 'ROL_ABS', 'ROL_ABS_X', 'ROR_ACC', 'ROR_ZP', 'ROR_ZP_X', 'ROR_ABS', 'ROR_ABS_X']:
+                ins_set = self.INS.split('_')
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                if address_mode == 'ACC':
+                    value = self.registers['A']
+                    self.readMemory()  # one byte instruction
+                else:
+                    address = self.determineAddress(mode=address_mode)
+                    value = self.readMemory(address=address, increment_pc=False, bytes=1)
+
+                # Carry flag
+                old_bit_7 = (value & 0b10000000) >> 8
+                if self.INS in ['ROL_ACC', 'ROL_ZP', 'ROL_ZP_X', 'ROL_ABS', 'ROL_ABS_X']:
+                    current_carry_flag = self.flags['C']
+                    value = value << 1
+                    value = value & 0b0000000011111111  # 8 bit mask
+                    value = value | 0b00000001 if current_carry_flag == 1 else value & 0b11111110
+                elif self.INS in ['ROR_ACC', 'ROR_ZP', 'ROR_ZP_X', 'ROR_ABS', 'ROR_ABS_X']:
+                    current_carry_flag = self.flags['C']
+                    value = value >> 1
+                    value = value & 0b0000000011111111  # 8 bit mask
+                    value = value | 0b10000000 if current_carry_flag == 1 else value & 0b01111111
+
+                self.setFlagsManually(value=old_bit_7, flags=['C'])
+
+                # Negative flag and Zero flag
+                self.setFlagsByValue(value=value, flags=['N', 'Z'])
+
+                if address_mode == 'ACC':
+                    self.registers['A'] = value
+                else:
+                    self.writeMemory(data=value, address=address, bytes=1)
+
             if self.INS in ['CMP_IM', 'CMP_ZP', 'CMP_ZP_X', 'CMP_ABS', 'CMP_ABS_X', 'CMP_IND_X', 'CMP_IND_Y',
                             'CPX_IM', 'CPX_ZP', 'CPX_ABS'
                             'CPY_IM', 'CPY_ZP', 'CPY_ABS']:
@@ -437,6 +482,7 @@ class CPU6502:
                     address_mode = '_'.join(_ for _ in ins_set[1:])
                     address = self.determineAddress(mode=address_mode)
                     value = self.readMemory(address=address, increment_pc=False, bytes=1)
+
                 compare = self.registers[target]
                 if compare > value:
                     self.setFlagsManually(['C'], 1)
