@@ -27,6 +27,233 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
+def TEST_0x68_PLA_IMP_ZERO_FLAG_SET():
+    EXPECTED_VALUE = 0x00
+    EXPECTED_CYCLES = 4
+    INITIAL_REGISTERS = {
+        'A': 0x25,
+        'X': 0x18,
+        'Y': 0x20
+    }
+    EXPECTED_REGISTERS = {
+        'A': EXPECTED_VALUE,
+        'X': 0x18,
+        'Y': 0x20
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 1,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0x68, 0x00]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.memory[0x01FF] = EXPECTED_VALUE
+    cpu.stack_pointer = 0xFE
+    cpu.execute()
+
+    try:
+        assert(cpu.stack_pointer == 0xFF)
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        cpu.memoryDump(startingAddress=0x01F8, endingAddress=0x01FF)
+        print(f'Cycles: {cpu.cycles-1}')
+        print(f'Expected Flags: {EXPECTED_FLAGS}')
+        raise
+    return False
+
+
+def TEST_0x68_PLA_IMP_NEGATIVE_FLAG_SET():
+    EXPECTED_VALUE = 0xF5
+    EXPECTED_CYCLES = 4
+    INITIAL_REGISTERS = {
+        'A': 0x25,
+        'X': 0x18,
+        'Y': 0x20
+    }
+    EXPECTED_REGISTERS = {
+        'A': EXPECTED_VALUE,
+        'X': 0x18,
+        'Y': 0x20
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 1
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0x68, 0x00]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.memory[0x01FF] = EXPECTED_VALUE
+    cpu.stack_pointer = 0xFE
+    cpu.execute()
+
+    try:
+        assert(cpu.stack_pointer == 0xFF)
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        cpu.memoryDump(startingAddress=0x01F8, endingAddress=0x01FF)
+        print(f'Cycles: {cpu.cycles-1}')
+        print(f'Expected Flags: {EXPECTED_FLAGS}')
+        raise
+    return False
+
+
+def TEST_0x68_PLA_IMP():
+    EXPECTED_VALUE = 0x35
+    EXPECTED_CYCLES = 4
+    INITIAL_REGISTERS = {
+        'A': 0x25,
+        'X': 0x18,
+        'Y': 0x20
+    }
+    EXPECTED_REGISTERS = {
+        'A': EXPECTED_VALUE,
+        'X': 0x18,
+        'Y': 0x20
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0x68, 0x00]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.memory[0x01FF] = EXPECTED_VALUE
+    cpu.stack_pointer = 0xFE
+    cpu.execute()
+
+    try:
+        assert(cpu.stack_pointer == 0xFF)
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        cpu.memoryDump(startingAddress=0x01F8, endingAddress=0x01FF)
+        print(f'Cycles: {cpu.cycles-1}')
+        print(f'Expected Flags: {EXPECTED_FLAGS}')
+        raise
+    return False
+
+
+def TEST_0x48_PHA_IMP():
+    EXPECTED_VALUE = 0x35
+    EXPECTED_CYCLES = 3
+    INITIAL_REGISTERS = {
+        'A': EXPECTED_VALUE,
+        'X': 0x18,
+        'Y': 0x20
+    }
+    EXPECTED_REGISTERS = {
+        'A': EXPECTED_VALUE,
+        'X': 0x18,
+        'Y': 0x20
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0x48, 0x00]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.stack_pointer == 0xFE)
+        assert(cpu.memory[0x01FF] == EXPECTED_VALUE)
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+        return True
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        cpu.memoryDump(startingAddress=0x01F8, endingAddress=0x01FF)
+        print(f'Cycles: {cpu.cycles-1}')
+        print(f'Expected Flags: {EXPECTED_FLAGS}')
+        raise
+    return False
+
+
 def TEST_0x6A_ROR_ACC_CARRY_FLAG_NOT_SET():
     EXPECTED_CYCLES = 2
     INITIAL_REGISTERS = {
@@ -6470,6 +6697,10 @@ if __name__ == '__main__':
         TEST_0x2A_ROL_ACC_CARRY_FLAG_SET,
         TEST_0x6A_ROR_ACC_CARRY_FLAG_NOT_SET,
         TEST_0x6A_ROR_ACC_CARRY_FLAG_SET,
+        TEST_0x48_PHA_IMP,
+        TEST_0x68_PLA_IMP,
+        TEST_0x68_PLA_IMP_NEGATIVE_FLAG_SET,
+        TEST_0x68_PLA_IMP_ZERO_FLAG_SET,
     ]
 
     num_tests, passed, failed = len(tests), 0, 0
