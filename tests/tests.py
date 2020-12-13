@@ -75,6 +75,7 @@ def TEST_0x6A_ROR_ACC_CARRY_FLAG_NOT_SET():
         cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
         print(f'Cycles: {cpu.cycles-1}')
         print(f'Expected Registers: {EXPECTED_REGISTERS}')
+        print(f'Expected Flags: {EXPECTED_FLAGS}')
         raise
         return False
     return True
