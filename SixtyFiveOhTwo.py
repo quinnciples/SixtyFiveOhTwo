@@ -39,9 +39,9 @@ class CPU6502:
     LSR - Done
     NOP - Done
     ORA
-    PHA
+    PHA - In progress
     PHP
-    PLA
+    PLA - in progress
     PLP
     ROL - Need to complete tests
     ROR - Need to complete tests
@@ -158,6 +158,9 @@ class CPU6502:
                0xB4: 'LDY_ZP_X',
                0xAC: 'LDY_ABS',
                0xBC: 'LDY_ABS_X',
+
+               0x48: 'PHA_IMP',
+               0x68: 'PLA_IMP',
 
                0x2A: 'ROL_ACC',
                0X26: 'ROL_ZP',
@@ -297,7 +300,7 @@ class CPU6502:
     def getStackPointerAddress(self):
         return self.stack_pointer | 0x0100
 
-    def saveAtStackPointer(self):
+    def savePCAtStackPointer(self):
         hi_byte = ((self.program_counter - 1) & 0b1111111100000000) >> 8
         lo_byte = (self.program_counter - 1) & 0b0000000011111111
         self.writeMemory(data=hi_byte, address=self.getStackPointerAddress(), bytes=1)
@@ -305,7 +308,14 @@ class CPU6502:
         self.writeMemory(data=lo_byte, address=self.getStackPointerAddress(), bytes=1)
         self.stackPointerDec()
 
-    def loadFromStackPointer(self):
+    def saveByteAtStackPointer(self, data=None):
+        # Enforce 1 byte size
+        assert(data <= 0xFF)
+        assert(data is not None)
+        self.writeMemory(data=data, address=self.getStackPointerAddress(), bytes=1)
+        self.stackPointerDec()
+
+    def loadPCFromStackPointer(self):
         self.stackPointerInc()
         lo_byte = self.readMemory(increment_pc=False, address=self.getStackPointerAddress(), bytes=1)
         self.stackPointerInc()
@@ -315,7 +325,11 @@ class CPU6502:
         # self.cycleInc()
         self.program_counter += (hi_byte << 8)
         # self.cycleInc()
-        pass
+
+    def loadByteFromStackPointer(self):
+        self.stackPointerInc()
+        byte = self.readMemory(increment_pc=False, address=self.getStackPointerAddress(), bytes=1)
+        return byte
 
     def reset(self, program_counter=0xFF10):
         self.program_counter = program_counter
@@ -437,6 +451,17 @@ class CPU6502:
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 400):
+
+            if self.INS == 'PHA_IMP':
+                value = self.registers['A']
+                self.saveByteAtStackPointer(data=value)
+                self.readMemory()  # single byte instruction
+
+            if self.INS == 'PLA_IMP':
+                value = self.loadByteFromStackPointer()
+                self.registers['A'] = value
+                self.setFlagsByRegister(register='A', flags=['N', 'Z'])
+                self.readMemory()  # single byte instruction
 
             if self.INS in ['ROL_ACC', 'ROL_ZP', 'ROL_ZP_X', 'ROL_ABS', 'ROL_ABS_X', 'ROR_ACC', 'ROR_ZP', 'ROR_ZP_X', 'ROR_ABS', 'ROR_ABS_X']:
                 ins_set = self.INS.split('_')
@@ -616,12 +641,12 @@ class CPU6502:
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
-                self.saveAtStackPointer()
+                self.savePCAtStackPointer()
                 self.program_counter = address
                 self.cycleInc()
 
             if self.INS == 'RTS':
-                self.loadFromStackPointer()
+                self.loadPCFromStackPointer()
                 self.programCounterInc()
                 self.cycleInc()
 
