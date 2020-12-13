@@ -248,6 +248,9 @@ class CPU6502:
 
     def memoryDump(self, startingAddress=0x0000, endingAddress=0x0000, display_format='Hex'):
         print('\nMemory Dump:\n')
+        line = ''  # to clear issues with pylance
+        header = ''
+        row = ''
         while startingAddress <= endingAddress and startingAddress <= CPU6502.MAX_MEMORY_SIZE:
             if display_format == 'Hex':
                 header = '0x{0:0{1}X}'.format(startingAddress, 4) + '\t'
@@ -468,7 +471,7 @@ class CPU6502:
                     self.program_counter += offset
                     self.cycleInc()
                     # Check if page was crossed
-                    if ((self.program_counter & 0b1111111100000000) != ((self.program_counter  - offset) & 0b1111111100000000)):
+                    if ((self.program_counter & 0b1111111100000000) != ((self.program_counter - offset) & 0b1111111100000000)):
                         self.cycleInc()
 
             if self.INS in ['TAX', 'TXA', 'TAY', 'TYA']:
@@ -623,7 +626,7 @@ class CPU6502:
                     self.setFlagsManually(flags=[self.INS[2]], value=0)
                 else:
                     self.setFlagsManually(flags=[self.INS[2]], value=1)
-                self.cycleInc()
+                self.readMemory()  # Single byte opcode
 
             if self.INS in ['LDA_IM', 'LDX_IM', 'LDY_IM']:
                 register = self.INS[2]
@@ -722,32 +725,6 @@ def run():
 
 
 def fibonacci_test():
-    cpu = CPU6502(cycle_limit=349)
-    cpu.reset(program_counter=0x0000)
-
-    program = [0xA9, 0x01,  # LDA_IM 1
-               0x85, 0x21,  # STA_ZP [0x21]
-               0xA9, 0x00,  # LDA_IM 0
-               0x65, 0x21,  # ADC [0x21]  -- This is the main loop; the jump ins below should point to the address of this line
-               0x95, 0x30,  # STA_ZP_X [0x30]
-               0xE8,        # INX
-               0x85, 0x22,  # STA_ZP [0x22]
-               0xA5, 0x21,  # LDA_ZP [0x21]
-               0x85, 0x20,  # STA_ZP [0x20]
-               0xA5, 0x22,  # LDA_ZP [0x22]
-               0x85, 0x21,  # STA_ZP [0x21]
-               0xA5, 0x20,  # LDA_ZP [0x20]
-               0x4C, 0x06, 0x00  # JMP 0x0006
-               ]
-    cpu.loadProgram(instructions=program, memoryAddress=0x0000)
-    cpu.execute()
-    cpu.printLog()
-    cpu.memoryDump(startingAddress=0x0000, endingAddress=0x001F)
-    cpu.memoryDump(startingAddress=0x0020, endingAddress=0x0022, display_format='Dec')
-    cpu.memoryDump(startingAddress=0x0030, endingAddress=0x003F, display_format='Dec')
-
-
-def fibonacci_test2():
     cpu = CPU6502(cycle_limit=10000)
     cpu.reset(program_counter=0x0000)
 
@@ -755,7 +732,7 @@ def fibonacci_test2():
                0x85, 0x21,  # STA_ZP [0x21]
                0xA9, 0x00,  # LDA_IM 0
                0x65, 0x21,  # ADC [0x21]  -- This is the main loop; the jump ins below should point to the address of this line
-               0xB0, 0x1A,  # BCS 0x1B  ; Jump to end of program if value exceeds 0xFF
+               0xB0, 0x11,  # BCS 0x11  ; Jump to end of program if value exceeds 0xFF
                0x95, 0x30,  # STA_ZP_X [0x30]
                0xE8,        # INX
                0x85, 0x22,  # STA_ZP [0x22]
@@ -773,6 +750,110 @@ def fibonacci_test2():
     cpu.memoryDump(startingAddress=0x0020, endingAddress=0x0022, display_format='Dec')
     cpu.memoryDump(startingAddress=0x0030, endingAddress=0x003F, display_format='Dec')
 
+
+def fast_multiply_10():
+    cpu = CPU6502(cycle_limit=100)
+    cpu.reset(program_counter=0x2000)
+
+    program = [0xA9, 0x19,  # LDA_IM 25 ; Load initial value
+               0x0A, 0x00,  # ASL ACC ; Double accumulator value
+               0x8D, 0x00, 0x30,  # STA [0x3000] ; Store doubled value in memory
+               0x0A, 0x00,  # ASL ACC ; Double accumulator again (x4 total)
+               0x0A, 0x00,  # ASL ACC ; Double accumulator again (x8 total)
+               0x18, 0x00,  # CLC ; Clear carry flag for some reason
+               0x6D, 0x00, 0x30,  # ADC [0x3000] ; Add memory to accumulator (effectively value x 8 + value x 2 = value x 10)
+               0x8D, 0x01, 0x30,  # STA [0x3000] ; Store accumulator value in memory
+               ]
+    cpu.loadProgram(instructions=program, memoryAddress=0x2000)
+    cpu.execute()
+    cpu.printLog()
+    cpu.memoryDump(startingAddress=0x2000, endingAddress=0x200F)
+    cpu.memoryDump(startingAddress=0x3000, endingAddress=0x3001, display_format='Dec')
+
+
+def square_root_test():
+    """
+    ; Calculates the 8 bit root and 9 bit remainder of a 16 bit unsigned integer in
+    ; Numberl/Numberh. The result is always in the range 0 to 255 and is held in
+    ; Root, the remainder is in the range 0 to 511 and is held in Reml/Remh
+    ;
+    ; partial results are held in templ/temph
+    ;
+    ; This routine is the complement to the integer square program.
+    ;
+    ; Destroys A, X registers.
+
+    ; variables - must be in RAM
+
+    Numberl		= $F0		; number to find square root of low byte
+    Numberh		= Numberl+1	; number to find square root of high byte
+    Reml		= $F2		; remainder low byte
+    Remh		= Reml+1	; remainder high byte
+    templ		= $F4		; temp partial low byte
+    temph		= templ+1	; temp partial high byte
+    Root		= $F6		; square root
+
+        *= $8000		; can be anywhere, ROM or RAM
+
+    SqRoot
+        LDA	#$00		; clear A
+        STA	Reml		; clear remainder low byte
+        STA	Remh		; clear remainder high byte
+        STA	Root		; clear Root
+        LDX	#$08		; 8 pairs of bits to do
+    Loop
+        ASL	Root		; Root = Root * 2
+
+        ASL	Numberl		; shift highest bit of number ..
+        ROL	Numberh		;
+        ROL	Reml		; .. into remainder
+        ROL	Remh		;
+
+        ASL	Numberl		; shift highest bit of number ..
+        ROL	Numberh		;
+        ROL	Reml		; .. into remainder
+        ROL	Remh		;
+
+        LDA	Root		; copy Root ..
+        STA	templ		; .. to templ
+        LDA	#$00		; clear byte
+        STA	temph		; clear temp high byte
+
+        SEC			; +1
+        ROL	templ		; temp = temp * 2 + 1
+        ROL	temph		;
+
+        LDA	Remh		; get remainder high byte
+        CMP	temph		; comapre with partial high byte
+        BCC	Next		; skip sub if remainder high byte smaller
+
+        BNE	Subtr		; do sub if <> (must be remainder>partial !)
+
+        LDA	Reml		; get remainder low byte
+        CMP	templ		; comapre with partial low byte
+        BCC	Next		; skip sub if remainder low byte smaller
+
+                    ; else remainder>=partial so subtract then
+                    ; and add 1 to root. carry is always set here
+    Subtr
+        LDA	Reml		; get remainder low byte
+        SBC	templ		; subtract partial low byte
+        STA	Reml		; save remainder low byte
+        LDA	Remh		; get remainder high byte
+        SBC	temph		; subtract partial high byte
+        STA	Remh		; save remainder high byte
+
+        INC	Root		; increment Root
+    Next
+        DEX			; decrement bit pair count
+        BNE	Loop		; loop if not all done
+
+        RTS
+    """
+
+
 if __name__ == '__main__':
     # run()
-    fibonacci_test2()
+    fibonacci_test()
+    print()
+    fast_multiply_10()

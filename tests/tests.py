@@ -133,7 +133,7 @@ def TEST_0xC9_CMP_LESS_THAN():
     return True
 
 
-def TEST_0xC9_CMP_LESS_THAN_NEGATIVE():
+def TEST_0xC9_CMP_NEGATIVE_FLAG_SET():
     EXPECTED_CYCLES = 2
     INITIAL_REGISTERS = {
         'A': 0x01,
@@ -6249,8 +6249,8 @@ if __name__ == '__main__':
         TEST_0x10_BPL_SUCCESSFUL_BRANCH_CROSS_PAGE_BOUNDARY,
         TEST_0xC9_CMP_GREATER_THAN,
         TEST_0xC9_CMP_LESS_THAN,
-        TEST_0xC9_CMP_LESS_THAN_NEGATIVE,
         TEST_0xC9_CMP_EQUAL,
+        TEST_0xC9_CMP_NEGATIVE_FLAG_SET,
     ]
 
     num_tests, passed, failed = len(tests), 0, 0
