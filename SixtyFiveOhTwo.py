@@ -36,21 +36,21 @@ class CPU6502:
     LDA - Done
     LDX - Done
     LDY - Done
-    LSR
+    LSR - Done
     NOP - Done
     ORA
     PHA
     PHP
     PLA
     PLP
-    ROL
-    ROR
+    ROL - Need to complete tests
+    ROR - Need to complete tests
     RTI
-    RTS
+    RTS - Done
     SBC
-    SEC
-    SED
-    SEI
+    SEC - Done
+    SED - Done
+    SEI - Done
     STA - Done
     STX - Done
     STY - Done
