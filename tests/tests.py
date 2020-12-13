@@ -27,6 +27,221 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
+def TEST_0x6A_ROR_ACC_CARRY_FLAG_NOT_SET():
+    EXPECTED_CYCLES = 2
+    INITIAL_REGISTERS = {
+        'A': 0b00000111,
+        'X': 0x00,
+        'Y': 0x00
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0b00000011,
+        'X': 0x00,
+        'Y': 0x00
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 1,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0x6A, 0x00]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        print(f'Cycles: {cpu.cycles-1}')
+        print(f'Expected Registers: {EXPECTED_REGISTERS}')
+        print(f'Expected Flags: {EXPECTED_FLAGS}')
+        raise
+        return False
+    return True
+
+
+def TEST_0x6A_ROR_ACC_CARRY_FLAG_SET():
+    EXPECTED_CYCLES = 2
+    INITIAL_REGISTERS = {
+        'A': 0b00000111,
+        'X': 0x00,
+        'Y': 0x00
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0b10000011,
+        'X': 0x00,
+        'Y': 0x00
+    }
+    INITIAL_FLAGS = {
+        'C': 1,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 1,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 1
+    }
+
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0x6A, 0x00]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        print(f'Cycles: {cpu.cycles-1}')
+        print(f'Expected Registers: {EXPECTED_REGISTERS}')
+        print(f'Expected Flags: {EXPECTED_FLAGS}')
+        raise
+        return False
+    return True
+
+
+def TEST_0x2A_ROL_ACC_CARRY_FLAG_NOT_SET():
+    EXPECTED_CYCLES = 2
+    INITIAL_REGISTERS = {
+        'A': 0x0F,
+        'X': 0x00,
+        'Y': 0x00
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0x1E,
+        'X': 0x00,
+        'Y': 0x00
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0x2A, 0x00]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        print(f'Cycles: {cpu.cycles-1}')
+        print(f'Expected Registers: {EXPECTED_REGISTERS}')
+        raise
+        return False
+    return True
+
+
+def TEST_0x2A_ROL_ACC_CARRY_FLAG_SET():
+    EXPECTED_CYCLES = 2
+    INITIAL_REGISTERS = {
+        'A': 0x0F,
+        'X': 0x00,
+        'Y': 0x00
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0x1F,
+        'X': 0x00,
+        'Y': 0x00
+    }
+    INITIAL_FLAGS = {
+        'C': 1,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+
+    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+    cpu.reset(program_counter=0xFF00)
+    program = [0x2A, 0x00]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.registers = INITIAL_REGISTERS
+    cpu.flags = INITIAL_FLAGS
+    cpu.execute()
+
+    try:
+        assert(cpu.registers == EXPECTED_REGISTERS)
+        assert(cpu.flags == EXPECTED_FLAGS)
+        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
+    except AssertionError:
+        cpu.printLog()
+        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        print(f'Cycles: {cpu.cycles-1}')
+        print(f'Expected Registers: {EXPECTED_REGISTERS}')
+        print(f'Expected Flags: {EXPECTED_FLAGS}')
+        raise
+        return False
+    return True
+
+
 def TEST_0xC9_CMP_GREATER_THAN():
     EXPECTED_CYCLES = 2
     INITIAL_REGISTERS = {
@@ -6251,6 +6466,10 @@ if __name__ == '__main__':
         TEST_0xC9_CMP_LESS_THAN,
         TEST_0xC9_CMP_EQUAL,
         TEST_0xC9_CMP_NEGATIVE_FLAG_SET,
+        TEST_0x2A_ROL_ACC_CARRY_FLAG_NOT_SET,
+        TEST_0x2A_ROL_ACC_CARRY_FLAG_SET,
+        TEST_0x6A_ROR_ACC_CARRY_FLAG_NOT_SET,
+        TEST_0x6A_ROR_ACC_CARRY_FLAG_SET,
     ]
 
     num_tests, passed, failed = len(tests), 0, 0
