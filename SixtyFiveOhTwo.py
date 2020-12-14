@@ -494,17 +494,21 @@ class CPU6502:
 
                 # Carry flag
                 if self.INS in ['ROL_ACC', 'ROL_ZP', 'ROL_ZP_X', 'ROL_ABS', 'ROL_ABS_X']:
-                    determine_carry_flag = (value & 0b10000000) >> 8
+                    determine_carry_flag = (value & 0b10000000) >> 7
                     current_carry_flag = self.flags['C']
                     value = value << 1
                     value = value & 0b0000000011111111  # 8 bit mask
                     value = value | 0b00000001 if current_carry_flag == 1 else value & 0b11111110
+                    if self.INS != 'ROL_ACC':
+                        self.cycleInc()  # Necessary according to notes above
                 elif self.INS in ['ROR_ACC', 'ROR_ZP', 'ROR_ZP_X', 'ROR_ABS', 'ROR_ABS_X']:
                     determine_carry_flag = value & 0b00000001
                     current_carry_flag = self.flags['C']
                     value = value >> 1
                     value = value & 0b0000000011111111  # 8 bit mask
                     value = value | 0b10000000 if current_carry_flag == 1 else value & 0b01111111
+                    if self.INS != 'ROR_ACC':
+                        self.cycleInc()  # Necessary according to notes above
                 self.setFlagsManually(value=determine_carry_flag, flags=['C'])
 
                 # Negative flag and Zero flag
