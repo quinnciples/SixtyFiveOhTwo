@@ -121,6 +121,7 @@ class CPU6502:
                0xD5: 'CMP_ZP_X',
                0xCD: 'CMP_ABS',
                0xDD: 'CMP_ABS_X',
+               0xD9: 'CMP_ABS_Y',
                0xC1: 'CMP_IND_X',
                0xD1: 'CMP_IND_Y',
 
@@ -496,7 +497,7 @@ class CPU6502:
                 else:
                     self.writeMemory(data=value, address=address, bytes=1)
 
-            if self.INS in ['CMP_IM', 'CMP_ZP', 'CMP_ZP_X', 'CMP_ABS', 'CMP_ABS_X', 'CMP_IND_X', 'CMP_IND_Y',
+            if self.INS in ['CMP_IM', 'CMP_ZP', 'CMP_ZP_X', 'CMP_ABS', 'CMP_ABS_X', 'CMP_ABS_Y', 'CMP_IND_X', 'CMP_IND_Y',
                             'CPX_IM', 'CPX_ZP', 'CPX_ABS'
                             'CPY_IM', 'CPY_ZP', 'CPY_ABS']:
                 target = 'A' if self.INS[2] == 'P' else self.INS[2]

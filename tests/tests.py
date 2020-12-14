@@ -15,6 +15,49 @@ Fibonacci - https://www.youtube.com/watch?v=a73ZXDJtU48
 """
 
 
+def generateProgram(instruction: str, registers: dict, zp_address: int, ind_zp_address: int, sixteen_bit_address: int, CYCLE_COUNTS: dict) -> list:
+    program = {}
+
+    for opcode, command in CPU6502.opcodes.items():
+        ins_set = command.split('_')
+        instruct = ins_set[0]
+        if instruct != instruction:
+            continue
+        address_mode = '_'.join(_ for _ in ins_set[1:])
+        if '_ACC' in address_mode or '_IM' in address_mode:
+            continue
+        else:
+            instructions = []
+            if address_mode == 'ZP':
+                instructions = [opcode, zp_address]
+                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+            elif address_mode == 'ZP_X':
+                instructions = [opcode, zp_address - registers.get('X', 0)]
+                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+            elif address_mode == 'ZP_Y':
+                instructions = [opcode, zp_address - registers.get('Y', 0)]
+                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+            if address_mode == 'ABS':
+                instructions = [opcode, sixteen_bit_address & 0b0000000011111111, (sixteen_bit_address & 0b1111111100000000) >> 8]
+                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+            if address_mode == 'ABS_X':
+                sixteen_bit_address -= registers.get('X', 0)
+                instructions = [opcode, sixteen_bit_address & 0b0000000011111111, (sixteen_bit_address & 0b1111111100000000) >> 8]
+                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+            if address_mode == 'ABS_Y':
+                sixteen_bit_address -= registers.get('Y', 0)
+                instructions = [opcode, sixteen_bit_address & 0b0000000011111111, (sixteen_bit_address & 0b1111111100000000) >> 8]
+                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+            if address_mode == 'IND_X':
+                instructions = [opcode, ind_zp_address - registers.get('X', 0)]
+                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+            if address_mode == 'IND_Y':
+                instructions = [opcode, ind_zp_address]
+                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+
+    return program
+
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -25,6 +68,87 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+def TEST_0xC9_CMP_GREATER_THAN_ADDRESS_MODE_TESTS():
+    INITIAL_REGISTERS = {
+        'A': 0x20,
+        'X': 0x01,
+        'Y': 0x05
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0x20,
+        'X': 0x01,
+        'Y': 0x05
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 1,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    ZP_ADDRESS = 0x0059
+    IND_ZP_ADDRESS = 0x0069
+    FULL_ADDRESS = 0xAA40
+    VALUE_TO_TEST = 0x10
+    CYCLE_COUNTS = {'ZP': 3, 'ZP_X': 4, 'ABS': 4, 'ABS_X': 4, 'ABS_Y': 4, 'IND_X': 6, 'IND_Y': 5}
+
+    programs = generateProgram(instruction='CMP',
+                               registers=INITIAL_REGISTERS,
+                               zp_address=ZP_ADDRESS,
+                               ind_zp_address=IND_ZP_ADDRESS,
+                               sixteen_bit_address=FULL_ADDRESS,
+                               CYCLE_COUNTS=CYCLE_COUNTS)
+
+    for label, program in programs.items():
+        print(f'\tTesting {label}... ', end='')
+        EXPECTED_CYCLES = program[1]
+        cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+        cpu.reset(program_counter=0xFF00)
+        cpu.loadProgram(instructions=program[0], memoryAddress=0xFF00)
+        cpu.registers = INITIAL_REGISTERS
+        cpu.flags = INITIAL_FLAGS
+        cpu.memory[ZP_ADDRESS] = VALUE_TO_TEST
+        cpu.memory[IND_ZP_ADDRESS] = FULL_ADDRESS & 0b0000000011111111
+        cpu.memory[IND_ZP_ADDRESS + 1] = (FULL_ADDRESS & 0b1111111100000000) >> 8
+        cpu.memory[FULL_ADDRESS] = VALUE_TO_TEST
+        cpu.execute()
+
+        if cpu.registers != EXPECTED_REGISTERS or cpu.flags != EXPECTED_FLAGS or cpu.cycles - 1 != EXPECTED_CYCLES:
+            print(f'{bcolors.FAIL}FAILED{bcolors.ENDC}', end='\n')
+            if cpu.registers != EXPECTED_REGISTERS:
+                print(f'{bcolors.FAIL}REGISTERS DO NOT MATCH{bcolors.ENDC}', end='\n')
+            if cpu.flags != EXPECTED_FLAGS:
+                print(f'{bcolors.FAIL}FLAGS DO NOT MATCH{bcolors.ENDC}', end='\n')
+            if cpu.cycles - 1 != EXPECTED_CYCLES:
+                print(f'{bcolors.FAIL}CYCLE COUNT DOES NOT MATCH{bcolors.ENDC}', end='\n')
+
+            cpu.printLog()
+            cpu.memoryDump(startingAddress=0xFF00, endingAddress=(0xFF00 + len(program)))
+            cpu.memoryDump(startingAddress=ZP_ADDRESS, endingAddress=ZP_ADDRESS + 1)
+            cpu.memoryDump(startingAddress=IND_ZP_ADDRESS, endingAddress=IND_ZP_ADDRESS + 1)
+            cpu.memoryDump(startingAddress=FULL_ADDRESS, endingAddress=FULL_ADDRESS + 1)
+
+            print(f'Program: {program[0]}')
+            print(f'Cycles: {cpu.cycles-1} Expected Cycles: {EXPECTED_CYCLES}')
+            print(f'Expected Registers: {EXPECTED_REGISTERS}')
+            print(f'Expected Flags: {EXPECTED_FLAGS}')
+            return False
+        else:
+            print(f'{bcolors.OKGREEN}PASSED{bcolors.ENDC}', end='\n')
+    return True
 
 
 def TEST_0x68_PLA_IMP_ZERO_FLAG_SET():
@@ -6692,6 +6816,7 @@ if __name__ == '__main__':
         TEST_0xC9_CMP_GREATER_THAN,
         TEST_0xC9_CMP_LESS_THAN,
         TEST_0xC9_CMP_EQUAL,
+        TEST_0xC9_CMP_GREATER_THAN_ADDRESS_MODE_TESTS,
         TEST_0xC9_CMP_NEGATIVE_FLAG_SET,
         TEST_0x2A_ROL_ACC_CARRY_FLAG_NOT_SET,
         TEST_0x2A_ROL_ACC_CARRY_FLAG_SET,
