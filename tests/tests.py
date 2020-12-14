@@ -70,6 +70,174 @@ def generateProgram(instruction: str, registers: dict, zp_address: int, ind_zp_a
     return program
 
 
+def TEST_0x24_BIT_ADDRESS_MODE_TESTS_ZERO_FLAG():
+    TEST_NAME = f'TEST_0x24_BIT_ADDRESS_MODE_TESTS_ZERO_FLAG'
+    INITIAL_REGISTERS = {
+        'A': 0x00,
+        'X': 0x05,
+        'Y': 0x59
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0x00,
+        'X': 0x05,
+        'Y': 0x59
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 1,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 1,
+        'N': 1
+    }
+
+    ZP_ADDRESS = 0x0059
+    IND_ZP_ADDRESS = 0x0069
+    FULL_ADDRESS = 0xAA40
+    VALUE_TO_TEST = 0b11000000
+    CYCLE_COUNTS = {'ZP': 3, 'ABS': 4}
+
+    programs = generateProgram(instruction='BIT',
+                               registers=INITIAL_REGISTERS,
+                               zp_address=ZP_ADDRESS,
+                               ind_zp_address=IND_ZP_ADDRESS,
+                               sixteen_bit_address=FULL_ADDRESS,
+                               CYCLE_COUNTS=CYCLE_COUNTS)
+
+    print(f'{bcolors.UNDERLINE}Running {TEST_NAME}{bcolors.ENDC}')
+    for label, program in programs.items():
+        print(f'\tTesting {label}... ', end='')
+        EXPECTED_CYCLES = program[1]
+        cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+        cpu.reset(program_counter=0xFF00)
+        cpu.loadProgram(instructions=program[0], memoryAddress=0xFF00)
+        cpu.registers = INITIAL_REGISTERS
+        cpu.flags = INITIAL_FLAGS
+        cpu.memory[ZP_ADDRESS] = VALUE_TO_TEST
+        cpu.memory[IND_ZP_ADDRESS] = FULL_ADDRESS & 0b0000000011111111
+        cpu.memory[IND_ZP_ADDRESS + 1] = (FULL_ADDRESS & 0b1111111100000000) >> 8
+        cpu.memory[FULL_ADDRESS] = VALUE_TO_TEST
+        cpu.execute()
+
+        if cpu.registers != EXPECTED_REGISTERS or cpu.flags != EXPECTED_FLAGS or cpu.cycles - 1 != EXPECTED_CYCLES:
+            print(f'{bcolors.FAIL}FAILED{bcolors.ENDC}', end='\n')
+            if cpu.registers != EXPECTED_REGISTERS:
+                print(f'{bcolors.FAIL}REGISTERS DO NOT MATCH{bcolors.ENDC}', end='\n')
+            if cpu.flags != EXPECTED_FLAGS:
+                print(f'{bcolors.FAIL}FLAGS DO NOT MATCH{bcolors.ENDC}', end='\n')
+            if cpu.cycles - 1 != EXPECTED_CYCLES:
+                print(f'{bcolors.FAIL}CYCLE COUNT DOES NOT MATCH{bcolors.ENDC}', end='\n')
+
+            cpu.printLog()
+            cpu.memoryDump(startingAddress=0xFF00, endingAddress=(0xFF00 + len(program)))
+            cpu.memoryDump(startingAddress=ZP_ADDRESS, endingAddress=ZP_ADDRESS + 1)
+            cpu.memoryDump(startingAddress=IND_ZP_ADDRESS, endingAddress=IND_ZP_ADDRESS + 1)
+            cpu.memoryDump(startingAddress=FULL_ADDRESS, endingAddress=FULL_ADDRESS + 1)
+
+            print(f'Program: {program[0]}')
+            print(f'Cycles: {cpu.cycles-1} Expected Cycles: {EXPECTED_CYCLES}')
+            print(f'Expected Registers: {EXPECTED_REGISTERS}')
+            print(f'Expected Flags: {EXPECTED_FLAGS}')
+            return False
+        else:
+            print(f'{bcolors.OKGREEN}PASSED{bcolors.ENDC}', end='\n')
+    return True
+
+
+def TEST_0x24_BIT_ADDRESS_MODE_TESTS():
+    TEST_NAME = f'TEST_0x24_BIT_ADDRESS_MODE_TESTS'
+    INITIAL_REGISTERS = {
+        'A': 0b11111111,
+        'X': 0x05,
+        'Y': 0x59
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0b11111111,
+        'X': 0x05,
+        'Y': 0x59
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 1,
+        'N': 1
+    }
+
+    ZP_ADDRESS = 0x0059
+    IND_ZP_ADDRESS = 0x0069
+    FULL_ADDRESS = 0xAA40
+    VALUE_TO_TEST = 0b11111111
+    CYCLE_COUNTS = {'ZP': 3, 'ABS': 4}
+
+    programs = generateProgram(instruction='BIT',
+                               registers=INITIAL_REGISTERS,
+                               zp_address=ZP_ADDRESS,
+                               ind_zp_address=IND_ZP_ADDRESS,
+                               sixteen_bit_address=FULL_ADDRESS,
+                               CYCLE_COUNTS=CYCLE_COUNTS)
+
+    print(f'{bcolors.UNDERLINE}Running {TEST_NAME}{bcolors.ENDC}')
+    for label, program in programs.items():
+        print(f'\tTesting {label}... ', end='')
+        EXPECTED_CYCLES = program[1]
+        cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
+        cpu.reset(program_counter=0xFF00)
+        cpu.loadProgram(instructions=program[0], memoryAddress=0xFF00)
+        cpu.registers = INITIAL_REGISTERS
+        cpu.flags = INITIAL_FLAGS
+        cpu.memory[ZP_ADDRESS] = VALUE_TO_TEST
+        cpu.memory[IND_ZP_ADDRESS] = FULL_ADDRESS & 0b0000000011111111
+        cpu.memory[IND_ZP_ADDRESS + 1] = (FULL_ADDRESS & 0b1111111100000000) >> 8
+        cpu.memory[FULL_ADDRESS] = VALUE_TO_TEST
+        cpu.execute()
+
+        if cpu.registers != EXPECTED_REGISTERS or cpu.flags != EXPECTED_FLAGS or cpu.cycles - 1 != EXPECTED_CYCLES:
+            print(f'{bcolors.FAIL}FAILED{bcolors.ENDC}', end='\n')
+            if cpu.registers != EXPECTED_REGISTERS:
+                print(f'{bcolors.FAIL}REGISTERS DO NOT MATCH{bcolors.ENDC}', end='\n')
+            if cpu.flags != EXPECTED_FLAGS:
+                print(f'{bcolors.FAIL}FLAGS DO NOT MATCH{bcolors.ENDC}', end='\n')
+            if cpu.cycles - 1 != EXPECTED_CYCLES:
+                print(f'{bcolors.FAIL}CYCLE COUNT DOES NOT MATCH{bcolors.ENDC}', end='\n')
+
+            cpu.printLog()
+            cpu.memoryDump(startingAddress=0xFF00, endingAddress=(0xFF00 + len(program)))
+            cpu.memoryDump(startingAddress=ZP_ADDRESS, endingAddress=ZP_ADDRESS + 1)
+            cpu.memoryDump(startingAddress=IND_ZP_ADDRESS, endingAddress=IND_ZP_ADDRESS + 1)
+            cpu.memoryDump(startingAddress=FULL_ADDRESS, endingAddress=FULL_ADDRESS + 1)
+
+            print(f'Program: {program[0]}')
+            print(f'Cycles: {cpu.cycles-1} Expected Cycles: {EXPECTED_CYCLES}')
+            print(f'Expected Registers: {EXPECTED_REGISTERS}')
+            print(f'Expected Flags: {EXPECTED_FLAGS}')
+            return False
+        else:
+            print(f'{bcolors.OKGREEN}PASSED{bcolors.ENDC}', end='\n')
+    return True
+
+
 def TEST_0xC9_CMP_GREATER_THAN_ADDRESS_MODE_TESTS():
     TEST_NAME = f'TEST_0xC9_CMP_GREATER_THAN_ADDRESS_MODE_TESTS'
     INITIAL_REGISTERS = {
@@ -6829,6 +6997,8 @@ if __name__ == '__main__':
         TEST_0x68_PLA_IMP,
         TEST_0x68_PLA_IMP_NEGATIVE_FLAG_SET,
         TEST_0x68_PLA_IMP_ZERO_FLAG_SET,
+        TEST_0x24_BIT_ADDRESS_MODE_TESTS,
+        TEST_0x24_BIT_ADDRESS_MODE_TESTS_ZERO_FLAG,
     ]
 
     num_tests, passed, failed = len(tests), 0, 0

@@ -10,7 +10,7 @@ class CPU6502:
     BCC - Done
     BCS - Done
     BEQ - Done
-    BIT
+    BIT - In progress
     BMI - Done
     BNE - Done
     BPL - Done
@@ -39,9 +39,9 @@ class CPU6502:
     LSR - Done
     NOP - Done
     ORA
-    PHA - In progress
+    PHA - Done
     PHP
-    PLA - in progress
+    PLA - Done
     PLP
     ROL - Need to complete tests
     ROR - Need to complete tests
@@ -106,6 +106,9 @@ class CPU6502:
                0x16: 'ASL_ZP_X',
                0x0E: 'ASL_ABS',
                0x1E: 'ASL_ABS_X',
+
+               0x24: 'BIT_ZP',
+               0x2C: 'BIT_ABS',
 
                0x90: 'BCC',
                0xB0: 'BCS',
@@ -452,6 +455,21 @@ class CPU6502:
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 400):
+
+            if self.INS in ['BIT_ZP', 'BIT_ABS']:
+                ins_set = self.INS.split('_')
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
+                value = self.readMemory(address=address, increment_pc=False, bytes=1)
+
+                zero_flag = 1 if (self.registers['A'] & value) == 0 else 0
+                self.setFlagsManually(flags=['Z'], value=zero_flag)
+
+                self.setFlagsByValue(value=value, flags=['N'])
+
+                overflow_flag = (value & 0b01000000) >> 6
+                self.setFlagsManually(flags=['V'], value=overflow_flag)
+
 
             if self.INS == 'PHA_IMP':
                 value = self.registers['A']
