@@ -10,7 +10,7 @@ class CPU6502:
     BCC - Done
     BCS - Done
     BEQ - Done
-    BIT - In progress
+    BIT - Done
     BMI - Done
     BNE - Done
     BPL - Done
@@ -27,7 +27,7 @@ class CPU6502:
     DEC - Done
     DEX - Done
     DEY - Done
-    EOR
+    EOR - In progress
     INC - Done
     INX - Done
     INY - Done
@@ -135,6 +135,15 @@ class CPU6502:
                0xC0: 'CPY_IM',
                0xC4: 'CPY_ZP',
                0xCC: 'CPY_ABS',
+
+               0x49: 'EOR_IM',
+               0x45: 'EOR_ZP',
+               0x55: 'EOR_ZP_X',
+               0x4D: 'EOR_ABS',
+               0x5D: 'EOR_ABS_X',
+               0x59: 'EOR_ABS_Y',
+               0x41: 'EOR_IND_X',
+               0x51: 'EOR_IND_Y',
 
                0x4A: 'LSR_ACC',
                0x46: 'LSR_ZP',
@@ -631,6 +640,21 @@ class CPU6502:
                     self.writeMemory(data=value, address=address, bytes=1)
                     self.setFlagsByValue(value=value, flags=['Z', 'N'])
                     self.setFlagsManually(flags=['C'], value=carry_flag)
+
+            if self.INS == 'EOR_IM':
+                value = self.readMemory()
+                result = self.registers['A'] ^ value
+                self.registers['A'] = result
+                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+
+            if self.INS in ['EOR_ZP', 'EOR_ZP_X', 'EOR_ABS', 'EOR_ABS_X', 'EOR_ABS_Y', 'EOR_IND_X', 'EOR_IND_Y']:
+                ins_set = self.INS.split('_')
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
+                value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                result = self.registers['A'] ^ value
+                self.registers['A'] = result
+                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
             if self.INS == 'AND_IM':
                 value = self.readMemory()
