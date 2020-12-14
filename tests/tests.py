@@ -15,6 +15,18 @@ Fibonacci - https://www.youtube.com/watch?v=a73ZXDJtU48
 """
 
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
 def generateProgram(instruction: str, registers: dict, zp_address: int, ind_zp_address: int, sixteen_bit_address: int, CYCLE_COUNTS: dict) -> list:
     program = {}
 
@@ -58,19 +70,8 @@ def generateProgram(instruction: str, registers: dict, zp_address: int, ind_zp_a
     return program
 
 
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
-
 def TEST_0xC9_CMP_GREATER_THAN_ADDRESS_MODE_TESTS():
+    TEST_NAME = f'TEST_0xC9_CMP_GREATER_THAN_ADDRESS_MODE_TESTS'
     INITIAL_REGISTERS = {
         'A': 0x20,
         'X': 0x01,
@@ -99,6 +100,7 @@ def TEST_0xC9_CMP_GREATER_THAN_ADDRESS_MODE_TESTS():
         'V': 0,
         'N': 0
     }
+
     ZP_ADDRESS = 0x0059
     IND_ZP_ADDRESS = 0x0069
     FULL_ADDRESS = 0xAA40
@@ -112,6 +114,7 @@ def TEST_0xC9_CMP_GREATER_THAN_ADDRESS_MODE_TESTS():
                                sixteen_bit_address=FULL_ADDRESS,
                                CYCLE_COUNTS=CYCLE_COUNTS)
 
+    print(f'{bcolors.UNDERLINE}Running {TEST_NAME}{bcolors.ENDC}')
     for label, program in programs.items():
         print(f'\tTesting {label}... ', end='')
         EXPECTED_CYCLES = program[1]
