@@ -146,11 +146,11 @@ def TEST_0x09_ORA_ADDRESS_MODE_TESTS():
                 print(f'\t{bcolors.FAIL}FLAGS DO NOT MATCH{bcolors.ENDC}', end='\n')
             if cpu.cycles - 1 != EXPECTED_CYCLES:
                 print(f'\t{bcolors.FAIL}CYCLE COUNT DOES NOT MATCH{bcolors.ENDC}', end='\n')
-            # Memory tests 
+            # Memory tests
             if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_Y'] and cpu.memory[ZP_ADDRESS] != EXPECTED_VALUE:
-               print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
+                print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
             if EXPECTED_VALUE is not None and label in ['ABS', 'ABS_X', 'ABS_Y', 'IND_X', 'IND_Y'] and cpu.memory[FULL_ADDRESS] != EXPECTED_VALUE:
-               print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
+                print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
 
             cpu.printLog()
             cpu.memoryDump(startingAddress=0xFF00, endingAddress=(0xFF00 + len(program)))
@@ -246,9 +246,9 @@ def TEST_0x49_EOR_ADDRESS_MODE_TESTS():
                 print(f'\t{bcolors.FAIL}CYCLE COUNT DOES NOT MATCH{bcolors.ENDC}', end='\n')
             # Memory tests
             if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_Y'] and cpu.memory[ZP_ADDRESS] != EXPECTED_VALUE:
-               print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
+                print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
             if EXPECTED_VALUE is not None and label in ['ABS', 'ABS_X', 'ABS_Y', 'IND_X', 'IND_Y'] and cpu.memory[FULL_ADDRESS] != EXPECTED_VALUE:
-               print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
+                print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
 
             cpu.printLog()
             cpu.memoryDump(startingAddress=0xFF00, endingAddress=(0xFF00 + len(program)))
@@ -343,7 +343,6 @@ def TEST_0x2A_ROL_ADDRESS_MODE_TESTS():
                 print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
             if label in ['ABS', 'ABS_X', 'ABS_Y', 'IND_X', 'IND_Y'] and cpu.memory[FULL_ADDRESS] != EXPECTED_VALUE:
                 print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
-
 
             # cpu.printLog()
             # cpu.memoryDump(startingAddress=0xFF00, endingAddress=(0xFF00 + len(program)))

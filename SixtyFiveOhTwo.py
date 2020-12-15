@@ -487,7 +487,6 @@ class CPU6502:
                 overflow_flag = (value & 0b01000000) >> 6
                 self.setFlagsManually(flags=['V'], value=overflow_flag)
 
-
             if self.INS == 'PHA_IMP':
                 value = self.registers['A']
                 self.saveByteAtStackPointer(data=value)
@@ -663,7 +662,7 @@ class CPU6502:
                 result = self.registers['A'] | value
                 self.registers['A'] = result
                 self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-            
+
             if self.INS == 'EOR_IM':
                 value = self.readMemory()
                 result = self.registers['A'] ^ value
