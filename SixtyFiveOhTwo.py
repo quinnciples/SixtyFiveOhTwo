@@ -40,9 +40,9 @@ class CPU6502:
     NOP - Done
     ORA - Done
     PHA - Done
-    PHP
+    PHP - In progress
     PLA - Done
-    PLP
+    PLP - In progress
     ROL - Need to complete tests
     ROR - Need to complete tests
     RTI
@@ -174,6 +174,9 @@ class CPU6502:
 
                0x48: 'PHA_IMP',
                0x68: 'PLA_IMP',
+
+               0x08: 'PHP_IMP',
+               0x28: 'PLP_IMP',
 
                0x2A: 'ROL_ACC',
                0X26: 'ROL_ZP',
@@ -468,10 +471,37 @@ class CPU6502:
 
         return address
 
+    def getProcessorStatus(self) -> int:
+        order = ['C', 'Z', 'I', 'D', 'B', 'X', 'V', 'N']
+        state = 0
+        for shift in range(8):
+            state += 0 if order[shift] == 'X' else (self.flags[order[shift]] << shift)
+        print(format(state, '08b'))
+        return state
+
+    def setProcessorStatus(self, flags: int):
+        print(format(flags, '08b'))
+        order = ['C', 'Z', 'I', 'D', 'B', 'X', 'V', 'N']
+        for shift in range(8):
+            flag = (flags >> shift) & 0b00000001
+            self.setFlagsManually(flags=[order[shift]], value=flag)
+
     def execute(self):
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 400):
+
+            if self.INS in ['PHP_IMP', 'PLP_IMP']:
+                # Push
+                if self.INS == 'PHP_IMP':    
+                    value = self.getProcessorStatus()
+                    self.saveByteAtStackPointer(data=value)
+                    self.readMemory()  # single byte instruction
+                elif self.INS == 'PLP_IMP':
+                    # Pull
+                    flags = self.loadByteFromStackPointer()
+                    self.setProcessorStatus(flags=flags)
+                    self.readMemory()  # single byte instruction
 
             if self.INS in ['BIT_ZP', 'BIT_ABS']:
                 ins_set = self.INS.split('_')
@@ -991,9 +1021,30 @@ def square_root_test():
         RTS
     """
 
+def flags_test():
+    cpu = CPU6502(cycle_limit=10)
+    cpu.setFlagsManually(['C', 'Z', 'I', 'D', 'B', 'V', 'N'], 0)
+    cpu.getProcessorStatus()
+    cpu.setFlagsManually(['C', 'Z', 'I', 'D', 'B', 'V', 'N'], 1)
+    cpu.getProcessorStatus()
+    cpu.setFlagsManually(['C', 'Z', 'I', 'D', 'B', 'V', 'N'], 0)
+    flags = ['N', 'V', 'B', 'D', 'I', 'Z', 'C']
+    for flag in flags:
+        print(f'Flag: {flag}')
+        cpu.setFlagsManually([flag], 1)
+        cpu.printState()
+        value = cpu.getProcessorStatus()
+        cpu.setFlagsManually([flag], 0)
+        cpu.printState()
+        cpu.setProcessorStatus(value)
+        cpu.printState()
+        print('*' * 50)
+
 
 if __name__ == '__main__':
     # run()
     fibonacci_test()
     print()
     fast_multiply_10()
+    print()
+    flags_test()
