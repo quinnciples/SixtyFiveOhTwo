@@ -4,13 +4,13 @@
 class CPU6502:
 
     """
-    ADC
+    ADC - Done
     AND - Done
     ASL - Done
     BCC - Done
     BCS - Done
     BEQ - Done
-    BIT
+    BIT - Done
     BMI - Done
     BNE - Done
     BPL - Done
@@ -27,7 +27,7 @@ class CPU6502:
     DEC - Done
     DEX - Done
     DEY - Done
-    EOR
+    EOR - Done
     INC - Done
     INX - Done
     INY - Done
@@ -38,10 +38,10 @@ class CPU6502:
     LDY - Done
     LSR - Done
     NOP - Done
-    ORA
-    PHA - In progress
+    ORA - Done
+    PHA - Done
     PHP
-    PLA - in progress
+    PLA - Done
     PLP
     ROL - Need to complete tests
     ROR - Need to complete tests
@@ -107,6 +107,9 @@ class CPU6502:
                0x0E: 'ASL_ABS',
                0x1E: 'ASL_ABS_X',
 
+               0x24: 'BIT_ZP',
+               0x2C: 'BIT_ABS',
+
                0x90: 'BCC',
                0xB0: 'BCS',
                0xF0: 'BEQ',
@@ -132,6 +135,15 @@ class CPU6502:
                0xC0: 'CPY_IM',
                0xC4: 'CPY_ZP',
                0xCC: 'CPY_ABS',
+
+               0x49: 'EOR_IM',
+               0x45: 'EOR_ZP',
+               0x55: 'EOR_ZP_X',
+               0x4D: 'EOR_ABS',
+               0x5D: 'EOR_ABS_X',
+               0x59: 'EOR_ABS_Y',
+               0x41: 'EOR_IND_X',
+               0x51: 'EOR_IND_Y',
 
                0x4A: 'LSR_ACC',
                0x46: 'LSR_ZP',
@@ -230,6 +242,14 @@ class CPU6502:
                0x61: 'ADC_IND_X',
                0x71: 'ADC_IND_Y',
 
+               0x09: 'ORA_IM',
+               0x05: 'ORA_ZP',
+               0x15: 'ORA_ZP_X',
+               0x0D: 'ORA_ABS',
+               0x1D: 'ORA_ABS_X',
+               0x19: 'ORA_ABS_Y',
+               0x01: 'ORA_IND_X',
+               0x11: 'ORA_IND_Y',
                }
 
     def __init__(self, cycle_limit=0):
@@ -453,6 +473,21 @@ class CPU6502:
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 400):
 
+            if self.INS in ['BIT_ZP', 'BIT_ABS']:
+                ins_set = self.INS.split('_')
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
+                value = self.readMemory(address=address, increment_pc=False, bytes=1)
+
+                zero_flag = 1 if (self.registers['A'] & value) == 0 else 0
+                self.setFlagsManually(flags=['Z'], value=zero_flag)
+
+                self.setFlagsByValue(value=value, flags=['N'])
+
+                overflow_flag = (value & 0b01000000) >> 6
+                self.setFlagsManually(flags=['V'], value=overflow_flag)
+
+
             if self.INS == 'PHA_IMP':
                 value = self.registers['A']
                 self.saveByteAtStackPointer(data=value)
@@ -476,17 +511,21 @@ class CPU6502:
 
                 # Carry flag
                 if self.INS in ['ROL_ACC', 'ROL_ZP', 'ROL_ZP_X', 'ROL_ABS', 'ROL_ABS_X']:
-                    determine_carry_flag = (value & 0b10000000) >> 8
+                    determine_carry_flag = (value & 0b10000000) >> 7
                     current_carry_flag = self.flags['C']
                     value = value << 1
                     value = value & 0b0000000011111111  # 8 bit mask
                     value = value | 0b00000001 if current_carry_flag == 1 else value & 0b11111110
+                    if self.INS != 'ROL_ACC':
+                        self.cycleInc()  # Necessary according to notes above
                 elif self.INS in ['ROR_ACC', 'ROR_ZP', 'ROR_ZP_X', 'ROR_ABS', 'ROR_ABS_X']:
                     determine_carry_flag = value & 0b00000001
                     current_carry_flag = self.flags['C']
                     value = value >> 1
                     value = value & 0b0000000011111111  # 8 bit mask
                     value = value | 0b10000000 if current_carry_flag == 1 else value & 0b01111111
+                    if self.INS != 'ROR_ACC':
+                        self.cycleInc()  # Necessary according to notes above
                 self.setFlagsManually(value=determine_carry_flag, flags=['C'])
 
                 # Negative flag and Zero flag
@@ -609,6 +648,36 @@ class CPU6502:
                     self.writeMemory(data=value, address=address, bytes=1)
                     self.setFlagsByValue(value=value, flags=['Z', 'N'])
                     self.setFlagsManually(flags=['C'], value=carry_flag)
+
+            if self.INS == 'ORA_IM':
+                value = self.readMemory()
+                result = self.registers['A'] | value
+                self.registers['A'] = result
+                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+
+            if self.INS in ['ORA_ZP', 'ORA_ZP_X', 'ORA_ABS', 'ORA_ABS_X', 'ORA_ABS_Y', 'ORA_IND_X', 'ORA_IND_Y']:
+                ins_set = self.INS.split('_')
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
+                value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                result = self.registers['A'] | value
+                self.registers['A'] = result
+                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+            
+            if self.INS == 'EOR_IM':
+                value = self.readMemory()
+                result = self.registers['A'] ^ value
+                self.registers['A'] = result
+                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+
+            if self.INS in ['EOR_ZP', 'EOR_ZP_X', 'EOR_ABS', 'EOR_ABS_X', 'EOR_ABS_Y', 'EOR_IND_X', 'EOR_IND_Y']:
+                ins_set = self.INS.split('_')
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
+                value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                result = self.registers['A'] ^ value
+                self.registers['A'] = result
+                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
             if self.INS == 'AND_IM':
                 value = self.readMemory()
