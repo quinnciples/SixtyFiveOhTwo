@@ -242,6 +242,14 @@ class CPU6502:
                0x61: 'ADC_IND_X',
                0x71: 'ADC_IND_Y',
 
+               0x09: 'ORA_IM',
+               0x05: 'ORA_ZP',
+               0x15: 'ORA_ZP_X',
+               0x0D: 'ORA_ABS',
+               0x1D: 'ORA_ABS_X',
+               0x19: 'ORA_ABS_Y',
+               0x01: 'ORA_IND_X',
+               0x11: 'ORA_IND_Y',
                }
 
     def __init__(self, cycle_limit=0):
@@ -641,6 +649,21 @@ class CPU6502:
                     self.setFlagsByValue(value=value, flags=['Z', 'N'])
                     self.setFlagsManually(flags=['C'], value=carry_flag)
 
+            if self.INS == 'ORA_IM':
+                value = self.readMemory()
+                result = self.registers['A'] | value
+                self.registers['A'] = result
+                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+
+            if self.INS in ['ORA_ZP', 'ORA_ZP_X', 'ORA_ABS', 'ORA_ABS_X', 'ORA_ABS_Y', 'ORA_IND_X', 'ORA_IND_Y']:
+                ins_set = self.INS.split('_')
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
+                value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                result = self.registers['A'] | value
+                self.registers['A'] = result
+                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+            
             if self.INS == 'EOR_IM':
                 value = self.readMemory()
                 result = self.registers['A'] ^ value
