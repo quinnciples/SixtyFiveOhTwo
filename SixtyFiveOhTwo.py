@@ -4,7 +4,7 @@
 class CPU6502:
 
     """
-    ADC
+    ADC - Done
     AND - Done
     ASL - Done
     BCC - Done
