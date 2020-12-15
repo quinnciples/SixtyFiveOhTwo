@@ -27,7 +27,7 @@ class CPU6502:
     DEC - Done
     DEX - Done
     DEY - Done
-    EOR - In progress
+    EOR - Done
     INC - Done
     INX - Done
     INY - Done
@@ -38,7 +38,7 @@ class CPU6502:
     LDY - Done
     LSR - Done
     NOP - Done
-    ORA
+    ORA - Done
     PHA - Done
     PHP
     PLA - Done
