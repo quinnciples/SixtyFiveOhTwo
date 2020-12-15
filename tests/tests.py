@@ -7370,14 +7370,16 @@ if __name__ == '__main__':
         TEST_0x08_PHP_PLA_COMBINED_TEST,
     ]
 
-    num_tests, passed, failed = len(tests), 0, 0
+    num_tests, passed, failed, results = len(tests), 0, 0, []
 
     for test in tests:
         try:
             if test():
+                results.append(True)
                 print(f"{bcolors.OKGREEN}PASSED:{bcolors.ENDC} {test.__name__}")
                 passed += 1
             else:
+                results.append(False)
                 print(f"{bcolors.FAIL}FAILED:{bcolors.ENDC} {test.__name__}")
                 failed += 1
         except AssertionError:
@@ -7387,5 +7389,10 @@ if __name__ == '__main__':
             continue
 
     print('TEST SUMMARY')
-    print(f"{bcolors.OKGREEN}{'▓' * passed}{bcolors.ENDC} {passed} tests PASSED")
-    print(f"{bcolors.FAIL}{'▓' * failed}{bcolors.ENDC} {failed} tests FAILED")
+    for result in results:
+        if result:
+            print(f"{bcolors.OKGREEN}{'▓'}{bcolors.ENDC}", end='')
+        else:
+            print(f"{bcolors.FAIL}{'▓'}{bcolors.ENDC}", end='')
+    print()
+    print(f'{passed} TESTS {bcolors.OKGREEN}PASSED{bcolors.ENDC}. {failed} TESTS {bcolors.FAIL}FAILED{bcolors.ENDC}.')

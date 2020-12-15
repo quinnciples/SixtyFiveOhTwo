@@ -40,9 +40,9 @@ class CPU6502:
     NOP - Done
     ORA - Done
     PHA - Done
-    PHP - In progress
+    PHP - Done
     PLA - Done
-    PLP - In progress
+    PLP - Done
     ROL - Need to complete tests
     ROR - Need to complete tests
     RTI
