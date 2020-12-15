@@ -476,15 +476,16 @@ class CPU6502:
         state = 0
         for shift in range(8):
             state += 0 if order[shift] == 'X' else (self.flags[order[shift]] << shift)
-        print(format(state, '08b'))
+        # print(format(state, '08b'))
         return state
 
     def setProcessorStatus(self, flags: int):
-        print(format(flags, '08b'))
+        # print(format(flags, '08b'))
         order = ['C', 'Z', 'I', 'D', 'B', 'X', 'V', 'N']
         for shift in range(8):
             flag = (flags >> shift) & 0b00000001
-            self.setFlagsManually(flags=[order[shift]], value=flag)
+            if order[shift] != 'X':
+                self.setFlagsManually(flags=[order[shift]], value=flag)
 
     def execute(self):
         data = self.readMemory()

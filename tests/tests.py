@@ -1,4 +1,4 @@
-`import os
+import os
 import logging
 import sys
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
@@ -71,6 +71,75 @@ def generateProgram(instruction: str, registers: dict, immediate_value: int, zp_
                 program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
 
     return program
+
+
+def TEST_0x08_PHP_PLA_COMBINED_TEST():
+    TEST_NAME = f'TEST_0x08_PHP_PLA_COMBINED_TEST'
+    INITIAL_REGISTERS = {
+        'A': 0x20,
+        'X': 0x60,
+        'Y': 0xA5
+    }
+    EXPECTED_REGISTERS = {
+        'A': 0x20,
+        'X': 0x60,
+        'Y': 0xA5
+    }
+    INITIAL_FLAGS = {
+        'C': 0,
+        'Z': 0,
+        'I': 0,
+        'D': 0,
+        'B': 0,
+        'V': 0,
+        'N': 0
+    }
+    EXPECTED_CYCLES = 3 + 1 + 4
+
+    print(f'{bcolors.UNDERLINE}Running {TEST_NAME}{bcolors.ENDC}')
+    errors = False
+    for flag in INITIAL_FLAGS.keys():
+        print(f'\tTesting {flag}... ', end='')
+        cpu = CPU6502(cycle_limit=100)
+        cpu.reset(program_counter=0xFF00)
+        push_program = [0x08, 0x00]
+        cpu.loadProgram(instructions=push_program, memoryAddress=0xFF00)
+        cpu.registers = INITIAL_REGISTERS.copy()
+        cpu.flags = INITIAL_FLAGS.copy()
+        cpu.flags[flag] = 1
+        cpu.execute()
+
+        pull_program = [0x28, 0x00]
+        cpu.loadProgram(instructions=pull_program, memoryAddress=0xFF02)
+        cpu.program_counter = 0xFF02
+        cpu.registers = INITIAL_REGISTERS.copy()
+        cpu.flags = INITIAL_FLAGS.copy()
+        cpu.execute()
+
+        EXPECTED_FLAGS = INITIAL_FLAGS.copy()
+        EXPECTED_FLAGS[flag] = 1
+
+        if cpu.registers != EXPECTED_REGISTERS or cpu.flags != EXPECTED_FLAGS or cpu.cycles - 1 != EXPECTED_CYCLES:
+            print(f'{bcolors.FAIL}FAILED{bcolors.ENDC}', end='\n')
+            if cpu.registers != EXPECTED_REGISTERS:
+                print(f'\t{bcolors.FAIL}REGISTERS DO NOT MATCH{bcolors.ENDC}', end='\n')
+                print(f'Expected Registers: {EXPECTED_REGISTERS}\tActual Registers: {cpu.registers}')
+            if cpu.flags != EXPECTED_FLAGS:
+                print(f'\t{bcolors.FAIL}FLAGS DO NOT MATCH{bcolors.ENDC}', end='\n')
+                print(f'Expected Flags: {EXPECTED_FLAGS}\tActual Flags: {cpu.flags}')
+            if cpu.cycles - 1 != EXPECTED_CYCLES:
+                print(f'\t{bcolors.FAIL}CYCLE COUNT DOES NOT MATCH{bcolors.ENDC}', end='\n')
+                print(f'Cycles: {cpu.cycles-1} Expected Cycles: {EXPECTED_CYCLES}')
+
+            cpu.printLog()
+            cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF03)
+            errors = True
+        else:
+            print(f'{bcolors.OKGREEN}PASSED{bcolors.ENDC}', end='\n')
+
+    if errors:
+        return False
+    return True
 
 
 def TEST_0x09_ORA_ADDRESS_MODE_TESTS():
@@ -7298,6 +7367,7 @@ if __name__ == '__main__':
         TEST_0x2A_ROL_ADDRESS_MODE_TESTS,
         TEST_0x49_EOR_ADDRESS_MODE_TESTS,
         TEST_0x09_ORA_ADDRESS_MODE_TESTS,
+        TEST_0x08_PHP_PLA_COMBINED_TEST,
     ]
 
     num_tests, passed, failed = len(tests), 0, 0
