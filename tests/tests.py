@@ -77,12 +77,12 @@ def TEST_0x49_EOR_ADDRESS_MODE_TESTS():
     INITIAL_REGISTERS = {
         'A': 0x10,
         'X': 0x01,
-        'Y': 0x00
+        'Y': 0x05
     }
     EXPECTED_REGISTERS = {
         'A': 0x10 ^ 0x42,
         'X': 0x01,
-        'Y': 0x00
+        'Y': 0x05
     }
     INITIAL_FLAGS = {
         'C': 0,
@@ -130,11 +130,11 @@ def TEST_0x49_EOR_ADDRESS_MODE_TESTS():
         cpu.loadProgram(instructions=program[0], memoryAddress=0xFF00)
         cpu.registers = INITIAL_REGISTERS.copy()
         cpu.flags = INITIAL_FLAGS.copy()
-        #cpu.registers['A'] = 0x10
-        cpu.memory[ZP_ADDRESS] = VALUE_TO_TEST
+        cpu.memory[ZP_ADDRESS] = VALUE_TO_TEST  # ZP, ZP_X, and ZP_Y Location
         cpu.memory[IND_ZP_ADDRESS] = FULL_ADDRESS & 0b0000000011111111
         cpu.memory[IND_ZP_ADDRESS + 1] = (FULL_ADDRESS & 0b1111111100000000) >> 8
-        cpu.memory[FULL_ADDRESS] = VALUE_TO_TEST
+        cpu.memory[FULL_ADDRESS] = VALUE_TO_TEST  # ABS, ABS_X, ABS_Y, and IND_X Location
+        cpu.memory[FULL_ADDRESS + INITIAL_REGISTERS['Y']] = VALUE_TO_TEST  # IND_Y Location
         cpu.execute()
 
         if cpu.registers != EXPECTED_REGISTERS or cpu.flags != EXPECTED_FLAGS or cpu.cycles - 1 != EXPECTED_CYCLES or (EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_Y'] and cpu.memory[ZP_ADDRESS] != EXPECTED_VALUE) or (EXPECTED_VALUE is not None and label in ['ABS', 'ABS_X', 'ABS_Y', 'IND_X', 'IND_Y'] and cpu.memory[FULL_ADDRESS] != EXPECTED_VALUE):
