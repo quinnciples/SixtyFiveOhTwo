@@ -110,6 +110,8 @@ class CPU6502:
                0x24: 'BIT_ZP',
                0x2C: 'BIT_ABS',
 
+               0x00: 'BRK',
+
                0x90: 'BCC',
                0xB0: 'BCS',
                0xF0: 'BEQ',
@@ -491,6 +493,17 @@ class CPU6502:
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 400):
+
+            if self.INS == 'BRK':
+                # Save program counter to stack
+                self.savePCAtStackPointer()
+                # Save flags to stack
+                value = self.getProcessorStatus()
+                self.saveByteAtStackPointer(data=value)
+                # Set B flag
+                self.setFlagsManually(['B'], 1)
+                # Manually change PC to 0xFFFE
+                self.program_counter = 0xFFFE
 
             if self.INS in ['PHP_IMP', 'PLP_IMP']:
                 # Push
