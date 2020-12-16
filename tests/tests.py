@@ -4745,7 +4745,7 @@ def TEST_0x20_JSR_ABS():
     program = [0x20, 0x05, 0xE3]
     cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
     program = [0xA9, 0x35]
-    cpu.loadProgram(instructions=program, memoryAddress=0xE305)
+    cpu.loadProgram(instructions=program, memoryAddress=0xE305, mainProgram=False)
     cpu.registers = INITIAL_REGISTERS
     cpu.flags = INITIAL_FLAGS
     cpu.execute()
@@ -4804,7 +4804,7 @@ def TEST_0x60_RTS():
     program = [0x20, 0x05, 0xE3, 0xA2, 0x29]
     cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
     program = [0xA9, 0x35, 0x60]
-    cpu.loadProgram(instructions=program, memoryAddress=0xE305)
+    cpu.loadProgram(instructions=program, memoryAddress=0xE305, mainProgram=False)
     cpu.registers = INITIAL_REGISTERS
     cpu.flags = INITIAL_FLAGS
     cpu.execute()
@@ -6677,10 +6677,10 @@ def TEST_0x4C_JMP_ABS():
     }
     cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
     cpu.reset(program_counter=0xFF00)
-    program = [0x4C, 0x10, 0xFF]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
     program = [0xA9, 0x45]
     cpu.loadProgram(instructions=program, memoryAddress=0xFF10)
+    program = [0x4C, 0x10, 0xFF]
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
     cpu.execute()
 
     try:
@@ -6717,9 +6717,9 @@ def TEST_0x6C_JMP_IND():
     program = [0x6C, 0x10, 0xFF]
     cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
     program = [0x20, 0xFF]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF10)
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF10, mainProgram=False)
     program = [0xA9, 0xFE]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF20)
+    cpu.loadProgram(instructions=program, memoryAddress=0xFF20, mainProgram=False)
     cpu.execute()
 
     try:
@@ -7391,6 +7391,7 @@ if __name__ == '__main__':
                 print(f"{bcolors.FAIL}FAILED:{bcolors.ENDC} {test.__name__}")
                 failed += 1
         except AssertionError:
+            results.append(False)
             print(f"{bcolors.FAIL}FAILED:{bcolors.ENDC} {test.__name__}")
             logging.error("", exc_info=True)
             failed += 1
