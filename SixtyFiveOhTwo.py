@@ -110,7 +110,7 @@ class CPU6502:
                0x24: 'BIT_ZP',
                0x2C: 'BIT_ABS',
 
-               # 0x00: 'BRK',
+               0xFA: 'BRK',
 
                0x90: 'BCC',
                0xB0: 'BCS',
@@ -281,11 +281,14 @@ class CPU6502:
             'N': 0   # Negative flag
         }
 
-        self.memory = [0] * CPU6502.MAX_MEMORY_SIZE
+        self.initializeMemory()
         self.cycles = 0
         self.log = []
 
         self.initializeLog()
+
+    def initializeMemory(self):
+        self.memory = [0x00] * CPU6502.MAX_MEMORY_SIZE
 
     def memoryDump(self, startingAddress=0x0000, endingAddress=0x0000, display_format='Hex'):
         print('\nMemory Dump:\n')
@@ -367,7 +370,7 @@ class CPU6502:
         # Reset all flags to zero
         self.flags = dict.fromkeys(self.flags.keys(), 0)
 
-        self.memory = [0] * CPU6502.MAX_MEMORY_SIZE
+        self.initializeMemory()
 
     def readMemory(self, increment_pc=True, address=None, bytes=1) -> int:
         data = 0
@@ -923,7 +926,7 @@ def run():
 
 
 def fibonacci_test():
-    cpu = CPU6502(cycle_limit=500)
+    cpu = CPU6502(cycle_limit=5000)
     cpu.reset(program_counter=0x0000)
 
     program = [0xA9, 0x01,  # LDA_IM 1
@@ -940,7 +943,7 @@ def fibonacci_test():
                0xA5, 0x22,  # LDA_ZP [0x22]
                0x85, 0x21,  # STA_ZP [0x21]
                0xA5, 0x20,  # LDA_ZP [0x20]
-               0x4C, 0x08, 0x00  # JMP 0x0006
+               0x4C, 0x08, 0x00  # JMP 0x0008
                ]
     cpu.loadProgram(instructions=program, memoryAddress=0x0000)
     cpu.execute()

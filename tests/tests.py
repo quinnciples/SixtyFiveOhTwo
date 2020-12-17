@@ -668,6 +668,7 @@ def TEST_0xC9_CMP_GREATER_THAN_ADDRESS_MODE_TESTS():
         cpu.memory[IND_ZP_ADDRESS] = FULL_ADDRESS & 0b0000000011111111
         cpu.memory[IND_ZP_ADDRESS + 1] = (FULL_ADDRESS & 0b1111111100000000) >> 8
         cpu.memory[FULL_ADDRESS] = VALUE_TO_TEST
+        cpu.memory[FULL_ADDRESS + INITIAL_REGISTERS['Y']] = VALUE_TO_TEST  # IND_Y Location
         cpu.execute()
 
         if cpu.registers != EXPECTED_REGISTERS or cpu.flags != EXPECTED_FLAGS or cpu.cycles - 1 != EXPECTED_CYCLES:
