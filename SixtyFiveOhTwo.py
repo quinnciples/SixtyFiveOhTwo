@@ -881,7 +881,7 @@ class CPU6502:
     def loadProgram(self, instructions=[], memoryAddress=0x0000, mainProgram=True):
         if mainProgram:
             self.memory[0xFFFE] = memoryAddress & 0b0000000011111111
-            self.memory[0xFFFF] = (memoryAddress >> 8 ) & 0b0000000011111111
+            self.memory[0xFFFF] = (memoryAddress >> 8) & 0b0000000011111111
         for ins in instructions:
             self.memory[memoryAddress] = ins
             memoryAddress += 1
