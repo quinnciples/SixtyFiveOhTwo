@@ -518,7 +518,7 @@ class CPU6502:
 
             if self.INS in ['PHP_IMP', 'PLP_IMP']:
                 # Push
-                if self.INS == 'PHP_IMP':    
+                if self.INS == 'PHP_IMP':
                     value = self.getProcessorStatus()
                     self.saveByteAtStackPointer(data=value)
                     self.readMemory()  # single byte instruction
@@ -887,7 +887,6 @@ class CPU6502:
             memoryAddress += 1
             if memoryAddress >= CPU6502.MAX_MEMORY_SIZE:
                 memoryAddress = 0
-        
 
 
 def run():
@@ -909,7 +908,6 @@ def run():
     cpu.memory[0xFF03] = 0x07
     cpu.memory[0xFF04] = 0x08
 
-    
     cpu.loadProgram(instructions=[0xA9, 0x09, 0x6C, 0x30, 0xFF], memoryAddress=0xFF28)
     cpu.loadProgram(instructions=[0x38, 0xFF], memoryAddress=0xFF30)
     cpu.loadProgram(instructions=[0xA9, 0x0A, 0x85, 0xB0, 0xA2, 0x01, 0xA9, 0x0B, 0x95, 0xB0], memoryAddress=0xFF38)
@@ -1052,6 +1050,7 @@ def square_root_test():
 
         RTS
     """
+
 
 def flags_test():
     cpu = CPU6502(cycle_limit=10)
