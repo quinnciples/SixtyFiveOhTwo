@@ -110,6 +110,8 @@ class CPU6502:
                0x24: 'BIT_ZP',
                0x2C: 'BIT_ABS',
 
+               0xFA: 'BRK',
+
                0x90: 'BCC',
                0xB0: 'BCS',
                0xF0: 'BEQ',
@@ -255,9 +257,9 @@ class CPU6502:
                0x11: 'ORA_IND_Y',
                }
 
-    def __init__(self, cycle_limit=0):
+    def __init__(self, cycle_limit=100):
 
-        self.program_counter = 0xFF10
+        self.program_counter = 0xFFFE
         self.stack_pointer = 0xFF  # This is technically 0x01FF since the stack pointer lives on page 01.
         self.cycle_limit = cycle_limit
 
@@ -279,11 +281,14 @@ class CPU6502:
             'N': 0   # Negative flag
         }
 
-        self.memory = [0] * CPU6502.MAX_MEMORY_SIZE
+        self.initializeMemory()
         self.cycles = 0
         self.log = []
 
         self.initializeLog()
+
+    def initializeMemory(self):
+        self.memory = [0x00] * CPU6502.MAX_MEMORY_SIZE
 
     def memoryDump(self, startingAddress=0x0000, endingAddress=0x0000, display_format='Hex'):
         print('\nMemory Dump:\n')
@@ -355,7 +360,7 @@ class CPU6502:
         byte = self.readMemory(increment_pc=False, address=self.getStackPointerAddress(), bytes=1)
         return byte
 
-    def reset(self, program_counter=0xFF10):
+    def reset(self, program_counter=0xFFFE):
         self.program_counter = program_counter
         self.stack_pointer = 0xFF
         self.cycles = 0
@@ -365,7 +370,7 @@ class CPU6502:
         # Reset all flags to zero
         self.flags = dict.fromkeys(self.flags.keys(), 0)
 
-        self.memory = [0] * CPU6502.MAX_MEMORY_SIZE
+        self.initializeMemory()
 
     def readMemory(self, increment_pc=True, address=None, bytes=1) -> int:
         data = 0
@@ -487,14 +492,33 @@ class CPU6502:
             if order[shift] != 'X':
                 self.setFlagsManually(flags=[order[shift]], value=flag)
 
+    def handleBRK(self):
+        address = self.memory[0xFFFF] << 8
+        address += self.memory[0xFFFE]
+        self.program_counter = address
+
     def execute(self):
+        # Set starting position based on 0xFFFE/F
+        self.handleBRK()
+
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
-        while self.INS is not None and self.cycles <= max(self.cycle_limit, 400):
+        while self.INS is not None and self.cycles <= max(self.cycle_limit, 100):
+
+            if self.INS == 'BRK':
+                # Save program counter to stack
+                self.savePCAtStackPointer()
+                # Save flags to stack
+                value = self.getProcessorStatus()
+                self.saveByteAtStackPointer(data=value)
+                # Set B flag
+                self.setFlagsManually(['B'], 1)
+                # Manually change PC to 0xFFFE
+                self.handleBRK()
 
             if self.INS in ['PHP_IMP', 'PLP_IMP']:
                 # Push
-                if self.INS == 'PHP_IMP':    
+                if self.INS == 'PHP_IMP':
                     value = self.getProcessorStatus()
                     self.saveByteAtStackPointer(data=value)
                     self.readMemory()  # single byte instruction
@@ -854,7 +878,10 @@ class CPU6502:
         for line in self.log:
             print(line)
 
-    def loadProgram(self, instructions=[], memoryAddress=0x0000):
+    def loadProgram(self, instructions=[], memoryAddress=0x0000, mainProgram=True):
+        if mainProgram:
+            self.memory[0xFFFE] = memoryAddress & 0b0000000011111111
+            self.memory[0xFFFF] = (memoryAddress >> 8) & 0b0000000011111111
         for ins in instructions:
             self.memory[memoryAddress] = ins
             memoryAddress += 1
@@ -881,10 +908,11 @@ def run():
     cpu.memory[0xFF03] = 0x07
     cpu.memory[0xFF04] = 0x08
 
-    cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0x00, 0xFF, 0xBD, 0x01, 0xFF, 0xB9, 0xFF, 0xFE, 0xA1, 0xAA, 0xB1, 0xAC, 0x4C, 0x28, 0xFF], memoryAddress=0xFF10)
     cpu.loadProgram(instructions=[0xA9, 0x09, 0x6C, 0x30, 0xFF], memoryAddress=0xFF28)
     cpu.loadProgram(instructions=[0x38, 0xFF], memoryAddress=0xFF30)
     cpu.loadProgram(instructions=[0xA9, 0x0A, 0x85, 0xB0, 0xA2, 0x01, 0xA9, 0x0B, 0x95, 0xB0], memoryAddress=0xFF38)
+
+    cpu.loadProgram(instructions=[0xA9, 0x01, 0xA5, 0xCC, 0xB5, 0x80, 0xAD, 0x00, 0xFF, 0xBD, 0x01, 0xFF, 0xB9, 0xFF, 0xFE, 0xA1, 0xAA, 0xB1, 0xAC, 0x4C, 0x28, 0xFF], memoryAddress=0xFF10)
 
     cpu.registers['Y'] = 0x03
 
@@ -896,10 +924,11 @@ def run():
 
 
 def fibonacci_test():
-    cpu = CPU6502(cycle_limit=10000)
+    cpu = CPU6502(cycle_limit=5000)
     cpu.reset(program_counter=0x0000)
 
     program = [0xA9, 0x01,  # LDA_IM 1
+               0xA2, 0x00,  # LDX_IM 0
                0x85, 0x21,  # STA_ZP [0x21]
                0xA9, 0x00,  # LDA_IM 0
                0x65, 0x21,  # ADC [0x21]  -- This is the main loop; the jump ins below should point to the address of this line
@@ -912,7 +941,7 @@ def fibonacci_test():
                0xA5, 0x22,  # LDA_ZP [0x22]
                0x85, 0x21,  # STA_ZP [0x21]
                0xA5, 0x20,  # LDA_ZP [0x20]
-               0x4C, 0x06, 0x00  # JMP 0x0006
+               0x4C, 0x08, 0x00  # JMP 0x0008
                ]
     cpu.loadProgram(instructions=program, memoryAddress=0x0000)
     cpu.execute()
@@ -1022,6 +1051,7 @@ def square_root_test():
         RTS
     """
 
+
 def flags_test():
     cpu = CPU6502(cycle_limit=10)
     cpu.setFlagsManually(['C', 'Z', 'I', 'D', 'B', 'V', 'N'], 0)
@@ -1045,7 +1075,7 @@ def flags_test():
 if __name__ == '__main__':
     # run()
     fibonacci_test()
-    print()
-    fast_multiply_10()
-    print()
-    flags_test()
+    # print()
+    # fast_multiply_10()
+    # print()
+    # flags_test()
