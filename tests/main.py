@@ -4,6 +4,8 @@ import sys
 from testing_modules import bcolors
 from testing_modules import generateProgram
 from LDA_tests import LDA_tests
+from LDX_tests import LDX_tests
+from LDY_tests import LDY_tests
 # import testing_modules
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
 from SixtyFiveOhTwo import CPU6502

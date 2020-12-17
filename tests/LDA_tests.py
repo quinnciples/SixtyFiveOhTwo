@@ -14,7 +14,16 @@ def LDA_ADDRESS_MODE_TESTS_NON_ZERO_NON_NEGATIVE_NO_PAGE_CROSSED() -> bool:
     FULL_ADDRESS = 0xAA48
     VALUE_TO_TEST = IMMEDIATE_VALUE
     EXPECTED_VALUE = 0x05
-    CYCLE_COUNTS = {'IM': 2, 'ZP': 3, 'ZP_X': 4, 'ABS': 4, 'ABS_X': 4, 'ABS_Y': 4, 'IND_X': 6, 'IND_Y': 5}
+    CYCLE_COUNTS = {
+        'IM': 2,
+        'ZP': 3,
+        'ZP_X': 4,
+        'ABS': 4,
+        'ABS_X': 4,
+        'ABS_Y': 4,
+        'IND_X': 6,
+        'IND_Y': 5
+    }
     INITIAL_REGISTERS = {
         'A': 0xFF,
         'X': 0x01,
