@@ -5075,6 +5075,7 @@ if __name__ == '__main__':
         for x in test_results:
             results.append(x)
 
+    print('*' * 80)
     print('TEST SUMMARY')
     for result in results:
         if result:
