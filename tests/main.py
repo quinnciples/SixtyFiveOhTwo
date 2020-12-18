@@ -4874,12 +4874,14 @@ if __name__ == '__main__':
         ORA_tests,
     ]
 
-    passed, failed, results = 0, 0, []
+    passed, failed, results, failed_tests = 0, 0, [], set([])
 
     for run_test in tests:
         test_results = run_test()
         for x in test_results:
             results.append(x)
+            if x is False:
+                failed_tests.add(run_test.__name__)
 
     print('*' * 80)
     print('TEST SUMMARY')
@@ -4894,3 +4896,7 @@ if __name__ == '__main__':
     print(f'{passed} TESTS {bcolors.OKGREEN}PASSED{bcolors.ENDC}', end='')
     if failed:
         print(f' // {failed} TESTS {bcolors.FAIL}FAILED{bcolors.ENDC}')
+        print()
+        print('The following tests did not complete successfully:')
+        for failed_test in failed_tests:
+            print(f'\t{failed_test}')
