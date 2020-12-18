@@ -10,6 +10,8 @@ from STA_tests import STA_tests
 from STX_tests import STX_tests
 from STY_tests import STY_tests
 from AND_tests import AND_tests
+from EOR_tests import EOR_tests
+from ORA_tests import ORA_tests
 
 # import testing_modules
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
@@ -5066,6 +5068,8 @@ if __name__ == '__main__':
         STX_tests,
         STY_tests,
         AND_tests,
+        EOR_tests,
+        ORA_tests,
     ]
 
     passed, failed, results = 0, 0, []
