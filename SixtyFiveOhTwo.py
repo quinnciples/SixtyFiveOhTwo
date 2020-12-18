@@ -236,8 +236,8 @@ class CPU6502:
                0xF6: 'INC_ZP_X',
                0xEE: 'INC_ABS',
                0xFE: 'INC_ABS_X',
-               0xC8: 'INY',
-               0xE8: 'INX',
+               0xC8: 'INY_IMP',
+               0xE8: 'INX_IMP',
 
                0x69: 'ADC_IM',
                0x65: 'ADC_ZP',
@@ -788,7 +788,7 @@ class CPU6502:
                 self.writeMemory(data=value, address=address, bytes=1)
                 self.setFlagsByValue(value=value, flags=['N', 'Z'])
 
-            if self.INS in ['INX', 'INY']:
+            if self.INS in ['INX_IMP', 'INY_IMP']:
                 value = self.registers[self.INS[2]]
                 value += 1
                 value = value % 0x100
@@ -824,36 +824,31 @@ class CPU6502:
                     self.setFlagsManually(flags=[self.INS[2]], value=1)
                 self.readMemory()  # Single byte opcode
 
-            if self.INS in ['LDA_IM', 'LDX_IM', 'LDY_IM']:
-                register = self.INS[2]
-                data = self.readMemory()
-                self.registers[register] = data
-                self.setFlagsByRegister(register=register, flags=['Z', 'N'])
-
-            elif self.INS in ['LDA_ZP', 'LDA_ZP_X',             'LDA_ABS', 'LDA_ABS_X', 'LDA_ABS_Y', 'LDA_IND_X', 'LDA_IND_Y',
-                              'LDX_ZP',             'LDX_ZP_Y', 'LDX_ABS',              'LDX_ABS_Y',
-                              'LDY_ZP', 'LDY_ZP_X',             'LDY_ABS', 'LDY_ABS_X']:
+            elif self.INS in ['LDA_IM', 'LDA_ZP', 'LDA_ZP_X', 'LDA_ABS', 'LDA_ABS_X', 'LDA_ABS_Y', 'LDA_IND_X', 'LDA_IND_Y',
+                              'LDX_IM', 'LDX_ZP', 'LDX_ZP_Y', 'LDX_ABS', 'LDX_ABS_Y',
+                              'LDY_IM', 'LDY_ZP', 'LDY_ZP_X', 'LDY_ABS', 'LDY_ABS_X']:
                 ins_set = self.INS.split('_')
                 register = ins_set[0][2]
                 address_mode = '_'.join(_ for _ in ins_set[1:])
-                address = self.determineAddress(mode=address_mode)
-                data = self.readMemory(address=address, increment_pc=False)
+                if address_mode == 'IM':
+                    data = self.readMemory()
+                else:
+                    address = self.determineAddress(mode=address_mode)
+                    data = self.readMemory(address=address, increment_pc=False)
                 self.registers[register] = data
                 self.setFlagsByRegister(register=register, flags=['Z', 'N'])
 
             elif self.INS == 'JMP':
                 address = self.determineAddress(mode='ABS')
                 self.program_counter = address
-                pass
 
             elif self.INS == 'JMP_IND':
                 address = self.determineAddress(mode='IND')
                 address = self.readMemory(address=address, increment_pc=False, bytes=2)
                 self.program_counter = address
-                pass
 
             elif self.INS == 'NOP':
-                self.readMemory()
+                self.readMemory() # single byte instruction
 
             data = self.readMemory()
             self.INS = CPU6502.opcodes.get(data, None)

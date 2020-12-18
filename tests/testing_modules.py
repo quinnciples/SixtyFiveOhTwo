@@ -28,8 +28,13 @@ def generateProgram(instruction: str, registers: dict, immediate_value: int, zp_
             continue
         else:
             instructions = []
+
             if address_mode == 'IM':
                 instructions = [opcode, immediate_value]
+                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+
+            if address_mode == 'IMP':
+                instructions = [opcode, 0x00]
                 program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
 
             if address_mode == 'ZP':

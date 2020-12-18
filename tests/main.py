@@ -12,6 +12,8 @@ from STY_tests import STY_tests
 from AND_tests import AND_tests
 from EOR_tests import EOR_tests
 from ORA_tests import ORA_tests
+from INX_tests import INX_tests
+from INY_tests import INY_tests
 
 # import testing_modules
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
@@ -4872,6 +4874,8 @@ if __name__ == '__main__':
         AND_tests,
         EOR_tests,
         ORA_tests,
+        INX_tests,
+        INY_tests,
     ]
 
     passed, failed, results, failed_tests = 0, 0, [], set([])
