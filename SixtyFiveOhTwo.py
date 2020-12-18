@@ -92,6 +92,7 @@ class CPU6502:
 
     version = '0.50'
     MAX_MEMORY_SIZE = 1024 * 64  # 64k memory size
+    OPCODES_WRITE_TO_MEMORY = ['STA', 'STX', 'STY']
     opcodes = {0x29: 'AND_IM',
                0x25: 'AND_ZP',
                0x35: 'AND_ZP_X',
@@ -451,13 +452,13 @@ class CPU6502:
         elif mode == 'ABS_X':
             address = self.readMemory(bytes=2)
             address += self.registers['X']
-            if int(address / 0x100) != int((address - self.registers['X']) / 0x100):
-                self.cycleInc()  # Only if PAGE crossed
+            if int(address / 0x100) != int((address - self.registers['X']) / 0x100) or (self.INS[0:3] in CPU6502.OPCODES_WRITE_TO_MEMORY):
+                self.cycleInc()  # Only if PAGE crossed or instruction writes to memory
         elif mode == 'ABS_Y':
             address = self.readMemory(bytes=2)
             address += self.registers['Y']
-            if int(address / 0x100) != int((address - self.registers['Y']) / 0x100):
-                self.cycleInc()  # Only if PAGE crossed
+            if (int(address / 0x100) != int((address - self.registers['Y']) / 0x100)) or (self.INS[0:3] in CPU6502.OPCODES_WRITE_TO_MEMORY):
+                self.cycleInc()  # Only if PAGE crossed or instruction writes to memory
         elif mode == 'IND':  # Indirect
             address = self.readMemory(bytes=2)
         elif mode == 'IND_X':
@@ -471,8 +472,8 @@ class CPU6502:
             address = self.readMemory()
             address = self.readMemory(address=address, increment_pc=False, bytes=2)
             address += self.registers['Y']
-            if int(address / 0x100) != int((address - self.registers['Y']) / 0x100):
-                self.cycleInc()  # Only if PAGE crossed
+            if int(address / 0x100) != int((address - self.registers['Y']) / 0x100) or (self.INS[0:3] in CPU6502.OPCODES_WRITE_TO_MEMORY):
+                self.cycleInc()  # Only if PAGE crossed or instruction writes to memory
 
         return address
 
