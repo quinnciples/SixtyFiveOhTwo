@@ -89,7 +89,7 @@ def LDA_ADDRESS_MODE_TESTS_NON_ZERO_NON_NEGATIVE_NO_PAGE_CROSSED() -> bool:
                 print(f'\t{bcolors.FAIL}CYCLE COUNT DOES NOT MATCH{bcolors.ENDC}', end='\n')
             # Memory tests
             # Test that memory was unchanged
-            if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_Y', 'ABS', 'ABS_X', 'ABS_Y', 'IND_X', 'IND_Y'] and cpu.memory != EXPECTED_MEMORY: 
+            if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_Y', 'ABS', 'ABS_X', 'ABS_Y', 'IND_X', 'IND_Y'] and cpu.memory != EXPECTED_MEMORY:
                 print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
             # if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_Y'] and cpu.memory[ZP_ADDRESS] != EXPECTED_VALUE:
                 # print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
@@ -166,7 +166,7 @@ def LDA_ADDRESS_MODE_TESTS_ZERO_FLAG_NON_NEGATIVE_NO_PAGE_CROSSED() -> bool:
     errors = False
     for label, program in programs.items():
         print(f'\tTesting {label}... ', end='')
-        EXPECTED_CYCLES = program[1]
+        EXPECTED_CYCLES = CYCLE_COUNTS[label]
         cpu = CPU6502(cycle_limit=100)
         cpu.reset(program_counter=0xFF00)
         cpu.loadProgram(instructions=program[0], memoryAddress=0xFF00)
@@ -190,7 +190,7 @@ def LDA_ADDRESS_MODE_TESTS_ZERO_FLAG_NON_NEGATIVE_NO_PAGE_CROSSED() -> bool:
                 print(f'\t{bcolors.FAIL}CYCLE COUNT DOES NOT MATCH{bcolors.ENDC}', end='\n')
             # Memory tests
             # Test that memory was unchanged
-            if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_Y', 'ABS', 'ABS_X', 'ABS_Y', 'IND_X', 'IND_Y'] and cpu.memory != EXPECTED_MEMORY: 
+            if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_Y', 'ABS', 'ABS_X', 'ABS_Y', 'IND_X', 'IND_Y'] and cpu.memory != EXPECTED_MEMORY:
                 print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
             # if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_Y'] and cpu.memory[ZP_ADDRESS] != EXPECTED_VALUE:
                 # print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
@@ -291,7 +291,7 @@ def LDA_ADDRESS_MODE_TESTS_NON_ZERO_NEGATIVE_FLAG_NO_PAGE_CROSSED() -> bool:
                 print(f'\t{bcolors.FAIL}CYCLE COUNT DOES NOT MATCH{bcolors.ENDC}', end='\n')
             # Memory tests
             # Test that memory was unchanged
-            if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_Y', 'ABS', 'ABS_X', 'ABS_Y', 'IND_X', 'IND_Y'] and cpu.memory != EXPECTED_MEMORY: 
+            if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_Y', 'ABS', 'ABS_X', 'ABS_Y', 'IND_X', 'IND_Y'] and cpu.memory != EXPECTED_MEMORY:
                 print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
             # if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_Y'] and cpu.memory[ZP_ADDRESS] != EXPECTED_VALUE:
                 # print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
@@ -393,7 +393,7 @@ def LDA_ADDRESS_MODE_TESTS_NON_ZERO_NON_NEGATIVE_PAGE_CROSSED() -> bool:
             # Memory tests
 
             # Test that memory was unchanged
-            if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_Y', 'ABS', 'ABS_X', 'ABS_Y', 'IND_X', 'IND_Y'] and cpu.memory != EXPECTED_MEMORY: 
+            if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_Y', 'ABS', 'ABS_X', 'ABS_Y', 'IND_X', 'IND_Y'] and cpu.memory != EXPECTED_MEMORY:
                 print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
 
             # Test that value was written to memory

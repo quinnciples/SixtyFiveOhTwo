@@ -1,5 +1,5 @@
 import os
-import logging
+# import logging
 import sys
 from testing_modules import bcolors
 from testing_modules import generateProgram
@@ -6229,30 +6229,26 @@ if __name__ == '__main__':
         TEST_0x08_PHP_PLA_COMBINED_TEST,
     ]
 
+    tests = [
+        LDA_tests,
+        LDX_tests,
+        LDY_tests,
+    ]
+
     num_tests, passed, failed, results = len(tests), 0, 0, []
 
-    for test in tests:
-        try:
-            if test():
-                results.append(True)
-                print(f"{bcolors.OKGREEN}PASSED:{bcolors.ENDC} {test.__name__}")
-                passed += 1
-            else:
-                results.append(False)
-                print(f"{bcolors.FAIL}FAILED:{bcolors.ENDC} {test.__name__}")
-                failed += 1
-        except AssertionError:
-            results.append(False)
-            print(f"{bcolors.FAIL}FAILED:{bcolors.ENDC} {test.__name__}")
-            logging.error("", exc_info=True)
-            failed += 1
-            continue
+    for run_test in tests:
+        test_results = run_test()
+        for x in test_results:
+            results.append(x)
 
     print('TEST SUMMARY')
     for result in results:
         if result:
             print(f"{bcolors.OKGREEN}{'▓'}{bcolors.ENDC}", end='')
+            passed += 1
         else:
             print(f"{bcolors.FAIL}{'▓'}{bcolors.ENDC}", end='')
+            failed += 1
     print()
     print(f'{passed} TESTS {bcolors.OKGREEN}PASSED{bcolors.ENDC}. {failed} TESTS {bcolors.FAIL}FAILED{bcolors.ENDC}.')

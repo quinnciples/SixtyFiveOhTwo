@@ -80,7 +80,7 @@ def LDY_ADDRESS_MODE_TESTS_NON_ZERO_NON_NEGATIVE_NO_PAGE_CROSSED() -> bool:
                 print(f'\t{bcolors.FAIL}CYCLE COUNT DOES NOT MATCH{bcolors.ENDC}', end='\n')
             # Memory tests
             # Test that memory was unchanged
-            if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_X', 'ABS', 'ABS_X', 'ABS_X', 'IND_X', 'IND_Y'] and cpu.memory != EXPECTED_MEMORY: 
+            if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_X', 'ABS', 'ABS_X', 'ABS_X', 'IND_X', 'IND_Y'] and cpu.memory != EXPECTED_MEMORY:
                 print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
             # if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_X'] and cpu.memory[ZP_ADDRESS] != EXPECTED_VALUE:
                 # print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
@@ -181,7 +181,7 @@ def LDY_ADDRESS_MODE_TESTS_ZERO_FLAG_NON_NEGATIVE_NO_PAGE_CROSSED() -> bool:
                 print(f'\t{bcolors.FAIL}CYCLE COUNT DOES NOT MATCH{bcolors.ENDC}', end='\n')
             # Memory tests
             # Test that memory was unchanged
-            if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_X', 'ABS', 'ABS_X', 'ABS_X', 'IND_X', 'IND_Y'] and cpu.memory != EXPECTED_MEMORY: 
+            if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_X', 'ABS', 'ABS_X', 'ABS_X', 'IND_X', 'IND_Y'] and cpu.memory != EXPECTED_MEMORY:
                 print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
             # if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_X'] and cpu.memory[ZP_ADDRESS] != EXPECTED_VALUE:
                 # print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
@@ -282,7 +282,7 @@ def LDY_ADDRESS_MODE_TESTS_NON_ZERO_NEGATIVE_FLAG_NO_PAGE_CROSSED() -> bool:
                 print(f'\t{bcolors.FAIL}CYCLE COUNT DOES NOT MATCH{bcolors.ENDC}', end='\n')
             # Memory tests
             # Test that memory was unchanged
-            if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_X', 'ABS', 'ABS_X', 'ABS_X', 'IND_X', 'IND_Y'] and cpu.memory != EXPECTED_MEMORY: 
+            if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_X', 'ABS', 'ABS_X', 'ABS_X', 'IND_X', 'IND_Y'] and cpu.memory != EXPECTED_MEMORY:
                 print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
             # if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_X'] and cpu.memory[ZP_ADDRESS] != EXPECTED_VALUE:
                 # print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
@@ -384,7 +384,7 @@ def LDY_ADDRESS_MODE_TESTS_NON_ZERO_NON_NEGATIVE_PAGE_CROSSED() -> bool:
             # Memory tests
 
             # Test that memory was unchanged
-            if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_X', 'ABS', 'ABS_X', 'ABS_X', 'IND_X', 'IND_Y'] and cpu.memory != EXPECTED_MEMORY: 
+            if EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_X', 'ABS', 'ABS_X', 'ABS_X', 'IND_X', 'IND_Y'] and cpu.memory != EXPECTED_MEMORY:
                 print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
 
             # Test that value was written to memory
