@@ -79,9 +79,9 @@ def STA_ADDRESS_MODE_TESTS() -> bool:
         # EXPECTED_MEMORY = cpu.memory.copy()
         cpu.execute()
 
-        if cpu.registers != EXPECTED_REGISTERS \
-            or cpu.flags != EXPECTED_FLAGS \
-            or cpu.cycles - 1 != EXPECTED_CYCLES \
+        if (cpu.registers != EXPECTED_REGISTERS) \
+            or (cpu.flags != EXPECTED_FLAGS) \
+            or (cpu.cycles - 1 != EXPECTED_CYCLES) \
             or (EXPECTED_VALUE is not None and label in ['ZP', 'ZP_X', 'ZP_Y'] and cpu.memory[ZP_ADDRESS] != EXPECTED_VALUE) \
             or (EXPECTED_VALUE is not None and label in ['ABS', 'ABS_X', 'ABS_Y', 'IND_X'] and cpu.memory[FULL_ADDRESS] != EXPECTED_VALUE) \
             or (EXPECTED_VALUE is not None and label in ['IND_Y'] and cpu.memory[FULL_ADDRESS + INITIAL_REGISTERS['Y']] != EXPECTED_VALUE):

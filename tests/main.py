@@ -5771,7 +5771,7 @@ if __name__ == '__main__':
         STY_tests,
     ]
 
-    num_tests, passed, failed, results = len(tests), 0, 0, []
+    passed, failed, results = 0, 0, []
 
     for run_test in tests:
         test_results = run_test()
