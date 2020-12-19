@@ -15,6 +15,9 @@ from ORA_tests import ORA_tests
 from INX_tests import INX_tests
 from INY_tests import INY_tests
 from INC_tests import INC_tests
+from SEC_tests import SEC_tests
+from SED_tests import SED_tests
+from SEI_tests import SEI_tests
 
 # import testing_modules
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
@@ -4088,108 +4091,6 @@ def TEST_0xD8_CLD():
     return False
 
 
-def TEST_0x38_SEC():
-    EXPECTED_CYCLES = 2
-    EXPECTED_REGISTERS = {
-        'A': 0,
-        'X': 0,
-        'Y': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 1,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0x38]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-        return True
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        raise
-    return False
-
-
-def TEST_0x78_SEI():
-    EXPECTED_CYCLES = 2
-    EXPECTED_REGISTERS = {
-        'A': 0,
-        'X': 0,
-        'Y': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 1,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0x78]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-        return True
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        raise
-    return False
-
-
-def TEST_0xF8_SED():
-    EXPECTED_CYCLES = 2
-    EXPECTED_REGISTERS = {
-        'A': 0,
-        'X': 0,
-        'Y': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 1,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0xF8]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-        return True
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        raise
-    return False
-
-
 def TEST_0x4C_JMP_ABS():
     EXPECTED_CYCLES = 3 + 2
     EXPECTED_VALUE = 0x45
@@ -4266,51 +4167,11 @@ def TEST_0x6C_JMP_IND():
     return False
 
 
-def TEST_0x84_STY_ZP():
-    EXPECTED_CYCLES = 3
-    EXPECTED_VALUE = 0x2A
-    EXPECTED_REGISTERS = {
-        'A': 0,
-        'X': 0,
-        'Y': EXPECTED_VALUE
-    }
-    EXPECTED_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0x84, 0x2A]
-    cpu.registers['Y'] = EXPECTED_REGISTERS['Y']
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.execute()
-
-    try:
-        assert(cpu.memory[0x002A] == EXPECTED_VALUE)
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-        return True
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        raise
-    return False
-
-
 if __name__ == '__main__':
     os.system('color')
     tests = [
         TEST_0x4C_JMP_ABS,
         TEST_0x6C_JMP_IND,
-        TEST_0x38_SEC,
-        TEST_0x78_SEI,
-        TEST_0xF8_SED,
         TEST_0x18_CLC,
         TEST_0x58_CLI,
         TEST_0xB8_CLV,
@@ -4399,6 +4260,9 @@ if __name__ == '__main__':
         INX_tests,
         INY_tests,
         INC_tests,
+        SEC_tests,
+        SED_tests,
+        SEI_tests,
     ]
 
     passed, failed, results, failed_tests = 0, 0, [], set([])
