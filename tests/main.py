@@ -3976,10 +3976,6 @@ if __name__ == '__main__':
     tests = [
         TEST_0x4C_JMP_ABS,
         TEST_0x6C_JMP_IND,
-        TEST_0x18_CLC,
-        TEST_0x58_CLI,
-        TEST_0xB8_CLV,
-        TEST_0xD8_CLD,
         TEST_0x20_JSR_ABS,
         TEST_0x60_RTS,
         TEST_0x69_ADC_IM,
