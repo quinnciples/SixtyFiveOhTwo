@@ -92,7 +92,7 @@ class CPU6502:
 
     version = '0.50'
     MAX_MEMORY_SIZE = 1024 * 64  # 64k memory size
-    OPCODES_WRITE_TO_MEMORY = ['STA', 'STX', 'STY']
+    OPCODES_WRITE_TO_MEMORY = ['STA', 'STX', 'STY', 'ROL', 'ROR']
     opcodes = {0x29: 'AND_IM',
                0x25: 'AND_ZP',
                0x35: 'AND_ZP_X',

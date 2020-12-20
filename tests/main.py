@@ -22,6 +22,8 @@ from CLC_tests import CLC_tests
 from CLD_tests import CLD_tests
 from CLI_tests import CLI_tests
 from CLV_tests import CLV_tests
+from ROL_tests import ROL_tests
+from ROR_tests import ROR_tests
 
 # import testing_modules
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
@@ -107,98 +109,7 @@ def TEST_0x08_PHP_PLA_COMBINED_TEST():
     return True
 
 
-def TEST_0x2A_ROL_ADDRESS_MODE_TESTS():
-    TEST_NAME = f'TEST_0x2A_ROL_ADDRESS_MODE_TESTS'
-    INITIAL_REGISTERS = {
-        'A': 0x0b10000001,
-        'X': 0x05,
-        'Y': 0x09
-    }
-    EXPECTED_REGISTERS = {
-        'A': 0x0b10000001,
-        'X': 0x05,
-        'Y': 0x09
-    }
-    INITIAL_FLAGS = {
-        'C': 1,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 1,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
 
-    ZP_ADDRESS = 0x0059
-    IND_ZP_ADDRESS = 0x0069
-    FULL_ADDRESS = 0xAA40
-    VALUE_TO_TEST = 0b10000001
-    EXPECTED_VALUE = 0b00000011
-    CYCLE_COUNTS = {'ZP': 5, 'ZP_X': 6, 'ABS': 6, 'ABS_X': 7}
-
-    programs = generateProgram(instruction='ROL',
-                               registers=INITIAL_REGISTERS,
-                               immediate_value=None,
-                               zp_address=ZP_ADDRESS,
-                               ind_zp_address=IND_ZP_ADDRESS,
-                               sixteen_bit_address=FULL_ADDRESS,
-                               CYCLE_COUNTS=CYCLE_COUNTS)
-
-    print(f'{bcolors.UNDERLINE}Running {TEST_NAME}{bcolors.ENDC}')
-    errors = False
-    for label, program in programs.items():
-        print(f'\tTesting {label}... ', end='')
-        EXPECTED_CYCLES = program[1]
-        cpu = CPU6502(cycle_limit=100)
-        cpu.reset(program_counter=0xFF00)
-        cpu.loadProgram(instructions=program[0], memoryAddress=0xFF00)
-        cpu.registers = INITIAL_REGISTERS
-        cpu.flags = INITIAL_FLAGS
-        cpu.memory[ZP_ADDRESS] = VALUE_TO_TEST
-        cpu.memory[IND_ZP_ADDRESS] = FULL_ADDRESS & 0b0000000011111111
-        cpu.memory[IND_ZP_ADDRESS + 1] = (FULL_ADDRESS & 0b1111111100000000) >> 8
-        cpu.memory[FULL_ADDRESS] = VALUE_TO_TEST
-        cpu.execute()
-
-        if cpu.registers != EXPECTED_REGISTERS or cpu.flags != EXPECTED_FLAGS or cpu.cycles - 1 != EXPECTED_CYCLES or (label in ['ZP', 'ZP_X', 'ZP_Y'] and cpu.memory[ZP_ADDRESS] != EXPECTED_VALUE) or (label in ['ABS', 'ABS_X', 'ABS_Y', 'IND_X', 'IND_Y'] and cpu.memory[FULL_ADDRESS] != EXPECTED_VALUE):
-            print(f'{bcolors.FAIL}FAILED{bcolors.ENDC}', end='\n')
-            if cpu.registers != EXPECTED_REGISTERS:
-                print(f'\t{bcolors.FAIL}REGISTERS DO NOT MATCH{bcolors.ENDC}', end='\n')
-            if cpu.flags != EXPECTED_FLAGS:
-                print(f'\t{bcolors.FAIL}FLAGS DO NOT MATCH{bcolors.ENDC}', end='\n')
-            if cpu.cycles - 1 != EXPECTED_CYCLES:
-                print(f'\t{bcolors.FAIL}CYCLE COUNT DOES NOT MATCH{bcolors.ENDC}', end='\n')
-            if label in ['ZP', 'ZP_X', 'ZP_Y'] and cpu.memory[ZP_ADDRESS] != EXPECTED_VALUE:
-                print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
-            if label in ['ABS', 'ABS_X', 'ABS_Y', 'IND_X', 'IND_Y'] and cpu.memory[FULL_ADDRESS] != EXPECTED_VALUE:
-                print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
-
-            # cpu.printLog()
-            # cpu.memoryDump(startingAddress=0xFF00, endingAddress=(0xFF00 + len(program)))
-            # cpu.memoryDump(startingAddress=ZP_ADDRESS, endingAddress=ZP_ADDRESS + 1)
-            # cpu.memoryDump(startingAddress=IND_ZP_ADDRESS, endingAddress=IND_ZP_ADDRESS + 1)
-            # cpu.memoryDump(startingAddress=FULL_ADDRESS, endingAddress=FULL_ADDRESS + 1)
-
-            # print(f'Program: {program[0]}')
-            # print(f'Cycles: {cpu.cycles-1} Expected Cycles: {EXPECTED_CYCLES}')
-            # print(f'Expected Registers: {EXPECTED_REGISTERS}')
-            # print(f'Expected Flags: {EXPECTED_FLAGS}')
-            errors = True
-        else:
-            print(f'{bcolors.OKGREEN}PASSED{bcolors.ENDC}', end='\n')
-
-    if errors:
-        return False
-    return
 
 
 def TEST_0x24_BIT_ADDRESS_MODE_TESTS_ZERO_FLAG():
@@ -682,221 +593,6 @@ def TEST_0x48_PHA_IMP():
         print(f'Expected Flags: {EXPECTED_FLAGS}')
         raise
     return False
-
-
-def TEST_0x6A_ROR_ACC_CARRY_FLAG_NOT_SET():
-    EXPECTED_CYCLES = 2
-    INITIAL_REGISTERS = {
-        'A': 0b00000111,
-        'X': 0x00,
-        'Y': 0x00
-    }
-    EXPECTED_REGISTERS = {
-        'A': 0b00000011,
-        'X': 0x00,
-        'Y': 0x00
-    }
-    INITIAL_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 1,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0x6A, 0x00]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        print(f'Cycles: {cpu.cycles-1}')
-        print(f'Expected Registers: {EXPECTED_REGISTERS}')
-        print(f'Expected Flags: {EXPECTED_FLAGS}')
-        raise
-        return False
-    return True
-
-
-def TEST_0x6A_ROR_ACC_CARRY_FLAG_SET():
-    EXPECTED_CYCLES = 2
-    INITIAL_REGISTERS = {
-        'A': 0b00000111,
-        'X': 0x00,
-        'Y': 0x00
-    }
-    EXPECTED_REGISTERS = {
-        'A': 0b10000011,
-        'X': 0x00,
-        'Y': 0x00
-    }
-    INITIAL_FLAGS = {
-        'C': 1,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 1,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 1
-    }
-
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0x6A, 0x00]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        print(f'Cycles: {cpu.cycles-1}')
-        print(f'Expected Registers: {EXPECTED_REGISTERS}')
-        print(f'Expected Flags: {EXPECTED_FLAGS}')
-        raise
-        return False
-    return True
-
-
-def TEST_0x2A_ROL_ACC_CARRY_FLAG_NOT_SET():
-    EXPECTED_CYCLES = 2
-    INITIAL_REGISTERS = {
-        'A': 0x0F,
-        'X': 0x00,
-        'Y': 0x00
-    }
-    EXPECTED_REGISTERS = {
-        'A': 0x1E,
-        'X': 0x00,
-        'Y': 0x00
-    }
-    INITIAL_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0x2A, 0x00]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        print(f'Cycles: {cpu.cycles-1}')
-        print(f'Expected Registers: {EXPECTED_REGISTERS}')
-        raise
-        return False
-    return True
-
-
-def TEST_0x2A_ROL_ACC_CARRY_FLAG_SET():
-    EXPECTED_CYCLES = 2
-    INITIAL_REGISTERS = {
-        'A': 0x0F,
-        'X': 0x00,
-        'Y': 0x00
-    }
-    EXPECTED_REGISTERS = {
-        'A': 0x1F,
-        'X': 0x00,
-        'Y': 0x00
-    }
-    INITIAL_FLAGS = {
-        'C': 1,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0x2A, 0x00]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        print(f'Cycles: {cpu.cycles-1}')
-        print(f'Expected Registers: {EXPECTED_REGISTERS}')
-        print(f'Expected Flags: {EXPECTED_FLAGS}')
-        raise
-        return False
-    return True
 
 
 def TEST_0xC9_CMP_GREATER_THAN():
@@ -4033,17 +3729,12 @@ if __name__ == '__main__':
         TEST_0xC9_CMP_EQUAL,
         TEST_0xC9_CMP_GREATER_THAN_ADDRESS_MODE_TESTS,
         TEST_0xC9_CMP_NEGATIVE_FLAG_SET,
-        TEST_0x2A_ROL_ACC_CARRY_FLAG_NOT_SET,
-        TEST_0x2A_ROL_ACC_CARRY_FLAG_SET,
-        TEST_0x6A_ROR_ACC_CARRY_FLAG_NOT_SET,
-        TEST_0x6A_ROR_ACC_CARRY_FLAG_SET,
         TEST_0x48_PHA_IMP,
         TEST_0x68_PLA_IMP,
         TEST_0x68_PLA_IMP_NEGATIVE_FLAG_SET,
         TEST_0x68_PLA_IMP_ZERO_FLAG_SET,
         TEST_0x24_BIT_ADDRESS_MODE_TESTS,
         TEST_0x24_BIT_ADDRESS_MODE_TESTS_ZERO_FLAG,
-        TEST_0x2A_ROL_ADDRESS_MODE_TESTS,
         TEST_0x08_PHP_PLA_COMBINED_TEST,
     ]
 
@@ -4067,6 +3758,8 @@ if __name__ == '__main__':
         CLD_tests,
         CLI_tests,
         CLV_tests,
+        ROL_tests,
+        ROR_tests,
     ]
 
     passed, failed, results, failed_tests = 0, 0, [], set([])

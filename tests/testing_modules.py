@@ -24,52 +24,49 @@ def generateProgram(instruction: str, registers: dict, immediate_value: int, zp_
         if instruct != instruction:
             continue
         address_mode = '_'.join(_ for _ in ins_set[1:])
-        if '_ACC' in address_mode:
-            continue
-        else:
-            instructions = []
+        instructions = []
 
-            if address_mode == 'IM':
-                instructions = [opcode, immediate_value]
-                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+        if address_mode == 'IM' and address_mode in CYCLE_COUNTS.keys():
+            instructions = [opcode, immediate_value]
+            program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
 
-            if address_mode == 'IMP':
-                instructions = [opcode, 0x00]
-                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+        if address_mode in (['ACC', 'IMP']) and address_mode in CYCLE_COUNTS.keys():
+            instructions = [opcode, 0x00]
+            program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
 
-            if address_mode == 'ZP':
-                instructions = [opcode, zp_address]
-                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+        if address_mode == 'ZP' and address_mode in CYCLE_COUNTS.keys():
+            instructions = [opcode, zp_address]
+            program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
 
-            elif address_mode == 'ZP_X':
-                instructions = [opcode, zp_address - registers.get('X', 0)]
-                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+        elif address_mode == 'ZP_X' and address_mode in CYCLE_COUNTS.keys():
+            instructions = [opcode, zp_address - registers.get('X', 0)]
+            program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
 
-            elif address_mode == 'ZP_Y':
-                instructions = [opcode, zp_address - registers.get('Y', 0)]
-                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+        elif address_mode == 'ZP_Y' and address_mode in CYCLE_COUNTS.keys():
+            instructions = [opcode, zp_address - registers.get('Y', 0)]
+            program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
 
-            if address_mode == 'ABS':
-                instructions = [opcode, sixteen_bit_address & 0b0000000011111111, (sixteen_bit_address & 0b1111111100000000) >> 8]
-                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+        if address_mode == 'ABS' and address_mode in CYCLE_COUNTS.keys():
+            instructions = [opcode, sixteen_bit_address & 0b0000000011111111, (sixteen_bit_address & 0b1111111100000000) >> 8]
+            program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
 
-            if address_mode == 'ABS_X':
-                target_sixteen_bit_address = sixteen_bit_address - registers.get('X', 0)
-                instructions = [opcode, target_sixteen_bit_address & 0b0000000011111111, (target_sixteen_bit_address & 0b1111111100000000) >> 8]
-                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+        if address_mode == 'ABS_X' and address_mode in CYCLE_COUNTS.keys():
+            target_sixteen_bit_address = sixteen_bit_address - registers.get('X', 0)
+            instructions = [opcode, target_sixteen_bit_address & 0b0000000011111111, (target_sixteen_bit_address & 0b1111111100000000) >> 8]
+            program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
 
-            if address_mode == 'ABS_Y':
-                target_sixteen_bit_address = sixteen_bit_address - registers.get('Y', 0)
-                instructions = [opcode, target_sixteen_bit_address & 0b0000000011111111, (target_sixteen_bit_address & 0b1111111100000000) >> 8]
-                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+        if address_mode == 'ABS_Y' and address_mode in CYCLE_COUNTS.keys():
+            target_sixteen_bit_address = sixteen_bit_address - registers.get('Y', 0)
+            instructions = [opcode, target_sixteen_bit_address & 0b0000000011111111, (target_sixteen_bit_address & 0b1111111100000000) >> 8]
+            program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
 
-            if address_mode == 'IND_X':
-                instructions = [opcode, ind_zp_address - registers.get('X', 0)]
-                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+        if address_mode == 'IND_X' and address_mode in CYCLE_COUNTS.keys():
+            instructions = [opcode, ind_zp_address - registers.get('X', 0)]
+            program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
 
-            if address_mode == 'IND_Y':
-                instructions = [opcode, ind_zp_address]
-                program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
+        if address_mode == 'IND_Y' and address_mode in CYCLE_COUNTS.keys():
+            instructions = [opcode, ind_zp_address]
+            program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
 
     return program
 
