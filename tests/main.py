@@ -18,6 +18,10 @@ from INC_tests import INC_tests
 from SEC_tests import SEC_tests
 from SED_tests import SED_tests
 from SEI_tests import SEI_tests
+from CLC_tests import CLC_tests
+from CLD_tests import CLD_tests
+from CLI_tests import CLI_tests
+from CLV_tests import CLV_tests
 
 # import testing_modules
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
@@ -4263,6 +4267,10 @@ if __name__ == '__main__':
         SEC_tests,
         SED_tests,
         SEI_tests,
+        CLC_tests,
+        CLD_tests,
+        CLI_tests,
+        CLV_tests,
     ]
 
     passed, failed, results, failed_tests = 0, 0, [], set([])

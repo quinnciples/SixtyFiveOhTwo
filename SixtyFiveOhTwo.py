@@ -225,10 +225,10 @@ class CPU6502:
                0xF8: 'SED_IMP',
                0x78: 'SEI_IMP',
 
-               0x18: 'CLC',
-               0x58: 'CLI',
-               0xB8: 'CLV',
-               0xD8: 'CLD',
+               0x18: 'CLC_IMP',
+               0x58: 'CLI_IMP',
+               0xB8: 'CLV_IMP',
+               0xD8: 'CLD_IMP',
 
                0xEA: 'NOP',
 
@@ -818,8 +818,8 @@ class CPU6502:
                 address = self.determineAddress(mode=address_mode)
                 self.writeMemory(data=self.registers[target], address=address, bytes=1)
 
-            if self.INS in ['CLC', 'CLI', 'CLD', 'CLV', 'SEC_IMP', 'SED_IMP', 'SEI_IMP']:
-                if self.INS in ['CLC', 'CLI', 'CLD', 'CLV']:
+            if self.INS in ['CLC_IMP', 'CLI_IMP', 'CLD_IMP', 'CLV_IMP', 'SEC_IMP', 'SED_IMP', 'SEI_IMP']:
+                if self.INS in ['CLC_IMP', 'CLI_IMP', 'CLD_IMP', 'CLV_IMP']:
                     self.setFlagsManually(flags=[self.INS[2]], value=0)
                 else:
                     self.setFlagsManually(flags=[self.INS[2]], value=1)
