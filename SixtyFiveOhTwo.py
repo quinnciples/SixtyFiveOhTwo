@@ -393,12 +393,12 @@ class CPU6502:
 
     def setFlagsByRegister(self, register=None, flags=[]):
         # Carry flag must be checked first, because it can alter the register value which can then be tested against other criteria in this same subroutine
-        if 'C' in flags:
-            if self.registers[register] & 0b100000000 > 0:
-                self.flags['C'] = 1
-                self.registers[register] = self.registers[register] % 0x0100
-            else:
-                self.flags['C'] = 0
+        # if 'C' in flags:
+            # if self.registers[register] & 0b100000000 > 0:
+                # self.flags['C'] = 1
+                # self.registers[register] = self.registers[register] % 0x0100
+            # else:
+                # self.flags['C'] = 0
 
         if 'Z' in flags:
             if self.registers[register] == 0:
@@ -752,16 +752,22 @@ class CPU6502:
 
             if self.INS == 'ADC_IM':
                 value = self.readMemory()
-                self.registers['A'] += value
-                self.setFlagsByRegister(register='A', flags=['C', 'Z', 'V', 'N'])
+                value += self.registers['A']
+                self.registers['A'] = value & 0b0000000011111111
+                self.setFlagsByRegister(register='A', flags=['Z', 'V', 'N'])
+                carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
+                self.setFlagsManually(flags=['C'], value=carry_flag)
 
             if self.INS in ['ADC_ZP', 'ADC_ZP_X', 'ADC_ABS', 'ADC_ABS_X', 'ADC_ABS_Y', 'ADC_IND_X', 'ADC_IND_Y']:
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
                 value = self.readMemory(address=address, increment_pc=False, bytes=1)
-                self.registers['A'] += value
+                value += self.registers['A']
+                self.registers['A'] = value & 0b0000000011111111
                 self.setFlagsByRegister(register='A', flags=['C', 'Z', 'V', 'N'])
+                carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
+                self.setFlagsManually(flags=['C'], value=carry_flag)
 
             if self.INS == 'JSR_ABS':
                 ins_set = self.INS.split('_')
