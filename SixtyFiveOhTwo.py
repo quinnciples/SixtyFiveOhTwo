@@ -774,7 +774,7 @@ class CPU6502:
                 orig_value = value
                 value += self.registers['A'] + self.flags['C']
                 self.registers['A'] = value & 0b0000000011111111
-                self.setFlagsByRegister(register='A', flags=['C', 'Z', 'N'])
+                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
                 carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
                 self.setFlagsManually(flags=['C'], value=carry_flag)
                 overflow_flag = 0
