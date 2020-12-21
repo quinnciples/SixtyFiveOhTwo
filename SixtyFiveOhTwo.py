@@ -754,7 +754,7 @@ class CPU6502:
                 orig_A_register_value = self.registers['A']
                 value = self.readMemory()
                 orig_value = value
-                value += self.registers['A']
+                value += self.registers['A'] + self.flags['C']
                 self.registers['A'] = value & 0b0000000011111111
                 self.setFlagsByRegister(register='A', flags=['Z', 'N'])
                 carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
@@ -772,7 +772,7 @@ class CPU6502:
                 address = self.determineAddress(mode=address_mode)
                 value = self.readMemory(address=address, increment_pc=False, bytes=1)
                 orig_value = value
-                value += self.registers['A']
+                value += self.registers['A'] + self.flags['C']
                 self.registers['A'] = value & 0b0000000011111111
                 self.setFlagsByRegister(register='A', flags=['C', 'Z', 'N'])
                 carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
