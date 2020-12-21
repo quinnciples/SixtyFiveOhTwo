@@ -751,23 +751,37 @@ class CPU6502:
                 self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
             if self.INS == 'ADC_IM':
+                orig_A_register_value = self.registers['A']
                 value = self.readMemory()
+                orig_value = value
                 value += self.registers['A']
                 self.registers['A'] = value & 0b0000000011111111
-                self.setFlagsByRegister(register='A', flags=['Z', 'V', 'N'])
+                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
                 carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
                 self.setFlagsManually(flags=['C'], value=carry_flag)
+                overflow_flag = 0
+                if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
+                    if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
+                        overflow_flag = 1
+                self.setFlagsManually(flags=['V'], value=overflow_flag)
 
             if self.INS in ['ADC_ZP', 'ADC_ZP_X', 'ADC_ABS', 'ADC_ABS_X', 'ADC_ABS_Y', 'ADC_IND_X', 'ADC_IND_Y']:
+                orig_A_register_value = self.registers['A']
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
                 value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                orig_value = value
                 value += self.registers['A']
                 self.registers['A'] = value & 0b0000000011111111
-                self.setFlagsByRegister(register='A', flags=['C', 'Z', 'V', 'N'])
+                self.setFlagsByRegister(register='A', flags=['C', 'Z', 'N'])
                 carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
                 self.setFlagsManually(flags=['C'], value=carry_flag)
+                overflow_flag = 0
+                if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
+                    if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
+                        overflow_flag = 1
+                self.setFlagsManually(flags=['V'], value=overflow_flag)
 
             if self.INS == 'JSR_ABS':
                 ins_set = self.INS.split('_')
