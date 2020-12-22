@@ -25,6 +25,7 @@ from CLV_tests import CLV_tests
 from ROL_tests import ROL_tests
 from ROR_tests import ROR_tests
 from ADC_tests import ADC_tests
+from ASL_tests import ASL_tests
 
 # import testing_modules
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
@@ -2776,168 +2777,6 @@ def TEST_0xBA_TSX():
     return False
 
 
-def TEST_0x0A_ASL_ACC():
-    EXPECTED_VALUE = 0x10
-    EXPECTED_CYCLES = 2
-    INITIAL_REGISTERS = {
-        'A': 0x08,
-        'X': 0,
-        'Y': 0
-    }
-    EXPECTED_REGISTERS = {
-        'A': EXPECTED_VALUE,
-        'X': 0,
-        'Y': 0
-    }
-    INITIAL_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0x0A]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-        return True
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        print(f'Cycles: {cpu.cycles-1}')
-        print(f'Expected Registers: {EXPECTED_REGISTERS}')
-        raise
-    return False
-
-
-def TEST_0x0A_ASL_ACC_CARRY_FLAG():
-    EXPECTED_VALUE = 0x54
-    EXPECTED_CYCLES = 2
-    INITIAL_REGISTERS = {
-        'A': 0xAA,
-        'X': 0,
-        'Y': 0
-    }
-    EXPECTED_REGISTERS = {
-        'A': EXPECTED_VALUE,
-        'X': 0,
-        'Y': 0
-    }
-    INITIAL_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 1,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0x0A]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-        return True
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        print(f'Cycles: {cpu.cycles-1}')
-        print(f'Expected Registers: {EXPECTED_REGISTERS}')
-        raise
-    return False
-
-
-def TEST_0x06_ASL_ZP():
-    EXPECTED_VALUE = 0x08
-    EXPECTED_CYCLES = 5
-    INITIAL_REGISTERS = {
-        'A': 0,
-        'X': 0,
-        'Y': 0
-    }
-    EXPECTED_REGISTERS = {
-        'A': 0,
-        'X': 0,
-        'Y': 0
-    }
-    INITIAL_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0x06, 0xAA]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.memory[0xAA] = 0x04
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.memory[0xAA] == EXPECTED_VALUE)
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-        return True
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        cpu.memoryDump(startingAddress=0x00AA, endingAddress=0x00AB)
-        print(f'Cycles: {cpu.cycles-1}')
-        print(f'Expected Registers: {EXPECTED_REGISTERS}')
-        raise
-    return False
-
-
 def TEST_0x20_JSR_ABS():
     EXPECTED_VALUE = 0x35
     EXPECTED_CYCLES = 6 + 2
@@ -3137,9 +2976,6 @@ if __name__ == '__main__':
         TEST_0x6C_JMP_IND,
         TEST_0x20_JSR_ABS,
         TEST_0x60_RTS,
-        TEST_0x0A_ASL_ACC,
-        TEST_0x0A_ASL_ACC_CARRY_FLAG,
-        TEST_0x06_ASL_ZP,
         TEST_0xAA_TAX,
         TEST_0xAA_TAX_ZERO_FLAG,
         TEST_0xAA_TAX_NEGATIVE_FLAG,
@@ -3214,6 +3050,7 @@ if __name__ == '__main__':
         ROL_tests,
         ROR_tests,
         ADC_tests,
+        ASL_tests,
     ]
 
     passed, failed, results, failed_tests = 0, 0, [], set([])
