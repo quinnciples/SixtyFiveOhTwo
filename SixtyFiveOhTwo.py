@@ -392,14 +392,6 @@ class CPU6502:
             self.memory[address + byte] = data
 
     def setFlagsByRegister(self, register=None, flags=[]):
-        # Carry flag must be checked first, because it can alter the register value which can then be tested against other criteria in this same subroutine
-        # if 'C' in flags:
-            # if self.registers[register] & 0b100000000 > 0:
-                # self.flags['C'] = 1
-                # self.registers[register] = self.registers[register] % 0x0100
-            # else:
-                # self.flags['C'] = 0
-
         if 'Z' in flags:
             if self.registers[register] == 0:
                 self.flags['Z'] = 1
@@ -869,7 +861,7 @@ class CPU6502:
                 self.program_counter = address
 
             elif self.INS == 'NOP':
-                self.readMemory() # single byte instruction
+                self.readMemory()  # single byte instruction
 
             data = self.readMemory()
             self.INS = CPU6502.opcodes.get(data, None)

@@ -113,9 +113,6 @@ def TEST_0x08_PHP_PLA_COMBINED_TEST():
     return True
 
 
-
-
-
 def TEST_0x24_BIT_ADDRESS_MODE_TESTS_ZERO_FLAG():
     TEST_NAME = f'TEST_0x24_BIT_ADDRESS_MODE_TESTS_ZERO_FLAG'
     INITIAL_REGISTERS = {
@@ -2745,7 +2742,7 @@ if __name__ == '__main__':
     print('*' * 80)
     print('TEST SUMMARY')
     for result in results:
-        if result:W
+        if result:
             print(f"{bcolors.OKGREEN}{'▓'}{bcolors.ENDC}", end='')
             passed += 1
         else:
