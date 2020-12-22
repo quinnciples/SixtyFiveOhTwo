@@ -26,6 +26,8 @@ from ROL_tests import ROL_tests
 from ROR_tests import ROR_tests
 from ADC_tests import ADC_tests
 from ASL_tests import ASL_tests
+from BCC_tests import BCC_tests
+from BCS_tests import BCS_tests
 
 # import testing_modules
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
@@ -1445,324 +1447,6 @@ def TEST_0x50_BVC_SUCCESSFUL_BRANCH_CROSS_PAGE_BOUNDARY():
     return True
 
 
-def TEST_0xB0_BCS_DOES_NOT_BRANCH():
-    EXPECTED_CYCLES = 2
-    INITIAL_REGISTERS = {
-        'A': 0x7F,
-        'X': 0xDD,
-        'Y': 0xCC
-    }
-    EXPECTED_REGISTERS = {
-        'A': 0x7F,
-        'X': 0xDD,
-        'Y': 0xCC
-    }
-    INITIAL_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0xB0, 0x02, 0x00, 0x00, 0xA9, 0x05]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        print(f'Cycles: {cpu.cycles-1}')
-        print(f'Expected Registers: {EXPECTED_REGISTERS}')
-        raise
-        return False
-    return True
-
-
-def TEST_0xB0_BCS_SUCCESSFUL_BRANCH():
-    EXPECTED_CYCLES = 3 + 2
-    INITIAL_REGISTERS = {
-        'A': 0x7F,
-        'X': 0xDD,
-        'Y': 0xCC
-    }
-    EXPECTED_REGISTERS = {
-        'A': 0x05,
-        'X': 0xDD,
-        'Y': 0xCC
-    }
-    INITIAL_FLAGS = {
-        'C': 1,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 1,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0xB0, 0x02, 0x00, 0x00, 0xA9, 0x05]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        print(f'Cycles: {cpu.cycles-1}')
-        print(f'Expected Registers: {EXPECTED_REGISTERS}')
-        raise
-        return False
-    return True
-
-
-def TEST_0xB0_BCS_SUCCESSFUL_BRANCH_CROSS_PAGE_BOUNDARY():
-    EXPECTED_CYCLES = 4 + 2
-    INITIAL_REGISTERS = {
-        'A': 0x7F,
-        'X': 0xDD,
-        'Y': 0xCC
-    }
-    EXPECTED_REGISTERS = {
-        'A': 0x05,
-        'X': 0xDD,
-        'Y': 0xCC
-    }
-    INITIAL_FLAGS = {
-        'C': 1,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 1,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xAAFB)
-    program = [0xB0, 0x04, 0x00, 0x00, 0x00, 0x00, 0xA9, 0x05]
-    cpu.loadProgram(instructions=program, memoryAddress=0xAAFB)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xAAF0, endingAddress=0xAB07)
-        print(f'Cycles: {cpu.cycles-1}')
-        print(f'Expected Registers: {EXPECTED_REGISTERS}')
-        raise
-        return False
-    return True
-
-
-def TEST_0x90_BCC_DOES_NOT_BRANCH():
-    EXPECTED_CYCLES = 2
-    INITIAL_REGISTERS = {
-        'A': 0x7F,
-        'X': 0xDD,
-        'Y': 0xCC
-    }
-    EXPECTED_REGISTERS = {
-        'A': 0x7F,
-        'X': 0xDD,
-        'Y': 0xCC
-    }
-    INITIAL_FLAGS = {
-        'C': 1,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 1,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0x90, 0x02, 0x00, 0x00, 0xA9, 0x05]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        print(f'Cycles: {cpu.cycles-1}')
-        print(f'Expected Registers: {EXPECTED_REGISTERS}')
-        raise
-        return False
-    return True
-
-
-def TEST_0x90_BCC_SUCCESSFUL_BRANCH():
-    EXPECTED_CYCLES = 3 + 2
-    INITIAL_REGISTERS = {
-        'A': 0x7F,
-        'X': 0xDD,
-        'Y': 0xCC
-    }
-    EXPECTED_REGISTERS = {
-        'A': 0x05,
-        'X': 0xDD,
-        'Y': 0xCC
-    }
-    INITIAL_FLAGS = {
-        'C': 0,
-        'Z': 1,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0x90, 0x02, 0x00, 0x00, 0xA9, 0x05]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        print(f'Cycles: {cpu.cycles-1}')
-        print(f'Expected Registers: {EXPECTED_REGISTERS}')
-        raise
-        return False
-    return True
-
-
-def TEST_0x90_BCC_SUCCESSFUL_BRANCH_CROSS_PAGE_BOUNDARY():
-    EXPECTED_CYCLES = 4 + 2
-    INITIAL_REGISTERS = {
-        'A': 0x7F,
-        'X': 0xDD,
-        'Y': 0xCC
-    }
-    EXPECTED_REGISTERS = {
-        'A': 0x05,
-        'X': 0xDD,
-        'Y': 0xCC
-    }
-    INITIAL_FLAGS = {
-        'C': 0,
-        'Z': 1,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xAAFB)
-    program = [0x90, 0x04, 0x00, 0x00, 0x00, 0x00, 0xA9, 0x05]
-    cpu.loadProgram(instructions=program, memoryAddress=0xAAFB)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xAAF0, endingAddress=0xAB07)
-        print(f'Cycles: {cpu.cycles-1}')
-        print(f'Expected Registers: {EXPECTED_REGISTERS}')
-        raise
-        return False
-    return True
-
-
 def TEST_0xF0_BEQ_DOES_NOT_BRANCH():
     EXPECTED_CYCLES = 2
     INITIAL_REGISTERS = {
@@ -2995,12 +2679,6 @@ if __name__ == '__main__':
         TEST_0xF0_BEQ_DOES_NOT_BRANCH,
         TEST_0xF0_BEQ_SUCCESSFUL_BRANCH,
         TEST_0xF0_BEQ_SUCCESSFUL_BRANCH_CROSS_PAGE_BOUNDARY,
-        TEST_0x90_BCC_DOES_NOT_BRANCH,
-        TEST_0x90_BCC_SUCCESSFUL_BRANCH,
-        TEST_0x90_BCC_SUCCESSFUL_BRANCH_CROSS_PAGE_BOUNDARY,
-        TEST_0xB0_BCS_DOES_NOT_BRANCH,
-        TEST_0xB0_BCS_SUCCESSFUL_BRANCH,
-        TEST_0xB0_BCS_SUCCESSFUL_BRANCH_CROSS_PAGE_BOUNDARY,
         TEST_0x50_BVC_DOES_NOT_BRANCH,
         TEST_0x50_BVC_SUCCESSFUL_BRANCH,
         TEST_0x50_BVC_SUCCESSFUL_BRANCH_CROSS_PAGE_BOUNDARY,
@@ -3051,6 +2729,8 @@ if __name__ == '__main__':
         ROR_tests,
         ADC_tests,
         ASL_tests,
+        BCC_tests,
+        BCS_tests,
     ]
 
     passed, failed, results, failed_tests = 0, 0, [], set([])
@@ -3065,7 +2745,7 @@ if __name__ == '__main__':
     print('*' * 80)
     print('TEST SUMMARY')
     for result in results:
-        if result:
+        if result:W
             print(f"{bcolors.OKGREEN}{'▓'}{bcolors.ENDC}", end='')
             passed += 1
         else:
