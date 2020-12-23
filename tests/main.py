@@ -35,6 +35,10 @@ from BVS_tests import BVS_tests
 from BMI_tests import BMI_tests
 from BPL_tests import BPL_tests
 from LSR_tests import LSR_tests
+from TAX_tests import TAX_tests
+from TXA_tests import TXA_tests
+from TAY_tests import TAY_tests
+from TYA_tests import TYA_tests
 
 # import testing_modules
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
@@ -815,214 +819,6 @@ def TEST_0xC9_CMP_EQUAL():
     return True
 
 
-def TEST_0xAA_TAX():
-    EXPECTED_CYCLES = 2
-    INITIAL_REGISTERS = {
-        'A': 0x08,
-        'X': 0xFF,
-        'Y': 0xCC
-    }
-    EXPECTED_REGISTERS = {
-        'A': 0x08,
-        'X': 0x08,
-        'Y': 0xCC
-    }
-    INITIAL_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0xAA]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-        return True
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        print(f'Cycles: {cpu.cycles-1}')
-        print(f'Expected Registers: {EXPECTED_REGISTERS}')
-        raise
-    return False
-
-
-def TEST_0xAA_TAX_ZERO_FLAG():
-    EXPECTED_CYCLES = 2
-    INITIAL_REGISTERS = {
-        'A': 0x00,
-        'X': 0xFF,
-        'Y': 0xDD
-    }
-    EXPECTED_REGISTERS = {
-        'A': 0x00,
-        'X': 0x00,
-        'Y': 0xDD
-    }
-    INITIAL_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 0,
-        'Z': 1,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0xAA]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-        return True
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        print(f'Cycles: {cpu.cycles-1}')
-        print(f'Expected Registers: {EXPECTED_REGISTERS}')
-        raise
-    return False
-
-
-def TEST_0xAA_TAX_NEGATIVE_FLAG():
-    EXPECTED_CYCLES = 2
-    INITIAL_REGISTERS = {
-        'A': 0xFF,
-        'X': 0x00,
-        'Y': 0xAA
-    }
-    EXPECTED_REGISTERS = {
-        'A': 0xFF,
-        'X': 0xFF,
-        'Y': 0xAA
-    }
-    INITIAL_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 1
-    }
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0xAA]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-        return True
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        print(f'Cycles: {cpu.cycles-1}')
-        print(f'Expected Registers: {EXPECTED_REGISTERS}')
-        raise
-    return False
-
-
-def TEST_0x8A_TXA():
-    EXPECTED_CYCLES = 2
-    INITIAL_REGISTERS = {
-        'A': 0x08,
-        'X': 0x13,
-        'Y': 0
-    }
-    EXPECTED_REGISTERS = {
-        'A': 0x13,
-        'X': 0x13,
-        'Y': 0
-    }
-    INITIAL_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0x8A]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-        return True
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        print(f'Cycles: {cpu.cycles-1}')
-        print(f'Expected Registers: {EXPECTED_REGISTERS}')
-        raise
-    return False
-
-
 def TEST_0x98_TYA():
     EXPECTED_CYCLES = 2
     INITIAL_REGISTERS = {
@@ -1433,11 +1229,7 @@ if __name__ == '__main__':
         TEST_0x6C_JMP_IND,
         TEST_0x20_JSR_ABS,
         TEST_0x60_RTS,
-        TEST_0xAA_TAX,
-        TEST_0xAA_TAX_ZERO_FLAG,
-        TEST_0xAA_TAX_NEGATIVE_FLAG,
         TEST_0xA8_TAY,
-        TEST_0x8A_TXA,
         TEST_0x98_TYA,
         TEST_0x9A_TXS,
         TEST_0xBA_TSX,
@@ -1488,6 +1280,11 @@ if __name__ == '__main__':
         BMI_tests,
         BPL_tests,
         LSR_tests,
+        TAX_tests,
+        TXA_tests,
+        TAY_tests,
+        TYA_tests,
+        
     ]
 
     passed, failed, results, failed_tests = 0, 0, [], set([])

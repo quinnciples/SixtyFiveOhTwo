@@ -209,12 +209,12 @@ class CPU6502:
                0x94: 'STY_ZP_X',
                0x8c: 'STY_ABS',
 
-               0xAA: 'TAX',
-               0x8A: 'TXA',
-               0xA8: 'TAY',
-               0x98: 'TYA',
-               0x9A: 'TXS',
-               0xBA: 'TSX',
+               0xAA: 'TAX_IMP',
+               0x8A: 'TXA_IMP',
+               0xA8: 'TAY_IMP',
+               0x98: 'TYA_IMP',
+               0x9A: 'TXS_IMP',
+               0xBA: 'TSX_IMP',
 
                0x4C: 'JMP',
                0x6C: 'JMP_IND',
@@ -291,7 +291,7 @@ class CPU6502:
     def initializeMemory(self):
         self.memory = [0x00] * CPU6502.MAX_MEMORY_SIZE
 
-    def memoryDump(self, startingAddress=0x0000, endingAddress=0x0000, display_format='Hex'):
+    def memoryDump(self, startingAddress=None, endingAddress=None, display_format='Hex'):
         print('\nMemory Dump:\n')
         line = ''  # to clear issues with pylance
         header = ''
@@ -633,7 +633,7 @@ class CPU6502:
                     if ((self.program_counter & 0b1111111100000000) != ((self.program_counter - offset) & 0b1111111100000000)):
                         self.cycleInc()
 
-            if self.INS in ['TAX', 'TXA', 'TAY', 'TYA']:
+            if self.INS in ['TAX_IMP', 'TXA_IMP', 'TAY_IMP', 'TYA_IMP']:
                 source = self.INS[1]
                 dest = self.INS[2]
                 self.registers[dest] = self.registers[source]
