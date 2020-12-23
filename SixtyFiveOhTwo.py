@@ -640,7 +640,7 @@ class CPU6502:
                 self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
                 self.readMemory()  # 1 byte instruction -- read next byte and ignore
 
-            if self.INS in ['TXS', 'TSX']:
+            if self.INS in ['TXS_IMP', 'TSX_IMP']:
                 source = self.INS[1]
                 dest = self.INS[2]
                 if dest == 'X':
