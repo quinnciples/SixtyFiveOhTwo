@@ -28,6 +28,8 @@ from ADC_tests import ADC_tests
 from ASL_tests import ASL_tests
 from BCC_tests import BCC_tests
 from BCS_tests import BCS_tests
+from BEQ_tests import BEQ_tests
+from BNE_tests import BNE_tests
 
 # import testing_modules
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
@@ -2728,6 +2730,8 @@ if __name__ == '__main__':
         ASL_tests,
         BCC_tests,
         BCS_tests,
+        BEQ_tests,
+        BNE_tests,
     ]
 
     passed, failed, results, failed_tests = 0, 0, [], set([])
