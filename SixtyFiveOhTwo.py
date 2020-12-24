@@ -139,6 +139,13 @@ class CPU6502:
                0xC4: 'CPY_ZP',
                0xCC: 'CPY_ABS',
 
+               0xC6: 'DEC_ZP',
+               0xD6: 'DEC_ZP_X',
+               0xCE: 'DEC_ABS',
+               0xDE: 'DEC_ABS_X',
+               0xCA: 'DEX_IMP',
+               0x88: 'DEY_IMP',
+
                0x49: 'EOR_IM',
                0x45: 'EOR_ZP',
                0x55: 'EOR_ZP_X',
@@ -627,6 +634,8 @@ class CPU6502:
                 flag = comparisons[self.INS][0]
                 test_value = comparisons[self.INS][1]
                 if self.flags[flag] == test_value:
+                    if offset > 127:
+                        offset = (256 - offset) * (-1)
                     self.program_counter += offset
                     self.cycleInc()
                     # Check if page was crossed
@@ -809,6 +818,15 @@ class CPU6502:
                 self.registers[self.INS[2]] = value
                 self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
 
+            if self.INS in ['DEX_IMP', 'DEY_IMP']:
+                self.readMemory()  # single byte instruction
+                value = self.registers[self.INS[2]]
+                value -= 1
+                if value < 0:
+                    value = 0xFF
+                self.registers[self.INS[2]] = value
+                self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
+
             if self.INS.startswith('STA'):
                 ins_set = self.INS.split('_')
                 target = ins_set[0][2]
@@ -983,6 +1001,96 @@ def fast_multiply_10():
 
 
 def square_root_test():
+    sqroot = [
+        0xA9, 0x00,  # LDA_IM 0
+        0x85, 0xF2,  # STA_ZP [0xF2] Reml
+        0x85, 0xF3,  # STA_ZP [0xF3] Remh
+        0x85, 0xF6,  # STA_ZP [0xF6] Root
+        0xA2, 0x08,  # LDX_IM 8
+
+        0x4C, 0x00, 0x11,  # JMP TO LOOP [0x1100]
+    ]
+    loop = [
+        0x06, 0xF6,  # ASL_ZP [0xF6] Root
+
+        0x06, 0xF0,  # ASL_ZP [0xF0] Numberl
+        0x26, 0xF1,  # ROL_ZP [0xF1] Numberh
+        0x26, 0xF2,  # ROL_ZP [0xF2] Reml
+        0x26, 0xF3,  # ROL_ZP [0xF3] Remh
+
+        0x06, 0xF0,  # ASL_ZP [0xF0] Numberl
+        0x26, 0xF1,  # ROL_ZP [0xF1] Numberh
+        0x26, 0xF2,  # ROL_ZP [0xF2] Reml
+        0x26, 0xF3,  # ROL_ZP [0xF3] Remh
+
+        0xA5, 0xF6,  # LDA_ZP [0xF6] Root
+        0x85, 0xF4,  # STA_ZP [0xF4] Templ
+        0xA9, 0x00,  # LDA_IM 0
+        0x85, 0xF5,  # STA_ZP [0xF5] Temph
+
+        0x38, 0x00,  # SEC
+        0x26, 0xF4,  # ROL_ZP [0xF4] Templ
+        0x26, 0xF5,  # ROL_ZP [0xF5] Temph
+
+        0xA5, 0xF3,  # LDA_ZP [0xF3] Remh
+        0xC5, 0xF5,  # CMP_ZP [0xF5] Temph
+        0xB0, 0x03,  # BCC [Next Subroutine] -- CHANGED TO BCS
+        0x4C, 0x00, 0x13,  # JMP TO NEXT [0x1300]
+
+        0xF0, 0xA3,  # BNE [Subtr Subroutine] -- CHANGED TO BEQ
+        0x4C, 0x00, 0x12,  # JMP TO SUBTR [0x1200]
+
+        0xA5, 0xF2,  # LDA_ZP [0xF2] Reml
+        0xC5, 0xF4,  # CMP_ZP [0xF4] Templ
+        0xB0, 0xA3,  # BCC [Next Subroutine] -- CHANGED TO BCS
+        0x4C, 0x00, 0x13,  # JMP TO NEXT [0x1300]
+
+        0x4C, 0x00, 0x12,  # JMP TO SUBTR [0x1200]
+    ]
+    subtr = [
+        0xA5, 0xF2,  # LDA_ZP [0xF2] Reml
+        0xE5, 0xF4,  # SBC_ZP [0xF4] Templ
+        0x85, 0xF2,  # STA_ZP [0xF2] Reml
+        0xA5, 0xF3,  # LDA_ZP [0xF3] Remh
+        0xE5, 0xF5,  # SBC_ZP [0xF4] Temph
+        0x85, 0xF3,  # STA_ZP [0xF3] Remh
+
+        0xE6, 0xF6,  # INC_ZP [0xF6] Root
+
+        0x4C, 0x00, 0x13  # JMP TO NEXT [0x1300]
+    ]
+    next = [
+        0xCA, 0x00,  # DEX
+        0xF0, 0x03,  # BNE [Loop Subroutine] -- CHANGED TO BEQ
+        0x4C, 0x00, 0x11,  # JMP TO LOOP [0x1100]
+        0x60, 0x00,  # RTS
+
+    ]
+
+    all_in_one = [0xa9, 0x00, 0x85, 0xf2, 0x85, 0xf3, 0x85, 0xf6, 0xa2, 0x08, 0x06, 0xf6,
+        0x06, 0xf0, 0x26, 0xf1, 0x26, 0xf2, 0x26, 0xf3, 0x06, 0xf0, 0x26, 0xf1, 0x26, 0xf2, 0x26, 0xf3,
+        0xa5, 0xf6, 0x85, 0xf4, 0xa9, 0x00, 0x85, 0xf5, 0x38, 0x26, 0xf4, 0x26, 0xf5, 0xa5, 0xf3, 0xc5,
+        0xf5, 0x90, 0x16, 0xd0, 0x06, 0xa5, 0xf2, 0xc5, 0xf4, 0x90, 0x0e, 0xa5, 0xf2, 0xe5, 0xf4, 0x85,
+        0xf2, 0xa5, 0xf3, 0xe5, 0xf5, 0x85, 0xf3, 0xe6, 0xf6, 0xca, 0xd0, 0xc2, 0x60]
+
+    cpu = CPU6502(cycle_limit=1200)
+    cpu.reset(program_counter=0x8000)
+    cpu.memory[0x00F0] = 0x51  # Number to find square root of low byte
+    cpu.memory[0x00F1] = 0x00  # Number to find square root of high byte
+
+    # cpu.loadProgram(instructions=sqroot, memoryAddress=0x1000, mainProgram=True)
+    # cpu.loadProgram(instructions=loop, memoryAddress=0x1100, mainProgram=False)
+    # cpu.loadProgram(instructions=subtr, memoryAddress=0x1200, mainProgram=False)
+    # cpu.loadProgram(instructions=next, memoryAddress=0x1300, mainProgram=False)
+    cpu.loadProgram(instructions=all_in_one, memoryAddress=0x8000, mainProgram=True)
+    cpu.execute()
+    cpu.printLog()
+    # cpu.memoryDump(startingAddress=0x1000, endingAddress=0x1000 + len(sqroot))
+    # cpu.memoryDump(startingAddress=0x1100, endingAddress=0x1100 + len(loop))
+    # cpu.memoryDump(startingAddress=0x1200, endingAddress=0x1200 + len(subtr))
+    # cpu.memoryDump(startingAddress=0x1300, endingAddress=0x1300 + len(next))
+    cpu.memoryDump(startingAddress=0x00F0, endingAddress=0x00F8)
+
     """
     ; Calculates the 8 bit root and 9 bit remainder of a 16 bit unsigned integer in
     ; Numberl/Numberh. The result is always in the range 0 to 255 and is held in
@@ -1004,7 +1112,7 @@ def square_root_test():
     temph		= templ+1	; temp partial high byte
     Root		= $F6		; square root
 
-        *= $8000		; can be anywhere, ROM or RAM
+    *= $8000        		; can be anywhere, ROM or RAM
 
     SqRoot
         LDA	#$00		; clear A
@@ -1030,7 +1138,7 @@ def square_root_test():
         LDA	#$00		; clear byte
         STA	temph		; clear temp high byte
 
-        SEC			; +1
+        SEC			    ; +1
         ROL	templ		; temp = temp * 2 + 1
         ROL	temph		;
 
@@ -1044,8 +1152,8 @@ def square_root_test():
         CMP	templ		; comapre with partial low byte
         BCC	Next		; skip sub if remainder low byte smaller
 
-                    ; else remainder>=partial so subtract then
-                    ; and add 1 to root. carry is always set here
+                        ; else remainder>=partial so subtract then
+                        ; and add 1 to root. carry is always set here
     Subtr
         LDA	Reml		; get remainder low byte
         SBC	templ		; subtract partial low byte
@@ -1056,7 +1164,7 @@ def square_root_test():
 
         INC	Root		; increment Root
     Next
-        DEX			; decrement bit pair count
+        DEX			    ; decrement bit pair count
         BNE	Loop		; loop if not all done
 
         RTS
@@ -1085,8 +1193,10 @@ def flags_test():
 
 if __name__ == '__main__':
     # run()
-    fibonacci_test()
+    # fibonacci_test()
     # print()
     # fast_multiply_10()
     # print()
     # flags_test()
+    print()
+    square_root_test()
