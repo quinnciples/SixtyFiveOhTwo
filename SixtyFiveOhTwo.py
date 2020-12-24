@@ -216,7 +216,7 @@ class CPU6502:
                0x9A: 'TXS_IMP',
                0xBA: 'TSX_IMP',
 
-               0x4C: 'JMP',
+               0x4C: 'JMP_ABS',
                0x6C: 'JMP_IND',
                0x20: 'JSR_ABS',
                0x60: 'RTS',
@@ -851,8 +851,10 @@ class CPU6502:
                 self.registers[register] = data
                 self.setFlagsByRegister(register=register, flags=['Z', 'N'])
 
-            elif self.INS == 'JMP':
-                address = self.determineAddress(mode='ABS')
+            elif self.INS in ['JMP_ABS']:
+                ins_set = self.INS.split('_')
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
                 self.program_counter = address
 
             elif self.INS == 'JMP_IND':
