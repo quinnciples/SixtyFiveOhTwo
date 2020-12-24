@@ -44,6 +44,9 @@ from TXS_tests import TXS_tests
 from JMP_tests import JMP_tests
 from JSR_tests import JSR_tests
 from RTS_tests import RTS_tests
+from DEX_tests import DEX_tests
+from DEY_tests import DEY_tests
+from DEC_tests import DEC_tests
 
 # import testing_modules
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
@@ -883,6 +886,9 @@ if __name__ == '__main__':
         JMP_tests,
         JSR_tests,
         RTS_tests,
+        DEX_tests,
+        DEY_tests,
+        DEC_tests,
 
     ]
 
