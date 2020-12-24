@@ -219,7 +219,7 @@ class CPU6502:
                0x4C: 'JMP_ABS',
                0x6C: 'JMP_IND',
                0x20: 'JSR_ABS',
-               0x60: 'RTS',
+               0x60: 'RTS_IMP',
 
                0x38: 'SEC_IMP',
                0xF8: 'SED_IMP',
@@ -783,10 +783,10 @@ class CPU6502:
                 self.program_counter = address
                 self.cycleInc()
 
-            if self.INS == 'RTS':
+            if self.INS == 'RTS_IMP':
+                self.readMemory()  # single byte instruction
                 self.loadPCFromStackPointer()
                 self.programCounterInc()
-                self.cycleInc()
 
             if self.INS in ['INC_ZP', 'INC_ZP_X', 'INC_ABS', 'INC_ABS_X']:
                 ins_set = self.INS.split('_')

@@ -42,6 +42,8 @@ from TYA_tests import TYA_tests
 from TSX_tests import TSX_tests
 from TXS_tests import TXS_tests
 from JMP_tests import JMP_tests
+from JSR_tests import JSR_tests
+from RTS_tests import RTS_tests
 
 # import testing_modules
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
@@ -822,127 +824,9 @@ def TEST_0xC9_CMP_EQUAL():
     return True
 
 
-def TEST_0x20_JSR_ABS():
-    EXPECTED_VALUE = 0x35
-    EXPECTED_CYCLES = 6 + 2
-    INITIAL_REGISTERS = {
-        'A': 0,
-        'X': 0,
-        'Y': 0
-    }
-    EXPECTED_REGISTERS = {
-        'A': EXPECTED_VALUE,
-        'X': 0,
-        'Y': 0
-    }
-    INITIAL_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0x20, 0x05, 0xE3]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    program = [0xA9, 0x35]
-    cpu.loadProgram(instructions=program, memoryAddress=0xE305, mainProgram=False)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.stack_pointer == 0xFD)
-        assert(cpu.memory[0x01FE] == 0x02)
-        assert(cpu.memory[0x01FF] == 0xFF)
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-        return True
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0x01F0, endingAddress=0x01FF)
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        print(f'Cycles: {cpu.cycles-1}')
-        raise
-    return False
-
-
-def TEST_0x60_RTS():
-    EXPECTED_VALUE_A = 0x35
-    EXPECTED_VALUE_X = 0x29
-    EXPECTED_CYCLES = 6 + 2 + 6 + 2
-    INITIAL_REGISTERS = {
-        'A': 0,
-        'X': 0,
-        'Y': 0
-    }
-    EXPECTED_REGISTERS = {
-        'A': EXPECTED_VALUE_A,
-        'X': EXPECTED_VALUE_X,
-        'Y': 0
-    }
-    INITIAL_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    EXPECTED_FLAGS = {
-        'C': 0,
-        'Z': 0,
-        'I': 0,
-        'D': 0,
-        'B': 0,
-        'V': 0,
-        'N': 0
-    }
-    cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
-    cpu.reset(program_counter=0xFF00)
-    program = [0x20, 0x05, 0xE3, 0xA2, 0x29]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
-    program = [0xA9, 0x35, 0x60]
-    cpu.loadProgram(instructions=program, memoryAddress=0xE305, mainProgram=False)
-    cpu.registers = INITIAL_REGISTERS
-    cpu.flags = INITIAL_FLAGS
-    cpu.execute()
-
-    try:
-        assert(cpu.memory[0x01FE] == 0x02)
-        assert(cpu.memory[0x01FF] == 0xFF)
-        assert(cpu.registers == EXPECTED_REGISTERS)
-        assert(cpu.flags == EXPECTED_FLAGS)
-        assert(cpu.cycles - 1 == EXPECTED_CYCLES)
-        return True
-    except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0x01F0, endingAddress=0x01FF)
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        print(f'Cycles: {cpu.cycles-1}')
-        raise
-    return False
-
-
 if __name__ == '__main__':
     os.system('color')
     tests = [
-        TEST_0x20_JSR_ABS,
-        TEST_0x60_RTS,
         TEST_0xC9_CMP_GREATER_THAN,
         TEST_0xC9_CMP_LESS_THAN,
         TEST_0xC9_CMP_EQUAL,
@@ -997,6 +881,8 @@ if __name__ == '__main__':
         TSX_tests,
         TXS_tests,
         JMP_tests,
+        JSR_tests,
+        RTS_tests,
 
     ]
 
