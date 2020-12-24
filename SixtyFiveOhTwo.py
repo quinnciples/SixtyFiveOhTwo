@@ -108,7 +108,7 @@ class CPU6502:
 
     version = '0.50'
     MAX_MEMORY_SIZE = 1024 * 64  # 64k memory size
-    OPCODES_WRITE_TO_MEMORY = ['STA', 'STX', 'STY', 'ROL', 'ROR', 'ASL', 'LSR']
+    OPCODES_WRITE_TO_MEMORY = ['STA', 'STX', 'STY', 'ROL', 'ROR', 'ASL', 'LSR', 'INC', 'DEC']
     opcodes = {0x29: 'AND_IM',
                0x25: 'AND_ZP',
                0x35: 'AND_ZP_X',
@@ -821,8 +821,6 @@ class CPU6502:
                 value += 1
                 value = value % 0x100
                 self.cycleInc()  # Is this really necessary? -- apparently, yes
-                if self.INS == 'INC_ABS_X':
-                    self.cycleInc()  # Also necessary according to comments above
                 self.writeMemory(data=value, address=address, bytes=1)
                 self.setFlagsByValue(value=value, flags=['N', 'Z'])
 
@@ -833,6 +831,18 @@ class CPU6502:
                 self.cycleInc()  # Is this really necessary?
                 self.registers[self.INS[2]] = value
                 self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
+
+            if self.INS in ['DEC_ZP', 'DEC_ZP_X', 'DEC_ABS', 'DEC_ABS_X']:
+                ins_set = self.INS.split('_')
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
+                value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                value -= 1
+                if value < 0:
+                    value = 0xFF
+                self.cycleInc()  # Is this really necessary? -- apparently, yes
+                self.writeMemory(data=value, address=address, bytes=1)
+                self.setFlagsByValue(value=value, flags=['N', 'Z'])
 
             if self.INS in ['DEX_IMP', 'DEY_IMP']:
                 self.readMemory()  # single byte instruction
