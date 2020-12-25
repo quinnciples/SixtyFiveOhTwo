@@ -721,9 +721,7 @@ class CPU6502:
                     # self.setFlagsManually(['C'], 0)
                     self.setFlagsManually(['Z'], 1)
                 # if compare < value:
-                result = compare - value
-                while result < 0:
-                    result += 0x100
+                result = (compare - value) & 0b0000000011111111
                 self.setFlagsByValue(value=result, flags=['N'])
 
             if self.INS in ['BEQ', 'BNE',
