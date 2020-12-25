@@ -12,6 +12,62 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+    CEND = '\33[0m'
+    CBOLD = '\33[1m'
+    CITALIC = '\33[3m'
+    CURL = '\33[4m'
+    CBLINK = '\33[5m'
+    CBLINK2 = '\33[6m'
+    CSELECTED = '\33[7m'
+
+    CBLACK = '\33[30m'
+    CRED = '\33[31m'
+    CGREEN = '\33[32m'
+    CYELLOW = '\33[33m'
+    CBLUE = '\33[34m'
+    CVIOLET = '\33[35m'
+    CBEIGE = '\33[36m'
+    CWHITE = '\33[37m'
+
+    CBLACKBG = '\33[40m'
+    CREDBG = '\33[41m'
+    CGREENBG = '\33[42m'
+    CYELLOWBG = '\33[43m'
+    CBLUEBG = '\33[44m'
+    CVIOLETBG = '\33[45m'
+    CBEIGEBG = '\33[46m'
+    CWHITEBG = '\33[47m'
+
+    CGREY = '\33[90m'
+    CRED2 = '\33[91m'
+    CGREEN2 = '\33[92m'
+    CYELLOW2 = '\33[93m'
+    CBLUE2 = '\33[94m'
+    CVIOLET2 = '\33[95m'
+    CBEIGE2 = '\33[96m'
+    CWHITE2 = '\33[97m'
+
+    CGREYBG = '\33[100m'
+    CREDBG2 = '\33[101m'
+    CGREENBG2 = '\33[102m'
+    CYELLOWBG2 = '\33[103m'
+    CBLUEBG2 = '\33[104m'
+    CVIOLETBG2 = '\33[105m'
+    CBEIGEBG2 = '\33[106m'
+    CWHITEBG2 = '\33[107m'
+
+    @classmethod
+    def printColorChart(self):
+        x = 0
+        for i in range(24):
+            colors = ""
+            for j in range(5):
+                code = str(x + j)
+                colors = colors + "\33[" + code + "m\\33[" + code + "m\033[0m "
+            print(colors)
+            x = x + 5
+        print(bcolors.CEND)
+
 
 class CPU6502:
 
@@ -28,7 +84,6 @@ class CPU6502:
     FFFD       - Vector address for RESET (high byte)
     FFFE       - Vector address for IRQ & BRK (low byte)
     FFFF       - Vector address for IRQ & BRK  (high byte)
-    
     """
 
     """
@@ -524,6 +579,16 @@ class CPU6502:
             state += (self.flags[flag] << shift)
         return state
 
+    def getProcessorStatusString(self) -> str:
+        order = ['C', 'Z', 'I', 'D', 'B', 'X', 'V', 'N']
+        flag_string = ''
+        for shift, flag in enumerate(reversed(order)):
+            if flag == 'X':
+                flag_string += '-'
+                continue
+            flag_string += bcolors.CBLUEBG + flag.upper() + bcolors.ENDC if self.flags[flag] == 1 else flag.lower()
+        return flag_string
+
     def setProcessorStatus(self, flags: int):
         order = ['C', 'Z', 'I', 'D', 'B', 'X', 'V', 'N']
         for shift, flag in enumerate(order):
@@ -807,8 +872,6 @@ class CPU6502:
 
                 orig_value = value
                 value = self.registers['A'] - orig_value - (1 - self.flags['C'])
-                # while value < 0:
-                    # value += 0x100
                 self.registers['A'] = value & 0b0000000011111111
                 self.setFlagsByRegister(register='A', flags=['Z', 'N'])
                 carry_flag = 0 if (value & 0b1111111100000000) > 0 else 1
@@ -821,7 +884,7 @@ class CPU6502:
 
             if self.INS == 'SBC_IM':
                 pass
-            
+
             if self.INS == 'ADC_IM':
                 orig_A_register_value = self.registers['A']
                 value = self.readMemory()
@@ -953,25 +1016,41 @@ class CPU6502:
             data = self.readMemory()
             self.INS = CPU6502.opcodes.get(data, None)
 
+    def getLogString(self):
+        combined = {**{'%-10s' % 'Cycle': '%-10s' % self.cycles,
+                    '%-10s' % 'INS': '%-10s' % self.INS},
+                    **self.registers,
+                    **self.flags,
+                    **{'SP': '0x{0:0{1}X}'.format(self.getStackPointerAddress(), 4),
+                    'PC': '0x{0:0{1}X}'.format(self.program_counter, 4),
+                    'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2),
+                    'FLAGS     ': '%-10s' % self.getProcessorStatusString()}
+                    }
+        return combined
+
+    def getLogHeaderString(self):
+        combined = self.getLogString()
+        headerString = bcolors.OKBLUE + '\t'.join(combined) + bcolors.ENDC
+        return headerString
+
     def printState(self):
-        combined = {**{'Cycle': self.cycles, '%-10s' % 'INS': '%-10s' % self.INS}, **self.registers, **self.flags, **{'SP': '0x{0:0{1}X}'.format(self.getStackPointerAddress(), 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
-        headerString = '\t'.join(combined)
+        combined = self.getLogString()
+        headerString = self.getLogHeaderString()
         valueString = '\t'.join(str(v) for v in combined.values())
         print(headerString)
         print(valueString)
 
     def initializeLog(self):
-        combined = {**{'Cycle': self.cycles, '%-10s' % 'INS': '%-10s' % self.INS}, **self.registers, **self.flags, **{'SP': '0x{0:0{1}X}'.format(self.getStackPointerAddress(), 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
-        headerString = '\t'.join(combined)
+        headerString = self.getLogHeaderString()
         self.log.append(headerString)
 
     def logState(self):
-        combined = {**{'Cycle': self.cycles, '%-10s' % 'INS': '%-10s' % self.INS}, **self.registers, **self.flags, **{'SP': '0x{0:0{1}X}'.format(self.getStackPointerAddress(), 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
-        valueString = '\t'.join(str(v) for v in combined.values())
+        combined = self.getLogString()
+        valueString = bcolors.ENDC + '\t'.join(str(v) for v in combined.values()) + bcolors.ENDC
         self.log.append(valueString)
-        if self.cycles % 10 == 0:
-            headerString = '\t'.join(combined)
-            self.log.append(f'{bcolors.UNDERLINE}{headerString}{bcolors.ENDC}')
+        headerString = headerString = self.getLogHeaderString()
+        # if self.cycles % 10 == 0:
+        #     self.log.append(headerString)
 
     def printLog(self):
         for line in self.log:
@@ -1054,23 +1133,28 @@ def fast_multiply_10():
     cpu = CPU6502(cycle_limit=100)
     cpu.reset(program_counter=0x2000)
 
-    program = [0xA9, 0x19,  # LDA_IM 25 ; Load initial value
-               0x0A, 0x00,  # ASL ACC ; Double accumulator value
+    program = [0xA9, 0x19,        # LDA_IM 25 ; Load initial value
+               0x0A,              # ASL ACC ; Double accumulator value
                0x8D, 0x00, 0x30,  # STA [0x3000] ; Store doubled value in memory
-               0x0A, 0x00,  # ASL ACC ; Double accumulator again (x4 total)
-               0x0A, 0x00,  # ASL ACC ; Double accumulator again (x8 total)
-               0x18, 0x00,  # CLC ; Clear carry flag for some reason
+               0x0A,              # ASL ACC ; Double accumulator again (x4 total)
+               0x0A,              # ASL ACC ; Double accumulator again (x8 total)
+               0x18,              # CLC ; Clear carry flag for some reason
                0x6D, 0x00, 0x30,  # ADC [0x3000] ; Add memory to accumulator (effectively value x 8 + value x 2 = value x 10)
                0x8D, 0x01, 0x30,  # STA [0x3000] ; Store accumulator value in memory
                ]
-    cpu.loadProgram(instructions=program, memoryAddress=0x2000)
+    cpu.loadProgram(instructions=program, memoryAddress=0x2000, mainProgram=True)
     cpu.execute()
     cpu.printLog()
-    cpu.memoryDump(startingAddress=0x2000, endingAddress=0x200F)
+    cpu.memoryDump(startingAddress=0x2000, endingAddress=0x2017)
     cpu.memoryDump(startingAddress=0x3000, endingAddress=0x3001, display_format='Dec')
+    print(cpu.getProcessorStatusString())
 
 
 def square_root_test():
+    """
+    http://www.6502.org/source/integers/root.htm
+    """
+
     sqroot = [
         0xA9, 0x00,  # LDA_IM 0
         0x85, 0xF2,  # STA_ZP [0xF2] Reml
@@ -1146,7 +1230,9 @@ def square_root_test():
     ]
 
     all_in_one = [
-        0xa9, 0x51, 0x85, 0xf0, 0xa9, 0x00, 0x85, 0xf2, 0x85, 0xf3, 0x85, 0xf6, 0xa2, 0x08, 0x06, 0xf6,
+        0xa9, 0x51, 0x85, 0xf0,  # 81
+        0xa9, 0x00, 0x85, 0xf1,
+        0xa9, 0x00, 0x85, 0xf2, 0x85, 0xf3, 0x85, 0xf6, 0xa2, 0x08, 0x06, 0xf6,
         0x06, 0xf0, 0x26, 0xf1, 0x26, 0xf2, 0x26, 0xf3, 0x06, 0xf0, 0x26, 0xf1, 0x26, 0xf2, 0x26, 0xf3,
         0xa5, 0xf6, 0x85, 0xf4, 0xa9, 0x00, 0x85, 0xf5, 0x38, 0x26, 0xf4, 0x26, 0xf5, 0xa5, 0xf3, 0xc5,
         0xf5, 0x90, 0x16, 0xd0, 0x06, 0xa5, 0xf2, 0xc5, 0xf4, 0x90, 0x0e, 0xa5, 0xf2, 0xe5, 0xf4, 0x85,
@@ -1174,7 +1260,6 @@ def square_root_test():
     cpu.memoryDump(startingAddress=0x00F0, endingAddress=0x00F7)
 
     """
-        
         Address  Hexdump   Dissassembly
     -------------------------------
     $0600    a9 90     LDA #$90
@@ -1197,7 +1282,7 @@ def square_root_test():
     $0622    85 f4     STA $f4
     $0624    a9 00     LDA #$00
     $0626    85 f5     STA $f5
-    $0628    38        SEC 
+    $0628    38        SEC
     $0629    26 f4     ROL $f4
     $062b    26 f5     ROL $f5
     $062d    a5 f3     LDA $f3
@@ -1214,9 +1299,9 @@ def square_root_test():
     $0643    e5 f5     SBC $f5
     $0645    85 f3     STA $f3
     $0647    e6 f6     INC $f6
-    $0649    ca        DEX 
+    $0649    ca        DEX
     $064a    d0 c2     BNE $060e
-    $064c    60        RTS 
+    $064c    60        RTS
 
     """
 
@@ -1226,7 +1311,7 @@ def square_root_test():
 
     SqRoot:
         LDA  #$90    ; clear A
-        STA  $F0    ; clear remainder low byte   
+        STA  $F0    ; clear remainder low byte
         LDA  #$00    ; clear A
         STA  $F2    ; clear remainder low byte
         STA  $F3    ; clear remainder high byte
@@ -1390,5 +1475,5 @@ if __name__ == '__main__':
     # fast_multiply_10()
     # print()
     # flags_test()
-    print()
+    # print()
     square_root_test()
