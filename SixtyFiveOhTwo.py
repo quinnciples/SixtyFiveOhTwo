@@ -27,9 +27,9 @@ class CPU6502:
     FFFC       - Vector address for RESET (low byte)
     FFFD       - Vector address for RESET (high byte)
     FFFE       - Vector address for IRQ & BRK (low byte)
-    FFFF       - Vector address for IRQ & BRK  (high byte)     
-
-     """
+    FFFF       - Vector address for IRQ & BRK  (high byte)
+    
+    """
 
     """
     ADC - Done
@@ -336,16 +336,16 @@ class CPU6502:
         self.memory = [0x00] * CPU6502.MAX_MEMORY_SIZE
 
     def memoryDump(self, startingAddress=None, endingAddress=None, display_format='Hex'):
-        print('\nMemory Dump:\n')
+        # print('\nMemory Dump:\n')
         line = ''  # to clear issues with pylance
         header = ''
         row = ''
         while startingAddress <= endingAddress and startingAddress <= CPU6502.MAX_MEMORY_SIZE:
             if display_format == 'Hex':
-                header = '0x{0:0{1}X}'.format(startingAddress, 4) + '\t'
+                header = '0x{0:0{1}X}:'.format(startingAddress, 4) + '\t'
                 row = '\t'.join('0x{0:0{1}X}'.format(self.memory[v], 2) for v in range(startingAddress, min(startingAddress + 8, CPU6502.MAX_MEMORY_SIZE)))
             elif display_format == 'Dec':
-                header = '0x{0:0{1}X}'.format(startingAddress, 4) + '\t'
+                header = '0x{0:0{1}X}:'.format(startingAddress, 4) + '\t'
                 row = '\t'.join('%-5s' % str(self.memory[v]) for v in range(startingAddress, min(startingAddress + 8, CPU6502.MAX_MEMORY_SIZE)))
             line = header + row
             print(line)
@@ -353,6 +353,8 @@ class CPU6502:
 
     def cycleInc(self):
         self.logState()
+        # print(self.INS, '0x{0:0{1}X}'.format(self.program_counter, 4), '{0:08b}'.format(self.getProcessorStatus()))
+        # self.memoryDump(startingAddress=0x00F0, endingAddress=0x00F7)
         self.cycles += 1
 
     def programCounterInc(self):
@@ -645,16 +647,19 @@ class CPU6502:
                     value = self.readMemory(address=address, increment_pc=False, bytes=1)
 
                 compare = self.registers[target]
-                if compare > value:
+                self.setFlagsManually(['C'], 0)
+                self.setFlagsManually(['Z'], 0)
+                if compare >= value:
                     self.setFlagsManually(['C'], 1)
-                    self.setFlagsManually(['Z'], 0)
-                elif compare == value:
-                    self.setFlagsManually(['C'], 0)
+                    # self.setFlagsManually(['Z'], 0)
+                if compare == value:
+                    # self.setFlagsManually(['C'], 0)
                     self.setFlagsManually(['Z'], 1)
-                elif compare < value:
-                    self.setFlagsManually(['C'], 0)
-                    self.setFlagsManually(['Z'], 0)
-                self.setFlagsByValue(value=(compare - value), flags=['N'])
+                # if compare < value:
+                result = compare - value
+                while result < 0:
+                    result += 0x100
+                self.setFlagsByValue(value=result, flags=['N'])
 
             if self.INS in ['BEQ', 'BNE',
                             'BCC', 'BCS',
@@ -792,6 +797,31 @@ class CPU6502:
                 self.registers['A'] = result
                 self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
+            if self.INS in ['SBC_ZP', 'SBC_ZP_X', 'SBC_ABS', 'SBC_ABS_X', 'SBC_ABS_Y', 'SBC_IND_X', 'SBC_IND_Y']:
+                orig_A_register_value = self.registers['A']
+
+                ins_set = self.INS.split('_')
+                address_mode = '_'.join(_ for _ in ins_set[1:])
+                address = self.determineAddress(mode=address_mode)
+                value = self.readMemory(address=address, increment_pc=False, bytes=1)
+
+                orig_value = value
+                value = self.registers['A'] - orig_value - (1 - self.flags['C'])
+                # while value < 0:
+                    # value += 0x100
+                self.registers['A'] = value & 0b0000000011111111
+                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                carry_flag = 0 if (value & 0b1111111100000000) > 0 else 1
+                self.setFlagsManually(flags=['C'], value=carry_flag)
+                overflow_flag = 0
+                if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
+                    if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
+                        overflow_flag = 1
+                self.setFlagsManually(flags=['V'], value=overflow_flag)
+
+            if self.INS == 'SBC_IM':
+                pass
+            
             if self.INS == 'ADC_IM':
                 orig_A_register_value = self.registers['A']
                 value = self.readMemory()
@@ -1108,31 +1138,150 @@ def square_root_test():
     ]
 
     all_in_one = [
-        0xa9, 0x51, 0x85, 0xf0, 0xa9, 0x00, 0x85, 0xf2, 0x85, 0xf3, 0x85, 0xf4, 0x85, 0xf5, 0x85, 0xf6,
-        0xa2, 0x08, 0x06, 0xf6, 0x06, 0xf0, 0x26, 0xf1, 0x26, 0xf2, 0x26, 0xf3, 0x06, 0xf0, 0x26, 0xf1,
-        0x26, 0xf2, 0x26, 0xf3, 0xa5, 0xf6, 0x85, 0xf4, 0xa9, 0x00, 0x85, 0xf5, 0x38, 0x26, 0xf4, 0x26,
-        0xf5, 0xa5, 0xf3, 0xc5, 0xf5, 0x90, 0x16, 0xd0, 0x06, 0xa5, 0xf2, 0xc5, 0xf4, 0x90, 0x0e, 0xa5,
-        0xf2, 0xe5, 0xf4, 0x85, 0xf2, 0xa5, 0xf3, 0xe5, 0xf5, 0x85, 0xf3, 0xe6, 0xf6, 0xca, 0xd0, 0xc2, 
-        0x60
+        0xa9, 0x51, 0x85, 0xf0, 0xa9, 0x00, 0x85, 0xf2, 0x85, 0xf3, 0x85, 0xf6, 0xa2, 0x08, 0x06, 0xf6,
+        0x06, 0xf0, 0x26, 0xf1, 0x26, 0xf2, 0x26, 0xf3, 0x06, 0xf0, 0x26, 0xf1, 0x26, 0xf2, 0x26, 0xf3,
+        0xa5, 0xf6, 0x85, 0xf4, 0xa9, 0x00, 0x85, 0xf5, 0x38, 0x26, 0xf4, 0x26, 0xf5, 0xa5, 0xf3, 0xc5,
+        0xf5, 0x90, 0x16, 0xd0, 0x06, 0xa5, 0xf2, 0xc5, 0xf4, 0x90, 0x0e, 0xa5, 0xf2, 0xe5, 0xf4, 0x85,
+        0xf2, 0xa5, 0xf3, 0xe5, 0xf5, 0x85, 0xf3, 0xe6, 0xf6, 0xca, 0xd0, 0xc2, 0x60
+    ]
+
+    all_in_one = [
+        0xa9, 0x51, 0x85, 0xf0, 0xa9, 0x00, 0x85, 0xf2, 0x85, 0xf3, 0x85, 0xf6, 0xa2, 0x08, 0x06, 0xf6,
+        0x06, 0xf0, 0x26, 0xf1, 0x26, 0xf2, 0x26, 0xf3, 0x06, 0xf0, 0x26, 0xf1, 0x26, 0xf2, 0x26, 0xf3,
+        0xa5, 0xf6, 0x85, 0xf4, 0xa9, 0x00, 0x85, 0xf5, 0x38, 0x26, 0xf4, 0x26, 0xf5, 0xa5, 0xf3, 0xc5,
+        0xf5, 0x90, 0x16, 0xd0, 0x06, 0xa5, 0xf2, 0xc5, 0xf4, 0x90, 0x0e, 0xa5, 0xf2, 0xe5, 0xf4, 0x85,
+        0xf2, 0xa5, 0xf3, 0xe5, 0xf5, 0x85, 0xf3, 0xe6, 0xf6, 0xca, 0xd0, 0xc2, 0x60
     ]
 
     cpu = CPU6502(cycle_limit=1200)
-    cpu.reset(program_counter=0x8000)
-    cpu.memory[0x00F0] = 0x09  # Number to find square root of low byte
-    cpu.memory[0x00F1] = 0x00  # Number to find square root of high byte
+    cpu.reset(program_counter=0x0600)
+    # cpu.memory[0x00F0] = 0x09  # Number to find square root of low byte
+    # cpu.memory[0x00F1] = 0x00  # Number to find square root of high byte
 
     # cpu.loadProgram(instructions=sqroot, memoryAddress=0x1000, mainProgram=True)
     # cpu.loadProgram(instructions=loop, memoryAddress=0x1100, mainProgram=False)
     # cpu.loadProgram(instructions=subtr, memoryAddress=0x1200, mainProgram=False)
     # cpu.loadProgram(instructions=next, memoryAddress=0x1300, mainProgram=False)
-    cpu.loadProgram(instructions=all_in_one, memoryAddress=0x8000, mainProgram=True)
+    cpu.loadProgram(instructions=all_in_one, memoryAddress=0x0600, mainProgram=True)
     cpu.execute()
     cpu.printLog()
+
     # cpu.memoryDump(startingAddress=0x1000, endingAddress=0x1000 + len(sqroot))
     # cpu.memoryDump(startingAddress=0x1100, endingAddress=0x1100 + len(loop))
     # cpu.memoryDump(startingAddress=0x1200, endingAddress=0x1200 + len(subtr))
     # cpu.memoryDump(startingAddress=0x1300, endingAddress=0x1300 + len(next))
-    cpu.memoryDump(startingAddress=0x00F0, endingAddress=0x00F8)
+
+    cpu.memoryDump(startingAddress=0x00F0, endingAddress=0x00F7)
+
+    """
+        
+        Address  Hexdump   Dissassembly
+    -------------------------------
+    $0600    a9 90     LDA #$90
+    $0602    85 f0     STA $f0
+    $0604    a9 00     LDA #$00
+    $0606    85 f2     STA $f2
+    $0608    85 f3     STA $f3
+    $060a    85 f6     STA $f6
+    $060c    a2 08     LDX #$08
+    $060e    06 f6     ASL $f6
+    $0610    06 f0     ASL $f0
+    $0612    26 f1     ROL $f1
+    $0614    26 f2     ROL $f2
+    $0616    26 f3     ROL $f3
+    $0618    06 f0     ASL $f0
+    $061a    26 f1     ROL $f1
+    $061c    26 f2     ROL $f2
+    $061e    26 f3     ROL $f3
+    $0620    a5 f6     LDA $f6
+    $0622    85 f4     STA $f4
+    $0624    a9 00     LDA #$00
+    $0626    85 f5     STA $f5
+    $0628    38        SEC 
+    $0629    26 f4     ROL $f4
+    $062b    26 f5     ROL $f5
+    $062d    a5 f3     LDA $f3
+    $062f    c5 f5     CMP $f5
+    $0631    90 16     BCC $0649
+    $0633    d0 06     BNE $063b
+    $0635    a5 f2     LDA $f2
+    $0637    c5 f4     CMP $f4
+    $0639    90 0e     BCC $0649
+    $063b    a5 f2     LDA $f2
+    $063d    e5 f4     SBC $f4
+    $063f    85 f2     STA $f2
+    $0641    a5 f3     LDA $f3
+    $0643    e5 f5     SBC $f5
+    $0645    85 f3     STA $f3
+    $0647    e6 f6     INC $f6
+    $0649    ca        DEX 
+    $064a    d0 c2     BNE $060e
+    $064c    60        RTS 
+
+    """
+
+    """
+
+        *= $0600            ; can be anywhere, ROM or RAM
+
+    SqRoot:
+        LDA  #$90    ; clear A
+        STA  $F0    ; clear remainder low byte   
+        LDA  #$00    ; clear A
+        STA  $F2    ; clear remainder low byte
+        STA  $F3    ; clear remainder high byte
+        STA  $F6    ; clear $F6
+        LDX  #$08    ; 8 pairs of bits to do
+    Loop:
+        ASL  $F6    ; $F6 = $F6 * 2
+
+        ASL  $F0    ; shift highest bit of numb
+        ROL  $F1    ;
+        ROL  $F2    ; .. into remainder
+        ROL  $F3    ;
+
+        ASL  $F0    ; shift highest bit of number ..
+        ROL  $F1    ;
+        ROL  $F2    ; .. into remainder
+        ROL  $F3    ;
+
+        LDA  $F6    ; copy $F6 ..
+        STA  $F4    ; .. to $F4
+        LDA  #$00    ; clear byte
+        STA  $F5    ; clear temp high byte
+
+        SEC          ; +1
+        ROL  $F4    ; temp = temp * 2 + 1
+        ROL  $F5    ;
+
+        LDA  $F3    ; get remainder high byte
+        CMP  $F5    ; comapre with partial high byte
+        BCC  Next    ; skip sub if remainder high byte smaller
+
+        BNE  Subtr    ; do sub if <> (must be remainder>partial !)
+
+        LDA  $F2    ; get remainder low byte
+        CMP  $F4    ; comapre with partial low byte
+        BCC  Next    ; skip sub if remainder low byte smaller
+
+                        ; else remainder>=partial so subtract then
+                        ; and add 1 to $F6. carry is always set here
+    Subtr:
+        LDA  $F2    ; get remainder low byte
+        SBC  $F4    ; subtract partial low byte
+        STA  $F2    ; save remainder low byte
+        LDA  $F3    ; get remainder high byte
+        SBC  $F5    ; subtract partial high byte
+        STA  $F3    ; save remainder high byte
+
+        INC  $F6    ; increment $F6
+    Next:
+        DEX          ; decrement bit pair count
+        BNE  Loop    ; loop if not all done
+
+        RTS
+
+    """
 
     """
     ; Calculates the 8 bit root and 9 bit remainder of a 16 bit unsigned integer in
