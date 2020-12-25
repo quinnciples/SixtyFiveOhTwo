@@ -1,6 +1,18 @@
 # 6502 machine code processor
 
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
 class CPU6502:
 
     """
@@ -215,6 +227,15 @@ class CPU6502:
                0X76: 'ROR_ZP_X',
                0X6E: 'ROR_ABS',
                0X7E: 'ROR_ABS_X',
+
+               0xE9: 'SBC_IM',
+               0xE5: 'SBC_ZP',
+               0xF5: 'SBC_ZP_X',
+               0xED: 'SBC_ABS',
+               0xFD: 'SBC_ABS_X',
+               0xF9: 'SBC_ABS_Y',
+               0xE1: 'SBC_IND_X',
+               0xF1: 'SBC_IND_Y',
 
                0x85: 'STA_ZP',
                0x95: 'STA_ZP_X',
@@ -514,6 +535,10 @@ class CPU6502:
         address += self.memory[0xFFFE]
         self.program_counter = address
 
+    def handleSingleByteInstruction(self):
+        self.cycleInc()
+        # self.readMemory()
+
     def execute(self):
         # Set starting position based on 0xFFFE/F
         self.handleBRK()
@@ -538,12 +563,12 @@ class CPU6502:
                 if self.INS == 'PHP_IMP':
                     value = self.getProcessorStatus()
                     self.saveByteAtStackPointer(data=value)
-                    self.readMemory()  # single byte instruction
+                    self.handleSingleByteInstruction()
                 elif self.INS == 'PLP_IMP':
                     # Pull
                     flags = self.loadByteFromStackPointer()
                     self.setProcessorStatus(flags=flags)
-                    self.readMemory()  # single byte instruction
+                    self.handleSingleByteInstruction()
 
             if self.INS in ['BIT_ZP', 'BIT_ABS']:
                 ins_set = self.INS.split('_')
@@ -562,20 +587,20 @@ class CPU6502:
             if self.INS == 'PHA_IMP':
                 value = self.registers['A']
                 self.saveByteAtStackPointer(data=value)
-                self.readMemory()  # single byte instruction
+                self.handleSingleByteInstruction()
 
             if self.INS == 'PLA_IMP':
                 value = self.loadByteFromStackPointer()
                 self.registers['A'] = value
                 self.setFlagsByRegister(register='A', flags=['N', 'Z'])
-                self.readMemory()  # single byte instruction
+                self.handleSingleByteInstruction()
 
             if self.INS in ['ROL_ACC', 'ROL_ZP', 'ROL_ZP_X', 'ROL_ABS', 'ROL_ABS_X', 'ROR_ACC', 'ROR_ZP', 'ROR_ZP_X', 'ROR_ABS', 'ROR_ABS_X']:
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 if address_mode == 'ACC':
                     value = self.registers['A']
-                    self.readMemory()  # one byte instruction
+                    self.handleSingleByteInstruction()
                 else:
                     address = self.determineAddress(mode=address_mode)
                     value = self.readMemory(address=address, increment_pc=False, bytes=1)
@@ -663,7 +688,7 @@ class CPU6502:
                 dest = self.INS[2]
                 self.registers[dest] = self.registers[source]
                 self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
-                self.readMemory()  # 1 byte instruction -- read next byte and ignore
+                self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
 
             if self.INS in ['TXS_IMP', 'TSX_IMP']:
                 source = self.INS[1]
@@ -674,7 +699,7 @@ class CPU6502:
                 elif dest == 'S':
                     self.stack_pointer = self.registers[source]
 
-                self.readMemory()  # 1 byte instruction -- read next byte and ignore
+                self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
 
             if self.INS in ['ASL_ACC', 'ASL_ZP', 'ASL_ZP_X', 'ASL_ABS', 'ASL_ABS_X']:
                 if self.INS == 'ASL_ACC':
@@ -685,7 +710,7 @@ class CPU6502:
                     self.registers['A'] = value
                     self.setFlagsByRegister(register='A', flags=['Z', 'N'])
                     self.setFlagsManually(flags=['C'], value=carry_flag)
-                    self.readMemory()  # 1 byte instruction -- read next byte and ignore
+                    self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
                 else:
                     ins_set = self.INS.split('_')
                     address_mode = '_'.join(_ for _ in ins_set[1:])
@@ -708,7 +733,7 @@ class CPU6502:
                     self.registers['A'] = value
                     self.setFlagsByRegister(register='A', flags=['Z', 'N'])
                     self.setFlagsManually(flags=['C'], value=carry_flag)
-                    self.readMemory()  # 1 byte instruction -- read next byte and ignore
+                    self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
                 else:
                     ins_set = self.INS.split('_')
                     address_mode = '_'.join(_ for _ in ins_set[1:])
@@ -809,7 +834,7 @@ class CPU6502:
                 self.cycleInc()
 
             if self.INS == 'RTS_IMP':
-                self.readMemory()  # single byte instruction
+                self.handleSingleByteInstruction()
                 self.loadPCFromStackPointer()
                 self.programCounterInc()
 
@@ -845,7 +870,7 @@ class CPU6502:
                 self.setFlagsByValue(value=value, flags=['N', 'Z'])
 
             if self.INS in ['DEX_IMP', 'DEY_IMP']:
-                self.readMemory()  # single byte instruction
+                self.handleSingleByteInstruction()
                 value = self.registers[self.INS[2]]
                 value -= 1
                 if value < 0:
@@ -853,21 +878,7 @@ class CPU6502:
                 self.registers[self.INS[2]] = value
                 self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
 
-            if self.INS.startswith('STA'):
-                ins_set = self.INS.split('_')
-                target = ins_set[0][2]
-                address_mode = '_'.join(_ for _ in ins_set[1:])
-                address = self.determineAddress(mode=address_mode)
-                self.writeMemory(data=self.registers[target], address=address, bytes=1)
-
-            if self.INS.startswith('STX'):
-                ins_set = self.INS.split('_')
-                target = ins_set[0][2]
-                address_mode = '_'.join(_ for _ in ins_set[1:])
-                address = self.determineAddress(mode=address_mode)
-                self.writeMemory(data=self.registers[target], address=address, bytes=1)
-
-            if self.INS.startswith('STY'):
+            if self.INS.startswith('ST'):
                 ins_set = self.INS.split('_')
                 target = ins_set[0][2]
                 address_mode = '_'.join(_ for _ in ins_set[1:])
@@ -879,7 +890,7 @@ class CPU6502:
                     self.setFlagsManually(flags=[self.INS[2]], value=0)
                 else:
                     self.setFlagsManually(flags=[self.INS[2]], value=1)
-                self.readMemory()  # Single byte opcode
+                self.handleSingleByteInstruction()
 
             elif self.INS in ['LDA_IM', 'LDA_ZP', 'LDA_ZP_X', 'LDA_ABS', 'LDA_ABS_X', 'LDA_ABS_Y', 'LDA_IND_X', 'LDA_IND_Y',
                               'LDX_IM', 'LDX_ZP', 'LDX_ZP_Y', 'LDX_ABS', 'LDX_ABS_Y',
@@ -907,7 +918,7 @@ class CPU6502:
                 self.program_counter = address
 
             elif self.INS == 'NOP':
-                self.readMemory()  # single byte instruction
+                self.handleSingleByteInstruction()
 
             data = self.readMemory()
             self.INS = CPU6502.opcodes.get(data, None)
@@ -928,6 +939,9 @@ class CPU6502:
         combined = {**{'Cycle': self.cycles, '%-10s' % 'INS': '%-10s' % self.INS}, **self.registers, **self.flags, **{'SP': '0x{0:0{1}X}'.format(self.getStackPointerAddress(), 4), 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4), 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2)}}
         valueString = '\t'.join(str(v) for v in combined.values())
         self.log.append(valueString)
+        if self.cycles % 10 == 0:
+            headerString = '\t'.join(combined)
+            self.log.append(f'{bcolors.UNDERLINE}{headerString}{bcolors.ENDC}')
 
     def printLog(self):
         for line in self.log:
@@ -1093,15 +1107,18 @@ def square_root_test():
 
     ]
 
-    all_in_one = [0xa9, 0x00, 0x85, 0xf2, 0x85, 0xf3, 0x85, 0xf6, 0xa2, 0x08, 0x06, 0xf6,
-        0x06, 0xf0, 0x26, 0xf1, 0x26, 0xf2, 0x26, 0xf3, 0x06, 0xf0, 0x26, 0xf1, 0x26, 0xf2, 0x26, 0xf3,
-        0xa5, 0xf6, 0x85, 0xf4, 0xa9, 0x00, 0x85, 0xf5, 0x38, 0x26, 0xf4, 0x26, 0xf5, 0xa5, 0xf3, 0xc5,
-        0xf5, 0x90, 0x16, 0xd0, 0x06, 0xa5, 0xf2, 0xc5, 0xf4, 0x90, 0x0e, 0xa5, 0xf2, 0xe5, 0xf4, 0x85,
-        0xf2, 0xa5, 0xf3, 0xe5, 0xf5, 0x85, 0xf3, 0xe6, 0xf6, 0xca, 0xd0, 0xc2, 0x60]
+    all_in_one = [
+        0xa9, 0x51, 0x85, 0xf0, 0xa9, 0x00, 0x85, 0xf2, 0x85, 0xf3, 0x85, 0xf4, 0x85, 0xf5, 0x85, 0xf6,
+        0xa2, 0x08, 0x06, 0xf6, 0x06, 0xf0, 0x26, 0xf1, 0x26, 0xf2, 0x26, 0xf3, 0x06, 0xf0, 0x26, 0xf1,
+        0x26, 0xf2, 0x26, 0xf3, 0xa5, 0xf6, 0x85, 0xf4, 0xa9, 0x00, 0x85, 0xf5, 0x38, 0x26, 0xf4, 0x26,
+        0xf5, 0xa5, 0xf3, 0xc5, 0xf5, 0x90, 0x16, 0xd0, 0x06, 0xa5, 0xf2, 0xc5, 0xf4, 0x90, 0x0e, 0xa5,
+        0xf2, 0xe5, 0xf4, 0x85, 0xf2, 0xa5, 0xf3, 0xe5, 0xf5, 0x85, 0xf3, 0xe6, 0xf6, 0xca, 0xd0, 0xc2, 
+        0x60
+    ]
 
     cpu = CPU6502(cycle_limit=1200)
     cpu.reset(program_counter=0x8000)
-    cpu.memory[0x00F0] = 0x51  # Number to find square root of low byte
+    cpu.memory[0x00F0] = 0x09  # Number to find square root of low byte
     cpu.memory[0x00F1] = 0x00  # Number to find square root of high byte
 
     # cpu.loadProgram(instructions=sqroot, memoryAddress=0x1000, mainProgram=True)
