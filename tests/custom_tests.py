@@ -19,7 +19,7 @@ def square_root_test() -> bool:
     # cpu.memoryDump(startingAddress=0x00F0, endingAddress=0x00F7)
 
     """
-        Address  Hexdump   Dissassembly
+    Address  Hexdump   Dissassembly
     -------------------------------
     $0600    a9 90     LDA #$90
     $0602    85 f0     STA $f0
@@ -321,9 +321,53 @@ def square_root_test() -> bool:
     return True
 
 
+def fibonacci_test():
+    TEST_NAME = 'SQUARE ROOT TEST'
+    print(f'{bcolors.UNDERLINE}Running {TEST_NAME}{bcolors.ENDC}')
+    errors = False
+    cpu = CPU6502(cycle_limit=500)
+    cpu.reset(program_counter=0x0000)
+
+    program = [0xA9, 0x01,  # LDA_IM 1
+               0xA2, 0x00,  # LDX_IM 0
+               0x85, 0x21,  # STA_ZP [0x21]
+               0xA9, 0x00,  # LDA_IM 0
+               0x65, 0x21,  # ADC [0x21]        ; This is the main loop; the jump ins below should point to the address of this line
+               0xB0, 0x11,  # BCS 0x11          ; Jump to end of program if value exceeds 0xFF
+               0x95, 0x30,  # STA_ZP_X [0x30]
+               0xE8,        # INX
+               0x85, 0x22,  # STA_ZP [0x22]
+               0xA5, 0x21,  # LDA_ZP [0x21]
+               0x85, 0x20,  # STA_ZP [0x20]
+               0xA5, 0x22,  # LDA_ZP [0x22]
+               0x85, 0x21,  # STA_ZP [0x21]
+               0xA5, 0x20,  # LDA_ZP [0x20]
+               0x4C, 0x08, 0x00  # JMP 0x0008
+               ]
+    cpu.loadProgram(instructions=program, memoryAddress=0x0000)
+    cpu.execute()
+    # cpu.printLog()
+    # cpu.memoryDump(startingAddress=0x0000, endingAddress=0x001F)
+    # cpu.memoryDump(startingAddress=0x0020, endingAddress=0x0022, display_format='Dec')
+    # cpu.memoryDump(startingAddress=0x0030, endingAddress=0x003F, display_format='Dec')
+    EXPECTED_VALUES = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233]
+    errors = False
+    print(f'\tTesting Fibonacci sequence... Expected {EXPECTED_VALUES} / got {cpu.memory[0x0030:0x003C]} -- ', end='')
+    if cpu.memory[0x0030:0x003C] == EXPECTED_VALUES:
+        print(f'{bcolors.OKGREEN}PASS{bcolors.ENDC}', end='\n')
+    else:
+        print(f'{bcolors.FAIL}FAIL{bcolors.ENDC}', end='\n')
+        errors = True
+
+    if errors:
+        return False
+    return True
+
+
 def custom_tests():
     tests = [
         square_root_test,
+        fibonacci_test,
     ]
     results = []
     for test in tests:
