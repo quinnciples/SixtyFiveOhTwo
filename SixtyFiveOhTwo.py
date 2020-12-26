@@ -1,4 +1,5 @@
 # 6502 machine code processor
+import datetime
 
 
 class bcolors:
@@ -442,6 +443,7 @@ class CPU6502:
     def saveByteAtStackPointer(self, data=None):
         # Enforce 1 byte size
         assert(data <= 0xFF)
+        assert(data >= 0x00)
         assert(data is not None)
         self.writeMemory(data=data, address=self.getStackPointerAddress(), bytes=1)
         self.stackPointerDec()
@@ -607,6 +609,7 @@ class CPU6502:
         # self.readMemory()
 
     def execute(self):
+        self.start_time = datetime.datetime.now()
         # Set starting position based on 0xFFFE/F
         self.handleBRK()
 
@@ -1013,6 +1016,8 @@ class CPU6502:
 
             data = self.readMemory()
             self.INS = CPU6502.opcodes.get(data, None)
+
+        self.execution_time = datetime.datetime.now() - self.start_time
 
     def getLogString(self):
         combined = {**{'%-10s' % 'Cycle': '%-10s' % self.cycles,

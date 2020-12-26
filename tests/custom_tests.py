@@ -356,10 +356,121 @@ def fibonacci_test():
         else:
             print(f'{bcolors.FAIL}FAIL{bcolors.ENDC}', end='\n')
             errors = True
-    cpu.printLog()
+    # cpu.printLog()
     # cpu.memoryDump(startingAddress=0x0000, endingAddress=0x001F)
     # cpu.memoryDump(startingAddress=0x0020, endingAddress=0x0022, display_format='Dec')
     # cpu.memoryDump(startingAddress=0x0030, endingAddress=0x003F, display_format='Dec')
+
+    if errors:
+        return False
+    return True
+
+
+def sort_test_8_bits() -> bool:
+    TEST_NAME = 'SORT TEST 8 BITS'
+    """
+    The subroutine (SORT8) sorts unordered lists that are comprised of 8-bit elements. 
+    As in the previous examples in this chapter, the starting addres is contained 
+    in locations $30 (low-address byte) and $31 (high-address byte). 
+    The length of the list is contained in the first byte of the list. 
+    Since a byte is 8 bits wide, the list can contain up to 255 elements.
+
+    ;THIS SUBROUTINE ARRANGES THE 8-BIT ELEMENTS OF A LIST IN ASCENDING
+    ;ORDER.  THE STARTING ADDRESS OF THE LIST IS IN LOCATIONS $30 AND
+    ;$31.  THE LENGTH OF THE LIST IS IN THE FIRST BYTE OF THE LIST.  LOCATION
+    ;$32 IS USED TO HOLD AN EXCHANGE FLAG.
+
+    SORT8    LDY #$00      ;TURN EXCHANGE FLAG OFF (= 0)
+            STY $32
+            LDA ($30),Y   ;FETCH ELEMENT COUNT
+            TAX           ; AND PUT IT INTO X
+            INY           ;POINT TO FIRST ELEMENT IN LIST
+            DEX           ;DECREMENT ELEMENT COUNT
+    NXTEL    LDA ($30),Y   ;FETCH ELEMENT
+            INY
+            CMP ($30),Y   ;IS IT LARGER THAN THE NEXT ELEMENT?
+            BCC CHKEND
+            BEQ CHKEND
+                        ;YES. EXCHANGE ELEMENTS IN MEMORY
+            PHA           ; BY SAVING LOW BYTE ON STACK.
+            LDA ($30),Y   ; THEN GET HIGH BYTE AND
+            DEY           ; STORE IT AT LOW ADDRESS
+            STA ($30),Y
+            PLA           ;PULL LOW BYTE FROM STACK
+            INY           ; AND STORE IT AT HIGH ADDRESS
+            STA ($30),Y
+            LDA #$FF      ;TURN EXCHANGE FLAG ON (= -1)
+            STA $32
+    CHKEND   DEX           ;END OF LIST?
+            BNE NXTEL     ;NO. FETCH NEXT ELEMENT
+            BIT $32       ;YES. EXCHANGE FLAG STILL OFF?
+            BMI SORT8     ;NO. GO THROUGH LIST AGAIN
+            RTS           ;YES. LIST IS NOW ORDERED
+
+    Subroutine SORT8 begins by initializing an exchange flag.
+    The exchange flag is an indicator in memory location $32 that can be interrogated
+    upon completion of a sorting pass to find out whether any elements were exchanged
+    during that pass (flag=-1) or if the pass was exected with no exchanges (flag=0).
+    The latter case indicates that the list is completely ordered and needs no further sorting.
+
+    After loading the element count into the X register, the 6502 microprocessor
+    enters an element compare loop at NXTEL. As each element is fetched, it is compared
+    to the next element in the list, with CMP ($30),Y. If this pair of elements are of
+    equal value, or are in ascending (sorted) order, the subroutine then branches to
+    CHKEND, to see if the element count in the X register has been decremented to zero
+    (the end-of-list condition). Otherwise, the elements are exchanged (if the element
+    pair is in the wrong order). The stack is used to save the lower-addressed element
+    while the higher-addressed element is being relocated in memory. A zero page memory
+    location could have been used to save the element, but it was observed that PHA and
+    PLA both execute in one less cycle than their LDA and STA counterparts. Upon completion
+    of an exchange operation, the exchange flag is turned on, by loading it with -1.
+
+    Following the exchange, the element count is decremented with a DEX instruction
+    (label CHKEND) and the subsequent BNE BXTEL instruction branches to NXTEL if the
+    pass has not yet been completed. When the pass is completed, BIT $32 checkes whether
+    the exhange is still off (Bit 7=0), or has been turned on (Bit 7=1) by an exchange
+    operation during the pass. If an exchange occurred, the subroutine is reinitiated at
+    ORDER8, otherwise RTS causes a return, with a now ordered list. 
+    """
+    SEQUENCES_TO_TEST = [2, 10, 25, 50, 100, 200, 255]
+    print(f'{bcolors.UNDERLINE}Running {TEST_NAME}{bcolors.ENDC}')
+    for NUMBER_SEQUENCE_LENGTH in SEQUENCES_TO_TEST:
+        # NUMBER_SEQUENCE_LENGTH = 10
+        data = [NUMBER_SEQUENCE_LENGTH]
+        data.extend(list(reversed([x for x in range(1, NUMBER_SEQUENCE_LENGTH + 1)])))
+        EXPECTED_DATA = [NUMBER_SEQUENCE_LENGTH]
+        EXPECTED_DATA.extend(sorted(data[1:]))
+
+        cpu = None
+        cpu = CPU6502(cycle_limit=100000000000)
+        cpu.reset(program_counter=0x0600)
+        # Location of list to sort is in 0x0030 and 0x0031
+        # List can be up to 255 elements
+        program = [
+            0xa0, 0x00, 0x84, 0x32, 0xb1, 0x30, 0xaa, 0xc8, 0xca, 0xb1, 0x30, 0xc8, 0xd1, 0x30, 0x90, 0x10,
+            0xf0, 0x0e, 0x48, 0xb1, 0x30, 0x88, 0x91, 0x30, 0x68, 0xc8, 0x91, 0x30, 0xa9, 0xff, 0x85, 0x32,
+            0xca, 0xd0, 0xe6, 0x24, 0x32, 0x30, 0xd9, 0x60
+        ]
+
+        cpu.loadProgram(instructions=program, memoryAddress=0x0600, mainProgram=True)
+        cpu.loadProgram(instructions=data, memoryAddress=0x4400, mainProgram=False)
+        cpu.memory[0x0030] = 0x00
+        cpu.memory[0x0031] = 0x44
+        # cpu.memoryDump(startingAddress=0x4400, endingAddress=0x4400 + len(data) - 1, display_format='Dec')
+        cpu.execute()
+        # cpu.printLog()
+        # cpu.memoryDump(startingAddress=0x0600, endingAddress=0x0627)
+        
+
+        errors = False
+        # print(f'\tTesting sort of {NUMBER_SEQUENCE_LENGTH} elements: Expected {EXPECTED_DATA[1:]} / got {cpu.memory[0x4401:0x4401 + NUMBER_SEQUENCE_LENGTH]} -- ', end='')
+        print(f'\tTesting sort of {NUMBER_SEQUENCE_LENGTH} elements: ', end='')
+        if cpu.memory[0x4401:0x4401 + NUMBER_SEQUENCE_LENGTH] == EXPECTED_DATA[1:]:
+            print(f'{bcolors.OKGREEN}PASS{bcolors.ENDC} -- {cpu.cycles - 1:,} cycles. {cpu.execution_time}', end='\n')
+        else:
+            print(f'{bcolors.FAIL}FAIL{bcolors.ENDC} -- {cpu.cycles - 1:,} cycles.', end='\n')
+            cpu.memoryDump(startingAddress=0x4400, endingAddress=0x4400 + len(data) - 1, display_format='Dec')
+            errors = True
 
     if errors:
         return False
@@ -370,6 +481,7 @@ def custom_tests():
     tests = [
         square_root_test,
         fibonacci_test,
+        sort_test_8_bits,
     ]
     results = []
     for test in tests:
