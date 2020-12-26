@@ -600,6 +600,7 @@ def ASL_tests():
         TEST_0x2A_ASL_ADDRESS_MODE_TESTS_CARRY_FLAG_SET,
         TEST_0x2A_ASL_ADDRESS_MODE_TESTS_NEGATIVE_FLAG_SET,
     ]
+    
     results = []
     for test in tests:
         results.append(test())

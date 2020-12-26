@@ -586,7 +586,7 @@ class CPU6502:
             if flag == 'X':
                 flag_string += '-'
                 continue
-            flag_string += bcolors.CBLUEBG + flag.upper() + bcolors.ENDC if self.flags[flag] == 1 else flag.lower()
+            flag_string += bcolors.CBLUEBG + flag.upper() + bcolors.ENDC if self.flags[flag] == 1 else bcolors.CGREY + flag.lower() + bcolors.ENDC
         return flag_string
 
     def setProcessorStatus(self, flags: int):

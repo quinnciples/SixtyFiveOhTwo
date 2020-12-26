@@ -48,6 +48,7 @@ from DEX_tests import DEX_tests
 from DEY_tests import DEY_tests
 from DEC_tests import DEC_tests
 from CMP_tests import CMP_tests
+from custom_tests import custom_tests
 
 # import testing_modules
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
@@ -588,6 +589,7 @@ if __name__ == '__main__':
         DEY_tests,
         DEC_tests,
         CMP_tests,
+        custom_tests,
 
     ]
 
