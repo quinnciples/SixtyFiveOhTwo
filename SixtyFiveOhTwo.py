@@ -408,7 +408,7 @@ class CPU6502:
             startingAddress += 8
 
     def cycleInc(self):
-        # self.logState()
+        self.logState()
         # self.memoryDump(startingAddress=0x00F0, endingAddress=0x00F7)
         self.cycles += 1
 
