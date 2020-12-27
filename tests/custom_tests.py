@@ -442,7 +442,7 @@ def sort_test_8_bits() -> bool:
         EXPECTED_DATA.extend(sorted(data[1:]))
 
         cpu = None
-        cpu = CPU6502(cycle_limit=100000000000)
+        cpu = CPU6502(cycle_limit=3_000_000)
         cpu.reset(program_counter=0x0600)
         # Location of list to sort is in 0x0030 and 0x0031
         # List can be up to 255 elements
@@ -670,7 +670,7 @@ def sort_test_16_bits() -> bool:
     $0648    4c 07 06  JMP $0607
 
     """
-    SEQUENCES_TO_TEST = [2, 10, 25, 50, 100, 125]
+    SEQUENCES_TO_TEST = [2, 10, 25, 50, 100, 127]
     print(f'{bcolors.UNDERLINE}Running {TEST_NAME}{bcolors.ENDC}')
     for NUMBER_SEQUENCE_LENGTH in SEQUENCES_TO_TEST:
         data = [NUMBER_SEQUENCE_LENGTH * 2]
@@ -683,7 +683,7 @@ def sort_test_16_bits() -> bool:
         # EXPECTED_DATA.extend(sorted(data[1:]))
 
         cpu = None
-        cpu = CPU6502(cycle_limit=100_000_000_000_000)
+        cpu = CPU6502(cycle_limit=2_000_000)
         cpu.reset(program_counter=0x0600)
         # Location of list to sort is in 0x0030 and 0x0031
         # List can be up to 255 elements

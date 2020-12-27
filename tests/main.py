@@ -2,7 +2,8 @@ import os
 # import logging
 import sys
 from testing_modules import bcolors
-from testing_modules import generateProgram
+# from testing_modules import generateProgram
+
 from LDA_tests import LDA_tests
 from LDX_tests import LDX_tests
 from LDY_tests import LDY_tests
