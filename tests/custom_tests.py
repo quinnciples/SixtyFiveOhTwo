@@ -369,10 +369,10 @@ def fibonacci_test():
 def sort_test_8_bits() -> bool:
     TEST_NAME = 'SORT TEST 8 BITS'
     """
-    The subroutine (SORT8) sorts unordered lists that are comprised of 8-bit elements. 
-    As in the previous examples in this chapter, the starting addres is contained 
-    in locations $30 (low-address byte) and $31 (high-address byte). 
-    The length of the list is contained in the first byte of the list. 
+    The subroutine (SORT8) sorts unordered lists that are comprised of 8-bit elements.
+    As in the previous examples in this chapter, the starting addres is contained
+    in locations $30 (low-address byte) and $31 (high-address byte).
+    The length of the list is contained in the first byte of the list.
     Since a byte is 8 bits wide, the list can contain up to 255 elements.
 
     ;THIS SUBROUTINE ARRANGES THE 8-BIT ELEMENTS OF A LIST IN ASCENDING
@@ -430,7 +430,7 @@ def sort_test_8_bits() -> bool:
     pass has not yet been completed. When the pass is completed, BIT $32 checkes whether
     the exhange is still off (Bit 7=0), or has been turned on (Bit 7=1) by an exchange
     operation during the pass. If an exchange occurred, the subroutine is reinitiated at
-    ORDER8, otherwise RTS causes a return, with a now ordered list. 
+    ORDER8, otherwise RTS causes a return, with a now ordered list.
     """
     SEQUENCES_TO_TEST = [2, 10, 25, 50, 100, 200, 255]
     print(f'{bcolors.UNDERLINE}Running {TEST_NAME}{bcolors.ENDC}')
@@ -460,7 +460,6 @@ def sort_test_8_bits() -> bool:
         cpu.execute()
         # cpu.printLog()
         # cpu.memoryDump(startingAddress=0x0600, endingAddress=0x0627)
-        
 
         errors = False
         # print(f'\tTesting sort of {NUMBER_SEQUENCE_LENGTH} elements: Expected {EXPECTED_DATA[1:]} / got {cpu.memory[0x4401:0x4401 + NUMBER_SEQUENCE_LENGTH]} -- ', end='')
@@ -477,11 +476,255 @@ def sort_test_8_bits() -> bool:
     return True
 
 
+def sort_test_16_bits() -> bool:
+    TEST_NAME = 'SORT TEST 16 BITS'
+    """
+    The sort subroutine discussed in the preceding example (see 8-bit Bubble Sort)
+    was relatively simple because the elements were 8-bit values, and could be
+    compared with a CMP instruction and exchanged without too much difficulty.
+    Unfortunately, the 6502 microprocessor has no 16-bit compare instruction,
+    so a comparison must be made by actually subtracting the elements and testing the
+    status of the result; if a borrow occurs, the elements must be exchanged, otherwise
+    the elements can remain in their present order. The SORT16 subroutine sorts 16-bit
+    elements using the bubble-sort algorithm and a 16-bit "compare" sequence.
+
+    ;THIS SUBROUTINE ARRANGES THE 16-BIT ELEMENTS OF A LIST IN
+    ;ASCENDING ORDER.  THE STARTING ADDRESS OF THE LIST IS IN LOCATIONS
+    ;$30 AND $31.  THE LENGTH OF THE LIST IS IN THE FIRST BYTE OF THE LIST.
+    ;LOCATION $32 IS USED TO HOLD AN EXCHANGE FLAG.
+
+    SORT16   LDY #$00     ;TURN EXCHANGE FLAG OFF (= 0)
+            STY $32
+            LDA ($30),Y  ;FETCH ELEMENT COUNT
+            TAY          ;  AND USE IT TO INDEX LAST ELEMENT
+    NXTEL    LDA ($30),Y  ;FETCH MSBY
+            PHA          ;  AND PUSH IT ONTO STACK
+            DEY
+            LDA ($30),Y  ;FETCH LSBY
+            SEC
+            DEY
+            DEY
+            SBC ($30),Y  ; AND SUBTRACT LSBY OF PRECEDING ELEMENT
+            PLA
+            INY
+            SBC ($30),Y  ; AND SUBTRACT MSBY OF PRECEDING ELEMENT
+            BCC SWAP     ;ARE THESE ELEMENTS OUT OF ORDER?
+            CPY #$02     ;NO. LOOP UNTIL ALL ELEMENTS COMPARED
+            BNE NXTEL
+            BIT $32      ;EXCHANGE FLAG STILL OFF?
+            BMI SORT16   ;NO. GO THROUGH LIST AGAIN
+            RTS
+
+    ;THIS ROUTINE BELOW EXCHANGES TWO 16-BIT ELEMENTS IN MEMORY
+
+    SWAP     LDA ($30),Y  ;SAVE MSBY1 ON STACK
+            PHA
+            DEY
+            LDA ($30),Y  ;SAVE LSBY1 ON STACK
+            PHA
+            INY
+            INY
+            INY
+            LDA ($30),Y  ;SAVE MSBY2 ON STACK
+            PHA
+            DEY
+            LDA ($30),Y  ;LOAD LSBY2 INTO ACCUMULATOR
+            DEY
+            DEY
+            STA ($30),Y  ; AND STORE IT AT LSBY1 POSITION
+            LDX #$03
+    SLOOP    INY          ;STORE THE OTHER THREE BYTES
+            PLA
+            STA ($30),Y
+            DEX
+            BNE SLOOP    ;LOOP UNTIL THREE BYTE STORED
+            LDA #$FF     ;TURN EXCHANGE FLAG ON (= -1)
+            STA $32
+            CPY #04      ;WAS EXCHANGE DONE AT START OF LIST?
+            BEQ SORT16   ;YES. GO THROUGH LIST AGAIN.
+            DEY          ;NO. COMPARE NEXT ELEMENT PAIR
+            DEY
+            JMP NXTEL
+
+    The SORT16 subroutine is designed with the same algorithm as SORT8, so the two
+    subroutines have several characteristics in common. For example, both SORT8 and
+    SORT16 have an exchange flag (in the same location, $32) that indicates whether
+    or not an exchange occurred during the last pass through the list. Like SORT8,
+    the SORT16 subroutine also compares adjacent elements (albeit with a 16-bit
+    subtraction, as opposed to the simple 8-bit comparison of the SORT8) and has
+    an exchange routine that interchanges misordered elements in memory.
+
+    Aside from the fact that SORT8 and SORT16 operate on different size elements,
+    the only other real difference between them is that SORT16 processes the list
+    from the end and works upward, whereas, SORT8 process the list from the beginning
+    and works downward. Why the difference in procedure? There is no good reason,
+    other than to demonstrate that a bubble sort can operate in either direction.
+
+    SORT16 starts by initializing the exchange flag to zero, and fetching the element
+    count from the first byte of the list. Using that value to point Y at the last
+    element, the 6502 microprocessor executes "compare" (subtraction) instructions.
+    These instructions, which start with the NXTEL instruction, perform a double-precision
+    subtraction. In this subtraction, the lest-significant bytes (LSBYs) are subtracted
+    first, and any borrow from that operation is passed, via the Carry, to the subtraction
+    of the most-significant bytes (MSBYs).
+
+    Operations on multiple-precision elements typically require a lot of pointer
+    manipulation, as you can see by the instructions that follow the NXTEL label.
+    To get the higher-addressed LSBY, the Y register must be decremented from its
+    MSBY position. Before decrementing the Y register, however, the higher-addressed
+    MSBY is pushed onto the stack for later use. With several more Y register decrements,
+    the two LSBYs are addressed and subtracted. The result of the subtraction is not saved,
+    since we are only interested in the final status of the operation, not the numerical
+    result.
+
+            |           |                     |           |
+            +-----------+                     +-----------+
+    ADDR     |   LSBY1   |            ADDR     |   LSBY2   |
+            +-----------+                     +-----------+
+    ADDR + 1 |   MSBY1   |            ADDR + 1 |   MSBY2   |
+            +-----------+                     +-----------+
+    ADDR + 2 |   LSBY2   |            ADDR + 2 |   LSBY1   |
+            +-----------+                     +-----------+
+    ADDR + 3 |   MSBY2   |            ADDR + 3 |   MSBY1   |
+            +-----------+                     +-----------+
+            |           |                     |           |
+
+        (A) Before Swap.                  (B) After Swap.
+
+    Figure 1: Swapping two 16-bit values in memory.
+
+    The most-significant bytes (MSBYs) are subtracted next, by retrieving the higher-addressed
+    MSBY from the stack and subtracting the lower-addressed MSBY from it. With this subtraction,
+    we can make the exchange/no-exchange decision based ont he state of the Carry flag. If Carry
+    is set (no borrow occurred), the elements are in the correct order; if Carry is reset
+    (a borrow occurred), the elements must be exchanged.
+
+    Figure 1 shows what the SWAP routine actually does, by presenting the "before" and "after"
+    diagrams of the exchanged 16-bit elements. The higher-valued elements initially resides in
+    symbolic addresses ADDR + 2 and ADDR + 3, and its bytes are designated as LSBY2 and MSBY2.
+    The lower-valued elements initially resides in symbolic addressed ADDR and ADDR + 1, and its
+    bytes are designated LSBY1 and MSBY1. The sequence of the SWAP routine will be more easily
+    understood if you refer to Figure 1 while studying the instructions of the routine.
+
+    Due to the previous subtraction routine, the Y register index is pointing at MSBY1 when the
+    SWAP routine is initiated. Taking advantage of this pointer, SWAP saves MSBY1 and the adjacent
+    byte, LSBY1, on the stack. Recalling that information is retrieved from a stack in the opposite
+    order from which it was entered on the stack, the MSBY1-then-LSBY1 push sequence implies which
+    byte will be the next to be pushed onto the stack- it will be MSBY2. With these three bytes
+    on the stack, the final byte LSBY2 is moved from ADDR + 2 (again, refer to Figure 1) to ADDR.
+    A short loop (SLOOP) pulls bytes MSBY2, LSBY1, and MSBY1 off the stack and stores them in the
+    locations following LSBY2. The SWAP routine ends by turning on the exchange flag in location $32.
+    If Elements 1 and 2 were exchanged, a BEQ SORT16 instrucion branches to the top of the subroutine;
+    otherwise, control jumps to NXTEL, for the next comparison.
+
+    Address  Hexdump   Dissassembly
+    -------------------------------
+    $0600    a0 00     LDY #$00
+    $0602    84 32     STY $32
+    $0604    b1 30     LDA ($30),Y
+    $0606    a8        TAY
+    $0607    b1 30     LDA ($30),Y
+    $0609    48        PHA
+    $060a    88        DEY
+    $060b    b1 30     LDA ($30),Y
+    $060d    38        SEC
+    $060e    88        DEY
+    $060f    88        DEY
+    $0610    f1 30     SBC ($30),Y
+    $0612    68        PLA
+    $0613    c8        INY
+    $0614    f1 30     SBC ($30),Y
+    $0616    90 09     BCC $0621
+    $0618    c0 02     CPY #$02
+    $061a    d0 eb     BNE $0607
+    $061c    24 32     BIT $32
+    $061e    30 e0     BMI $0600
+    $0620    60        RTS
+    $0621    b1 30     LDA ($30),Y
+    $0623    48        PHA
+    $0624    88        DEY
+    $0625    b1 30     LDA ($30),Y
+    $0627    48        PHA
+    $0628    c8        INY
+    $0629    c8        INY
+    $062a    c8        INY
+    $062b    b1 30     LDA ($30),Y
+    $062d    48        PHA
+    $062e    88        DEY
+    $062f    b1 30     LDA ($30),Y
+    $0631    88        DEY
+    $0632    88        DEY
+    $0633    91 30     STA ($30),Y
+    $0635    a2 03     LDX #$03
+    $0637    c8        INY
+    $0638    68        PLA
+    $0639    91 30     STA ($30),Y
+    $063b    ca        DEX
+    $063c    d0 f9     BNE $0637
+    $063e    a9 ff     LDA #$ff
+    $0640    85 32     STA $32
+    $0642    c0 04     CPY #$04
+    $0644    f0 ba     BEQ $0600
+    $0646    88        DEY
+    $0647    88        DEY
+    $0648    4c 07 06  JMP $0607
+
+    """
+    SEQUENCES_TO_TEST = [5, 10, 25, 50, 100, 200, 255]
+    print(f'{bcolors.UNDERLINE}Running {TEST_NAME}{bcolors.ENDC}')
+    for NUMBER_SEQUENCE_LENGTH in SEQUENCES_TO_TEST:
+        data = [NUMBER_SEQUENCE_LENGTH * 2]
+        EXPECTED_DATA = [NUMBER_SEQUENCE_LENGTH * 2]
+        for x in range(1, NUMBER_SEQUENCE_LENGTH + 1, 1):
+            data.append(0x00)
+            data.append(NUMBER_SEQUENCE_LENGTH + 1 - x)
+            EXPECTED_DATA.append(0x00)
+            EXPECTED_DATA.append(x)
+        # EXPECTED_DATA.extend(sorted(data[1:]))
+
+        cpu = None
+        cpu = CPU6502(cycle_limit=10_000_000)
+        cpu.reset(program_counter=0x0600)
+        # Location of list to sort is in 0x0030 and 0x0031
+        # List can be up to 255 elements
+        program = [
+            0xa0, 0x00, 0x84, 0x32, 0xb1, 0x30, 0xa8, 0xb1, 0x30, 0x48, 0x88, 0xb1, 0x30, 0x38, 0x88, 0x88,
+            0xf1, 0x30, 0x68, 0xc8, 0xf1, 0x30, 0x90, 0x09, 0xc0, 0x02, 0xd0, 0xeb, 0x24, 0x32, 0x30, 0xe0,
+            0x60, 0xb1, 0x30, 0x48, 0x88, 0xb1, 0x30, 0x48, 0xc8, 0xc8, 0xc8, 0xb1, 0x30, 0x48, 0x88, 0xb1,
+            0x30, 0x88, 0x88, 0x91, 0x30, 0xa2, 0x03, 0xc8, 0x68, 0x91, 0x30, 0xca, 0xd0, 0xf9, 0xa9, 0xff,
+            0x85, 0x32, 0xc0, 0x04, 0xf0, 0xba, 0x88, 0x88, 0x4c, 0x07, 0x06
+        ]
+
+        cpu.loadProgram(instructions=program, memoryAddress=0x0600, mainProgram=True)
+        cpu.loadProgram(instructions=data, memoryAddress=0x4400, mainProgram=False)
+        cpu.memory[0x0030] = 0x00
+        cpu.memory[0x0031] = 0x44
+        # cpu.memoryDump(startingAddress=0x4400, endingAddress=0x4400 + len(data) - 1, display_format='Dec')
+        cpu.execute()
+        # cpu.printLog()
+        # cpu.memoryDump(startingAddress=0x0600, endingAddress=0x0627)
+
+        errors = False
+        # print(f'\tTesting sort of {NUMBER_SEQUENCE_LENGTH} elements: Expected {EXPECTED_DATA[1:]} / got {cpu.memory[0x4401:0x4401 + NUMBER_SEQUENCE_LENGTH]} -- ', end='')
+        print(f'\tTesting sort of {NUMBER_SEQUENCE_LENGTH} elements: ', end='')
+        if cpu.memory[0x4401:0x4401 + NUMBER_SEQUENCE_LENGTH * 2] == EXPECTED_DATA[1:]:
+            print(f'{bcolors.OKGREEN}PASS{bcolors.ENDC} -- {cpu.cycles - 1:,} cycles. {cpu.execution_time}', end='\n')
+        else:
+            print(f'{bcolors.FAIL}FAIL{bcolors.ENDC} -- {cpu.cycles - 1:,} cycles.', end='\n')
+            cpu.memoryDump(startingAddress=0x4400, endingAddress=0x4400 + len(data) - 1, display_format='Dec')
+            errors = True
+
+    if errors:
+        return False
+    return True
+
+
 def custom_tests():
     tests = [
-        square_root_test,
-        fibonacci_test,
-        sort_test_8_bits,
+        # square_root_test,
+        # fibonacci_test,
+        # sort_test_8_bits,
+        sort_test_16_bits,
     ]
     results = []
     for test in tests:

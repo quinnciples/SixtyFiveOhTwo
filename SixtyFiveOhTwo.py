@@ -703,9 +703,9 @@ class CPU6502:
                     self.writeMemory(data=value, address=address, bytes=1)
 
             if self.INS in ['CMP_IM', 'CMP_ZP', 'CMP_ZP_X', 'CMP_ABS', 'CMP_ABS_X', 'CMP_ABS_Y', 'CMP_IND_X', 'CMP_IND_Y',
-                            'CPX_IM', 'CPX_ZP', 'CPX_ABS'
+                            'CPX_IM', 'CPX_ZP', 'CPX_ABS',
                             'CPY_IM', 'CPY_ZP', 'CPY_ABS']:
-                target = 'A' if self.INS[2] == 'P' else self.INS[2]
+                target = 'A' if self.INS[2] not in ['X', 'Y'] else self.INS[2]
                 if self.INS in ['CMP_IM', 'CPX_IM', 'CPY_IM']:
                     value = self.readMemory()
                 else:
@@ -884,7 +884,21 @@ class CPU6502:
                 self.setFlagsManually(flags=['V'], value=overflow_flag)
 
             if self.INS == 'SBC_IM':
-                pass
+                orig_A_register_value = self.registers['A']
+
+                value = self.readMemory()
+
+                orig_value = value
+                value = self.registers['A'] - orig_value - (1 - self.flags['C'])
+                self.registers['A'] = value & 0b0000000011111111
+                self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                carry_flag = 0 if (value & 0b1111111100000000) > 0 else 1
+                self.setFlagsManually(flags=['C'], value=carry_flag)
+                overflow_flag = 0
+                if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
+                    if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
+                        overflow_flag = 1
+                self.setFlagsManually(flags=['V'], value=overflow_flag)
 
             if self.INS == 'ADC_IM':
                 orig_A_register_value = self.registers['A']
