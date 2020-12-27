@@ -683,7 +683,7 @@ def sort_test_16_bits() -> bool:
         # EXPECTED_DATA.extend(sorted(data[1:]))
 
         cpu = None
-        cpu = CPU6502(cycle_limit=10_000_000)
+        cpu = CPU6502(cycle_limit=100_000_000)
         cpu.reset(program_counter=0x0600)
         # Location of list to sort is in 0x0030 and 0x0031
         # List can be up to 255 elements

@@ -408,8 +408,7 @@ class CPU6502:
             startingAddress += 8
 
     def cycleInc(self):
-        self.logState()
-        # print(self.INS, '0x{0:0{1}X}'.format(self.program_counter, 4), '{0:08b}'.format(self.getProcessorStatus()))
+        # self.logState()
         # self.memoryDump(startingAddress=0x00F0, endingAddress=0x00F7)
         self.cycles += 1
 
