@@ -195,7 +195,7 @@ class CPU6502:
                0x24: 'BIT_ZP',
                0x2C: 'BIT_ABS',
 
-               0xFA: 'BRK',
+               0x00: 'BRK',
 
                0x90: 'BCC',
                0xB0: 'BCS',
@@ -1208,7 +1208,7 @@ def load_program():
 
     # print(program[0x0400: 0x04FF])
     cpu = None
-    cpu = CPU6502(cycle_limit=200_000, printActivity=True)
+    cpu = CPU6502(cycle_limit=90_000, printActivity=True)
     cpu.reset(program_counter=0x0400)
     cpu.loadProgram(instructions=program, memoryAddress=0x0000, mainProgram=False)
     cpu.program_counter = 0x0400
