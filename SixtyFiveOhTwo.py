@@ -321,6 +321,8 @@ class CPU6502:
                0x20: 'JSR_ABS',
                0x60: 'RTS_IMP',
 
+               0x40: 'RTI',
+
                0x38: 'SEC_IMP',
                0xF8: 'SED_IMP',
                0x78: 'SEI_IMP',
@@ -439,8 +441,12 @@ class CPU6502:
         return self.stack_pointer | 0x0100
 
     def savePCAtStackPointer(self):
-        hi_byte = ((self.program_counter - 1) & 0b1111111100000000) >> 8
-        lo_byte = (self.program_counter - 1) & 0b0000000011111111
+        if self.INS == 'BRK':
+            hi_byte = ((self.program_counter) & 0b1111111100000000) >> 8
+            lo_byte = (self.program_counter) & 0b0000000011111111
+        else:
+            hi_byte = ((self.program_counter - 1) & 0b1111111100000000) >> 8
+            lo_byte = (self.program_counter - 1) & 0b0000000011111111
         self.writeMemory(data=hi_byte, address=self.getStackPointerAddress(), bytes=1)
         self.stackPointerDec()
         self.writeMemory(data=lo_byte, address=self.getStackPointerAddress(), bytes=1)
@@ -620,15 +626,29 @@ class CPU6502:
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 100):
 
             if self.INS == 'BRK':
+                # Possibly need a readMemory() call here according to http://nesdev.com/the%20%27B%27%20flag%20&%20BRK%20instruction.txt
+                self.readMemory()  # BRK is 2 byte instruction - this byte is read and ignored
                 # Save program counter to stack
                 self.savePCAtStackPointer()
                 # Save flags to stack
                 value = self.getProcessorStatus()
+                # Manually set bits 4 and 5 to 1
+                value = value | 0b00110000
                 self.saveByteAtStackPointer(data=value)
                 # Set B flag
                 self.setFlagsManually(['B'], 1)
+                # Set interrupt disable flag
+                self.setFlagsManually(['I'], 1)
                 # Manually change PC to 0xFFFE
                 self.handleBRK()
+
+            if self.INS == 'RTI':
+                # Set flags from stack
+                flags = self.loadByteFromStackPointer()
+                self.setProcessorStatus(flags=flags)
+                # Get PC from stack
+                self.loadPCFromStackPointer()
+                pass
 
             if self.INS in ['PHP_IMP', 'PLP_IMP']:
                 # Push
@@ -1063,13 +1083,12 @@ class CPU6502:
         valueString = '\t'.join(str(v) for v in combined.values())
         if self.cycles == 0:
             print(headerString)
-            self.logFile.write(headerString)
         print(valueString)
 
     def initializeLog(self):
         headerString = self.getLogHeaderString()
         self.log.append(headerString)
-        # self.logFile.write(headerString)
+        self.logFile.write(headerString)
 
     def logState(self):
         combined = self.getLogString()
@@ -1208,7 +1227,7 @@ def load_program():
 
     # print(program[0x0400: 0x04FF])
     cpu = None
-    cpu = CPU6502(cycle_limit=90_000, printActivity=True)
+    cpu = CPU6502(cycle_limit=2_000_000, printActivity=True)
     cpu.reset(program_counter=0x0400)
     cpu.loadProgram(instructions=program, memoryAddress=0x0000, mainProgram=False)
     cpu.program_counter = 0x0400
