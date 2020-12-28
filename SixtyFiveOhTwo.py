@@ -215,7 +215,7 @@ class CPU6502:
                0xC1: 'CMP_IND_X',
                0xD1: 'CMP_IND_Y',
 
-               0xE0: 'CMX_IM',
+               0xE0: 'CPX_IM',
                0xE4: 'CPX_ZP',
                0xEC: 'CPX_ABS',
 
@@ -358,13 +358,17 @@ class CPU6502:
                0x11: 'ORA_IND_Y',
                }
 
-    def __init__(self, cycle_limit=100):
+    def __init__(self, cycle_limit=100, printActivity=True, logFile = 'log.txt'):
 
         self.program_counter = 0xFFFE
         self.stack_pointer = 0xFF  # This is technically 0x01FF since the stack pointer lives on page 01.
         self.cycle_limit = cycle_limit
 
         self.INS = None
+
+        self.logFile = open(logFile, 'w')
+
+        self.printActivity = printActivity
 
         self.registers = {
             'A': 0,
@@ -410,6 +414,8 @@ class CPU6502:
     def cycleInc(self):
         self.logState()
         # self.memoryDump(startingAddress=0x00F0, endingAddress=0x00F7)
+        if self.printActivity:
+            self.printState()
         self.cycles += 1
 
     def programCounterInc(self):
@@ -576,8 +582,9 @@ class CPU6502:
         state = 0
         for shift, flag in enumerate(order):
             if flag == 'X':
-                continue
-            state += (self.flags[flag] << shift)
+                state += (1 << shift)
+            else:
+                state += (self.flags[flag] << shift)
         return state
 
     def getProcessorStatusString(self) -> str:
@@ -587,7 +594,8 @@ class CPU6502:
             if flag == 'X':
                 flag_string += '-'
                 continue
-            flag_string += bcolors.CBLUEBG + flag.upper() + bcolors.ENDC if self.flags[flag] == 1 else bcolors.CGREY + flag.lower() + bcolors.ENDC
+            # flag_string += bcolors.CBLUEBG + flag.upper() + bcolors.ENDC if self.flags[flag] == 1 else bcolors.CGREY + flag.lower() + bcolors.ENDC
+            flag_string += flag.upper() if self.flags[flag] == 1 else flag.lower()
         return flag_string
 
     def setProcessorStatus(self, flags: int):
@@ -610,7 +618,7 @@ class CPU6502:
     def execute(self):
         self.start_time = datetime.datetime.now()
         # Set starting position based on 0xFFFE/F
-        self.handleBRK()
+        # self.handleBRK()
 
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
@@ -1030,7 +1038,9 @@ class CPU6502:
             data = self.readMemory()
             self.INS = CPU6502.opcodes.get(data, None)
 
+        # Cleanup
         self.execution_time = datetime.datetime.now() - self.start_time
+        self.logFile.close()
 
     def getLogString(self):
         combined = {**{'%-10s' % 'Cycle': '%-10s' % self.cycles,
@@ -1040,7 +1050,8 @@ class CPU6502:
                     **{'SP': '0x{0:0{1}X}'.format(self.getStackPointerAddress(), 4),
                     'PC': '0x{0:0{1}X}'.format(self.program_counter, 4),
                         'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2),
-                        'FLAGS     ': '%-10s' % self.getProcessorStatusString()}
+                        'FLAGS     ': '%-10s' % self.getProcessorStatusString()
+                        }
                     }
         return combined
 
@@ -1053,17 +1064,22 @@ class CPU6502:
         combined = self.getLogString()
         headerString = self.getLogHeaderString()
         valueString = '\t'.join(str(v) for v in combined.values())
-        print(headerString)
+        if self.cycles == 0:
+            print(headerString)
+            self.logFile.write(headerString)
         print(valueString)
 
     def initializeLog(self):
         headerString = self.getLogHeaderString()
         self.log.append(headerString)
+        # self.logFile.write(headerString)
 
     def logState(self):
         combined = self.getLogString()
-        valueString = bcolors.ENDC + '\t'.join(str(v) for v in combined.values()) + bcolors.ENDC
+        # valueString = bcolors.ENDC + '\t'.join(str(v) for v in combined.values()) + bcolors.ENDC
+        valueString = '\t'.join(str(v) for v in combined.values())
         self.log.append(valueString)
+        self.logFile.write(valueString + '\n')
         # headerString = self.getLogHeaderString()
         # if self.cycles % 10 == 0:
         #     self.log.append(headerString)
@@ -1186,10 +1202,31 @@ def flags_test():
         print('*' * 50)
 
 
+def load_program():
+    program = []
+    with open('binary/6502_functional_test.bin', 'rb') as f:
+        data = f.read()
+    for d in data:
+        program.append(d)
+
+    # print(program[0x0400: 0x04FF])
+    cpu = None
+    cpu = CPU6502(cycle_limit=100_000_000, printActivity=True)
+    cpu.reset(program_counter=0x0400)
+    cpu.loadProgram(instructions=program, memoryAddress=0x0000, mainProgram=False)
+    cpu.program_counter = 0x0400
+    print(cpu.program_counter)
+    cpu.execute()
+    # cpu.printLog()
+    # cpu.memoryDump(startingAddress=0x0400, endingAddress=0x04FF)
+
+
 if __name__ == '__main__':
-    run()
+    # run()
     # fibonacci_test()
     # print()
     # fast_multiply_10()
     # print()
     # flags_test()
+    # print()
+    load_program()
