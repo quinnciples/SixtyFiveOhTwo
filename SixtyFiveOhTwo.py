@@ -382,6 +382,7 @@ class CPU6502:
             'I': 0,  # Interrupt flag
             'D': 0,  # Decimal mode flag
             'B': 0,  # Break flag
+            'U': 0,  # Unused flag
             'V': 0,  # Overflow flag
             'N': 0   # Negative flag
         }
@@ -478,6 +479,8 @@ class CPU6502:
         self.registers = dict.fromkeys(self.registers.keys(), 0)
         # Reset all flags to zero
         self.flags = dict.fromkeys(self.flags.keys(), 0)
+        # self.flags['U'] = 1
+        # self.flags['B'] = 1
 
         self.initializeMemory()
 
@@ -578,31 +581,23 @@ class CPU6502:
         return address
 
     def getProcessorStatus(self) -> int:
-        order = ['C', 'Z', 'I', 'D', 'B', 'X', 'V', 'N']
+        order = ['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N']
         state = 0
         for shift, flag in enumerate(order):
-            if flag == 'X':
-                state += (1 << shift)
-            else:
-                state += (self.flags[flag] << shift)
+            state += (self.flags[flag] << shift)
         return state
 
     def getProcessorStatusString(self) -> str:
-        order = ['C', 'Z', 'I', 'D', 'B', 'X', 'V', 'N']
+        order = ['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N']
         flag_string = ''
         for shift, flag in enumerate(reversed(order)):
-            if flag == 'X':
-                flag_string += '-'
-                continue
             # flag_string += bcolors.CBLUEBG + flag.upper() + bcolors.ENDC if self.flags[flag] == 1 else bcolors.CGREY + flag.lower() + bcolors.ENDC
             flag_string += flag.upper() if self.flags[flag] == 1 else flag.lower()
         return flag_string
 
     def setProcessorStatus(self, flags: int):
-        order = ['C', 'Z', 'I', 'D', 'B', 'X', 'V', 'N']
+        order = ['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N']
         for shift, flag in enumerate(order):
-            if flag == 'X':
-                continue
             flag_value = (flags >> shift) & 0b00000001
             self.setFlagsManually(flags=[flag], value=flag_value)
 
@@ -639,6 +634,8 @@ class CPU6502:
                 # Push
                 if self.INS == 'PHP_IMP':
                     value = self.getProcessorStatus()
+                    # Manually set bits 4 and 5 to 1
+                    value = value | 0b00110000
                     self.saveByteAtStackPointer(data=value)
                     self.handleSingleByteInstruction()
                 elif self.INS == 'PLP_IMP':
@@ -1184,12 +1181,12 @@ def fast_multiply_10():
 
 def flags_test():
     cpu = CPU6502(cycle_limit=10)
-    cpu.setFlagsManually(['C', 'Z', 'I', 'D', 'B', 'V', 'N'], 0)
+    cpu.setFlagsManually(['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N'], 0)
     cpu.getProcessorStatus()
-    cpu.setFlagsManually(['C', 'Z', 'I', 'D', 'B', 'V', 'N'], 1)
+    cpu.setFlagsManually(['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N'], 1)
     cpu.getProcessorStatus()
-    cpu.setFlagsManually(['C', 'Z', 'I', 'D', 'B', 'V', 'N'], 0)
-    flags = ['N', 'V', 'B', 'D', 'I', 'Z', 'C']
+    cpu.setFlagsManually(['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N'], 0)
+    flags = ['N', 'V', 'U', 'B', 'D', 'I', 'Z', 'C']
     for flag in flags:
         print(f'Flag: {flag}')
         cpu.setFlagsManually([flag], 1)
@@ -1211,7 +1208,7 @@ def load_program():
 
     # print(program[0x0400: 0x04FF])
     cpu = None
-    cpu = CPU6502(cycle_limit=100_000_000, printActivity=True)
+    cpu = CPU6502(cycle_limit=200_000, printActivity=True)
     cpu.reset(program_counter=0x0400)
     cpu.loadProgram(instructions=program, memoryAddress=0x0000, mainProgram=False)
     cpu.program_counter = 0x0400
