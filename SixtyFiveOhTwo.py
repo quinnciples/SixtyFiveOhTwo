@@ -645,6 +645,7 @@ class CPU6502:
             if self.INS == 'RTI':
                 # Set flags from stack
                 flags = self.loadByteFromStackPointer()
+                # PLP and BRK should ignore bits 4 & 5
                 self.setProcessorStatus(flags=flags)
                 # Get PC from stack
                 self.loadPCFromStackPointer()
@@ -660,6 +661,7 @@ class CPU6502:
                     self.handleSingleByteInstruction()
                 elif self.INS == 'PLP_IMP':
                     # Pull
+                    # PLP and BRK should ignore bits 4 & 5
                     flags = self.loadByteFromStackPointer()
                     self.setProcessorStatus(flags=flags)
                     self.handleSingleByteInstruction()
