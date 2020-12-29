@@ -623,7 +623,14 @@ class CPU6502:
 
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
-        while self.INS is not None and self.cycles <= max(self.cycle_limit, 100):
+        bne_count = 0
+        while self.INS is not None and self.cycles <= max(self.cycle_limit, 100) and bne_count <= 20:
+
+            # Remove this when done testing
+            if self.INS == 'BNE':
+                bne_count += 1
+            else:
+                bne_count = 0
 
             if self.INS == 'BRK':
                 # Possibly need a readMemory() call here according to http://nesdev.com/the%20%27B%27%20flag%20&%20BRK%20instruction.txt
@@ -891,17 +898,16 @@ class CPU6502:
 
             if self.INS in ['SBC_ZP', 'SBC_ZP_X', 'SBC_ABS', 'SBC_ABS_X', 'SBC_ABS_Y', 'SBC_IND_X', 'SBC_IND_Y']:
                 orig_A_register_value = self.registers['A']
-
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
                 value = self.readMemory(address=address, increment_pc=False, bytes=1)
-
+                value =  0b11111111 - value
                 orig_value = value
-                value = self.registers['A'] - orig_value - (1 - self.flags['C'])
+                value += self.registers['A'] + self.flags['C']
                 self.registers['A'] = value & 0b0000000011111111
                 self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-                carry_flag = 0 if (value & 0b1111111100000000) > 0 else 1
+                carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
                 self.setFlagsManually(flags=['C'], value=carry_flag)
                 overflow_flag = 0
                 if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
@@ -911,14 +917,13 @@ class CPU6502:
 
             if self.INS == 'SBC_IM':
                 orig_A_register_value = self.registers['A']
-
                 value = self.readMemory()
-
+                value =  0b11111111 - value
                 orig_value = value
-                value = self.registers['A'] - orig_value - (1 - self.flags['C'])
+                value += self.registers['A'] + self.flags['C']
                 self.registers['A'] = value & 0b0000000011111111
                 self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-                carry_flag = 0 if (value & 0b1111111100000000) > 0 else 1
+                carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
                 self.setFlagsManually(flags=['C'], value=carry_flag)
                 overflow_flag = 0
                 if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
@@ -1096,7 +1101,10 @@ class CPU6502:
         combined = self.getLogString()
         # valueString = bcolors.ENDC + '\t'.join(str(v) for v in combined.values()) + bcolors.ENDC
         valueString = '\t'.join(str(v) for v in combined.values())
-        self.log.append(valueString)
+        # self.log.append(valueString)
+        if self.cycles % 250000 == 0:
+            self.logFile.close()
+            self.logFile = open(self.logFile.name, 'w')
         self.logFile.write(valueString + '\n')
         # headerString = self.getLogHeaderString()
         # if self.cycles % 10 == 0:
@@ -1227,13 +1235,15 @@ def load_program():
     for d in data:
         program.append(d)
 
-    # print(program[0x0400: 0x04FF])
+    # print(program[0x03F6: 0x040F])
+    # print(len(program))
     cpu = None
-    cpu = CPU6502(cycle_limit=2_000_000, printActivity=True)
+    cpu = CPU6502(cycle_limit=200_000_000, printActivity=False)
     cpu.reset(program_counter=0x0400)
-    cpu.loadProgram(instructions=program, memoryAddress=0x0000, mainProgram=False)
+    #cpu.loadProgram(instructions=program, memoryAddress=0x0000, mainProgram=False)
+    cpu.loadProgram(instructions=program, memoryAddress=0x000A, mainProgram=False)
     cpu.program_counter = 0x0400
-    print(cpu.program_counter)
+    print(cpu.memory[0x400:0x40F])
     cpu.execute()
     # cpu.printLog()
     # cpu.memoryDump(startingAddress=0x0400, endingAddress=0x04FF)
