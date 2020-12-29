@@ -174,7 +174,7 @@ class CPU6502:
 
     """
 
-    version = '0.50'
+    version = '0.80'
     MAX_MEMORY_SIZE = 1024 * 64  # 64k memory size
     OPCODES_WRITE_TO_MEMORY = ['STA', 'STX', 'STY', 'ROL', 'ROR', 'ASL', 'LSR', 'INC', 'DEC']
     opcodes = {0x29: 'AND_IM',
@@ -627,7 +627,7 @@ class CPU6502:
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 100) and bne_count <= 20:
 
             # Remove this when done testing
-            if self.INS == 'BNE':
+            if self.INS == 'BNE' or self.program_counter in [0x336D, 0x336E, 0x336F]:
                 bne_count += 1
             else:
                 bne_count = 0
@@ -656,7 +656,6 @@ class CPU6502:
                 self.setProcessorStatus(flags=flags)
                 # Get PC from stack
                 self.loadPCFromStackPointer()
-                pass
 
             if self.INS in ['PHP_IMP', 'PLP_IMP']:
                 # Push
@@ -1238,7 +1237,7 @@ def load_program():
     # print(program[0x03F6: 0x040F])
     # print(len(program))
     cpu = None
-    cpu = CPU6502(cycle_limit=200_000_000, printActivity=False)
+    cpu = CPU6502(cycle_limit=100_000_000, printActivity=False)
     cpu.reset(program_counter=0x0400)
     #cpu.loadProgram(instructions=program, memoryAddress=0x0000, mainProgram=False)
     cpu.loadProgram(instructions=program, memoryAddress=0x000A, mainProgram=False)
