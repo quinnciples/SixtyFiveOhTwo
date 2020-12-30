@@ -195,8 +195,6 @@ class CPU6502:
                0x24: 'BIT_ZP',
                0x2C: 'BIT_ABS',
 
-               0x00: 'BRK',
-
                0x90: 'BCC',
                0xB0: 'BCS',
                0xF0: 'BEQ',
@@ -360,15 +358,19 @@ class CPU6502:
                0x11: 'ORA_IND_Y',
                }
 
-    def __init__(self, cycle_limit=100, printActivity=True, logFile = 'log.txt'):
+    def __init__(self, cycle_limit=100, printActivity=False, logFile='log.txt', enableBRK=False):
 
         self.program_counter = 0xFFFE
         self.stack_pointer = 0xFF  # This is technically 0x01FF since the stack pointer lives on page 01.
         self.cycle_limit = cycle_limit
 
         self.INS = None
+        self.enableBRK = enableBRK
+        if self.enableBRK:
+            CPU6502.opcodes[0x00] = 'BRK'
 
         self.logFile = open(logFile, 'w')
+        self.action = []
 
         self.printActivity = printActivity
 
@@ -398,6 +400,7 @@ class CPU6502:
 
     def memoryDump(self, startingAddress=None, endingAddress=None, display_format='Hex'):
         # print('\nMemory Dump:\n')
+        print()
         line = ''  # to clear issues with pylance
         header = ''
         row = ''
@@ -417,6 +420,7 @@ class CPU6502:
         # self.memoryDump(startingAddress=0x00F0, endingAddress=0x00F7)
         if self.printActivity:
             self.printState()
+        self.action = []
         self.cycles += 1
 
     def programCounterInc(self):
@@ -486,16 +490,16 @@ class CPU6502:
         # self.flags['U'] = 1
         # self.flags['B'] = 1
 
-        self.initializeMemory()
-
     def readMemory(self, increment_pc=True, address=None, bytes=1) -> int:
         data = 0
         for byte in range(bytes):
             self.cycleInc()
             if not address:
                 data += (self.memory[self.program_counter] * (0x100 ** byte))
+                self.action.append(f'Read  memory address [{self.program_counter:04X}] : value [{self.memory[self.program_counter]:02X}]')
             else:
                 data += (self.memory[address + byte] * (0x100 ** byte))
+                self.action.append(f'Read  memory address [{(address + byte):04X}] : value [{self.memory[address + byte]:02X}]')
 
             if increment_pc:
                 self.programCounterInc()
@@ -505,6 +509,7 @@ class CPU6502:
         for byte in range(bytes):
             self.cycleInc()
             self.memory[address + byte] = data
+            self.action.append(f'Write memory address [{address + byte:04X}] : value [{data:02X}]')
 
     def setFlagsByRegister(self, register=None, flags=[]):
         if 'Z' in flags:
@@ -630,7 +635,7 @@ class CPU6502:
             else:
                 bne_count = 0
 
-            if self.INS == 'BRK':
+            if self.INS == 'BRK' and self.enableBRK:
                 # Reference wiki.nesdev.com/w/index.php/Status_flags
                 # Possibly need a readMemory() call here according to http://nesdev.com/the%20%27B%27%20flag%20&%20BRK%20instruction.txt
                 self.readMemory()  # BRK is 2 byte instruction - this byte is read and ignored
@@ -1062,24 +1067,27 @@ class CPU6502:
 
         # Cleanup
         self.execution_time = datetime.datetime.now() - self.start_time
+        # print(f'Execution time: {self.execution_time}')
         self.logFile.close()
 
     def getLogString(self):
-        combined = {**{'%-10s' % 'Cycle': '%-10s' % self.cycles,
+        combined = {**{'%-10s' % 'Cycle': '%-10s' % str(self.cycles),
                     '%-10s' % 'INS': '%-10s' % self.INS},
                     **self.registers,
                     **self.flags,
                     **{'SP': '0x{0:0{1}X}'.format(self.getStackPointerAddress(), 4),
                     'PC': '0x{0:0{1}X}'.format(self.program_counter, 4),
                         'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2),
-                        'FLAGS     ': '%-10s' % self.getProcessorStatusString()
-                        }
+                        '%-10s' % 'FLAGS': '%-10s' % self.getProcessorStatusString()
+                        },
+                    '%-20s' % 'ACTION': '%-20s' % '->'.join(self.action)
                     }
         return combined
 
     def getLogHeaderString(self):
         combined = self.getLogString()
-        headerString = bcolors.OKBLUE + '\t'.join(combined) + bcolors.ENDC
+        # headerString = bcolors.OKBLUE + '\t'.join(combined.keys()) + bcolors.ENDC
+        headerString = '\t'.join(combined.keys())
         return headerString
 
     def printState(self):
@@ -1159,7 +1167,7 @@ def run():
 
 
 def fibonacci_test():
-    cpu = CPU6502(cycle_limit=399)
+    cpu = CPU6502(cycle_limit=1000)
     cpu.reset(program_counter=0x0000)
 
     program = [0xA9, 0x01,  # LDA_IM 1
@@ -1187,7 +1195,7 @@ def fibonacci_test():
 
 
 def fast_multiply_10():
-    cpu = CPU6502(cycle_limit=100)
+    cpu = CPU6502(cycle_limit=100, printActivity=True)
     cpu.reset(program_counter=0x2000)
 
     program = [0xA9, 0x19,        # LDA_IM 25 ; Load initial value
@@ -1201,10 +1209,8 @@ def fast_multiply_10():
                ]
     cpu.loadProgram(instructions=program, memoryAddress=0x2000, mainProgram=True)
     cpu.execute()
-    cpu.printLog()
     cpu.memoryDump(startingAddress=0x2000, endingAddress=0x2017)
     cpu.memoryDump(startingAddress=0x3000, endingAddress=0x3001, display_format='Dec')
-    print(cpu.getProcessorStatusString())
 
 
 def flags_test():
@@ -1248,9 +1254,9 @@ def load_program():
 
 if __name__ == '__main__':
     # run()
-    fibonacci_test()
+    # fibonacci_test()
     # print()
-    # fast_multiply_10()
+    fast_multiply_10()
     # print()
     # flags_test()
     # print()

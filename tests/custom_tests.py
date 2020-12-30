@@ -304,7 +304,7 @@ def square_root_test() -> bool:
     errors = False
 
     for test_value, expected_value in zip(numbers_to_test, expected_values):
-        cpu = CPU6502(cycle_limit=1200)
+        cpu = CPU6502(cycle_limit=1200, printActivity=False)
         cpu.reset(program_counter=0x0600)
         cpu.loadProgram(instructions=all_in_one, memoryAddress=0x0600, mainProgram=True)
         cpu.memory[0x00F0] = test_value
@@ -724,7 +724,7 @@ def custom_tests():
         square_root_test,
         fibonacci_test,
         sort_test_8_bits,
-        sort_test_16_bits,
+        # sort_test_16_bits,
     ]
     results = []
     for test in tests:
