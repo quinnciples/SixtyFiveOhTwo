@@ -391,8 +391,6 @@ class CPU6502:
 
         self.initializeMemory()
         self.cycles = 0
-        self.log = []
-
         self.initializeLog()
 
     def initializeMemory(self):
@@ -633,6 +631,7 @@ class CPU6502:
                 bne_count = 0
 
             if self.INS == 'BRK':
+                # Reference wiki.nesdev.com/w/index.php/Status_flags
                 # Possibly need a readMemory() call here according to http://nesdev.com/the%20%27B%27%20flag%20&%20BRK%20instruction.txt
                 self.readMemory()  # BRK is 2 byte instruction - this byte is read and ignored
                 # Save program counter to stack
@@ -1092,6 +1091,7 @@ class CPU6502:
         print(valueString)
 
     def initializeLog(self):
+        self.log = []
         headerString = self.getLogHeaderString()
         self.log.append(headerString)
         self.logFile.write(headerString)
@@ -1159,7 +1159,7 @@ def run():
 
 
 def fibonacci_test():
-    cpu = CPU6502(cycle_limit=5000)
+    cpu = CPU6502(cycle_limit=399)
     cpu.reset(program_counter=0x0000)
 
     program = [0xA9, 0x01,  # LDA_IM 1
@@ -1244,16 +1244,14 @@ def load_program():
     cpu.program_counter = 0x0400
     print(cpu.memory[0x400:0x40F])
     cpu.execute()
-    # cpu.printLog()
-    # cpu.memoryDump(startingAddress=0x0400, endingAddress=0x04FF)
 
 
 if __name__ == '__main__':
     # run()
-    # fibonacci_test()
+    fibonacci_test()
     # print()
     # fast_multiply_10()
     # print()
     # flags_test()
     # print()
-    load_program()
+    # load_program()
