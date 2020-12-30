@@ -724,7 +724,7 @@ def custom_tests():
         square_root_test,
         fibonacci_test,
         sort_test_8_bits,
-        # sort_test_16_bits,
+        sort_test_16_bits,
     ]
     results = []
     for test in tests:

@@ -490,7 +490,7 @@ class CPU6502:
         self.registers = dict.fromkeys(self.registers.keys(), 0)
         # Reset all flags to zero
         self.flags = dict.fromkeys(self.flags.keys(), 0)
-        # self.flags['U'] = 1
+        self.flags['U'] = 1
         # self.flags['B'] = 1
 
     def readMemory(self, increment_pc=True, address=None, bytes=1) -> int:
@@ -609,7 +609,8 @@ class CPU6502:
         flag_string = ''
         for shift, flag in enumerate(reversed(order)):
             # flag_string += bcolors.CBLUEBG + flag.upper() + bcolors.ENDC if self.flags[flag] == 1 else bcolors.CGREY + flag.lower() + bcolors.ENDC
-            flag_string += flag.upper() if self.flags[flag] == 1 else flag.lower()
+            # flag_string += flag.upper() if self.flags[flag] == 1 else flag.lower()
+            flag_string += flag.upper() if self.flags.get(flag, 1) == 1 else flag.lower()
         return flag_string
 
     def setProcessorStatus(self, flags: int):
@@ -794,6 +795,7 @@ class CPU6502:
                         offset = (256 - offset) * (-1)
                     self.program_counter += offset
                     self.cycleInc()
+                    self.logAction(f'Branch test passed. Junping to location [{self.program_counter:04X}] offset [{offset}] bytes')
                     # Check if page was crossed
                     if ((self.program_counter & 0b1111111100000000) != ((self.program_counter - offset) & 0b1111111100000000)):
                         self.cycleInc()
@@ -1116,7 +1118,7 @@ class CPU6502:
         combined = self.getLogString()
         # valueString = bcolors.ENDC + '\t'.join(str(v) for v in combined.values()) + bcolors.ENDC
         valueString = '\t'.join(str(v) for v in combined.values())
-        # self.log.append(valueString)
+        self.log.append(valueString)
         if self.cycles % 250000 == 0:
             self.logFile.close()
             self.logFile = open(self.logFile.name, 'w')
@@ -1175,7 +1177,7 @@ def run():
 
 
 def fibonacci_test():
-    cpu = CPU6502(cycle_limit=1000)
+    cpu = CPU6502(cycle_limit=1000, printActivity=True)
     cpu.reset(program_counter=0x0000)
 
     program = [0xA9, 0x01,  # LDA_IM 1
@@ -1261,9 +1263,9 @@ def load_program():
 
 if __name__ == '__main__':
     # run()
-    # fibonacci_test()
+    fibonacci_test()
     # print()
-    fast_multiply_10()
+    # fast_multiply_10()
     # print()
     # flags_test()
     # print()
