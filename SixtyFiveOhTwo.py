@@ -423,6 +423,9 @@ class CPU6502:
         self.action = []
         self.cycles += 1
 
+    def logAction(self, action=''):
+        self.action.append(action)
+
     def programCounterInc(self):
         self.program_counter += 1
         if self.program_counter >= CPU6502.MAX_MEMORY_SIZE:
@@ -496,10 +499,10 @@ class CPU6502:
             self.cycleInc()
             if not address:
                 data += (self.memory[self.program_counter] * (0x100 ** byte))
-                self.action.append(f'Read  memory address [{self.program_counter:04X}] : value [{self.memory[self.program_counter]:02X}]')
+                self.logAction(f'Read  memory address [{self.program_counter:04X}] : value [{self.memory[self.program_counter]:02X}]')
             else:
                 data += (self.memory[address + byte] * (0x100 ** byte))
-                self.action.append(f'Read  memory address [{(address + byte):04X}] : value [{self.memory[address + byte]:02X}]')
+                self.logAction(f'Read  memory address [{(address + byte):04X}] : value [{self.memory[address + byte]:02X}]')
 
             if increment_pc:
                 self.programCounterInc()
@@ -509,7 +512,7 @@ class CPU6502:
         for byte in range(bytes):
             self.cycleInc()
             self.memory[address + byte] = data
-            self.action.append(f'Write memory address [{address + byte:04X}] : value [{data:02X}]')
+            self.logAction(f'Write memory address [{address + byte:04X}] : value [{data:02X}]')
 
     def setFlagsByRegister(self, register=None, flags=[]):
         if 'Z' in flags:
@@ -517,9 +520,11 @@ class CPU6502:
                 self.flags['Z'] = 1
             else:
                 self.flags['Z'] = 0
+            self.logAction(action=f'Setting Z flag based on register [{register}] : value [{self.registers[register]:02X}]')
 
         if 'N' in flags:
             self.flags['N'] = self.registers[register] >> 7 & 1
+            self.logAction(action=f'Setting N flag based on register [{register}] : value [{self.registers[register]:>08b}]')
 
     def setFlagsByValue(self, value=None, flags=[]):
         if value is None or len(flags) == 0:
@@ -530,18 +535,21 @@ class CPU6502:
                 self.flags['Z'] = 1
             else:
                 self.flags['Z'] = 0
+            self.logAction(action=f'Setting Z flag based on value [{value:02X}]')
 
         if 'N' in flags:
             if value & 0b10000000 > 0:
                 self.flags['N'] = 1
             else:
                 self.flags['N'] = 0
+            self.logAction(action=f'Setting N flag based on value [{value:>08b}]')
 
     def setFlagsManually(self, flags=[], value=None):
         if value is None or value < 0 or value > 1:
             return
         for flag in flags:
             self.flags[flag] = value
+            self.logAction(action=f'Setting {flag} flag manually to [{value:>01b}]')
 
     def determineAddress(self, mode):
         address = 0
@@ -1080,7 +1088,7 @@ class CPU6502:
                         'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2),
                         '%-10s' % 'FLAGS': '%-10s' % self.getProcessorStatusString()
                         },
-                    '%-20s' % 'ACTION': '%-20s' % '->'.join(self.action)
+                    '%-20s' % 'ACTION': '%-20s' % ' -> '.join(self.action)
                     }
         return combined
 
@@ -1243,9 +1251,8 @@ def load_program():
     # print(program[0x03F6: 0x040F])
     # print(len(program))
     cpu = None
-    cpu = CPU6502(cycle_limit=100_000_000, printActivity=False)
+    cpu = CPU6502(cycle_limit=100_000_000, printActivity=False, enableBRK=True)
     cpu.reset(program_counter=0x0400)
-    #cpu.loadProgram(instructions=program, memoryAddress=0x0000, mainProgram=False)
     cpu.loadProgram(instructions=program, memoryAddress=0x000A, mainProgram=False)
     cpu.program_counter = 0x0400
     print(cpu.memory[0x400:0x40F])
@@ -1261,3 +1268,4 @@ if __name__ == '__main__':
     # flags_test()
     # print()
     # load_program()
+    print()
