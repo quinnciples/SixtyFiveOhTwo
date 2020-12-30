@@ -174,7 +174,7 @@ class CPU6502:
 
     """
 
-    version = '0.50'
+    version = '0.80'
     MAX_MEMORY_SIZE = 1024 * 64  # 64k memory size
     OPCODES_WRITE_TO_MEMORY = ['STA', 'STX', 'STY', 'ROL', 'ROR', 'ASL', 'LSR', 'INC', 'DEC']
     opcodes = {0x29: 'AND_IM',
@@ -195,7 +195,7 @@ class CPU6502:
                0x24: 'BIT_ZP',
                0x2C: 'BIT_ABS',
 
-               0xFA: 'BRK',
+               0x00: 'BRK',
 
                0x90: 'BCC',
                0xB0: 'BCS',
@@ -321,6 +321,8 @@ class CPU6502:
                0x20: 'JSR_ABS',
                0x60: 'RTS_IMP',
 
+               0x40: 'RTI',
+
                0x38: 'SEC_IMP',
                0xF8: 'SED_IMP',
                0x78: 'SEI_IMP',
@@ -382,14 +384,13 @@ class CPU6502:
             'I': 0,  # Interrupt flag
             'D': 0,  # Decimal mode flag
             'B': 0,  # Break flag
+            'U': 0,  # Unused flag
             'V': 0,  # Overflow flag
             'N': 0   # Negative flag
         }
 
         self.initializeMemory()
         self.cycles = 0
-        self.log = []
-
         self.initializeLog()
 
     def initializeMemory(self):
@@ -438,8 +439,12 @@ class CPU6502:
         return self.stack_pointer | 0x0100
 
     def savePCAtStackPointer(self):
-        hi_byte = ((self.program_counter - 1) & 0b1111111100000000) >> 8
-        lo_byte = (self.program_counter - 1) & 0b0000000011111111
+        if self.INS == 'BRK':
+            hi_byte = ((self.program_counter) & 0b1111111100000000) >> 8
+            lo_byte = (self.program_counter) & 0b0000000011111111
+        else:
+            hi_byte = ((self.program_counter - 1) & 0b1111111100000000) >> 8
+            lo_byte = (self.program_counter - 1) & 0b0000000011111111
         self.writeMemory(data=hi_byte, address=self.getStackPointerAddress(), bytes=1)
         self.stackPointerDec()
         self.writeMemory(data=lo_byte, address=self.getStackPointerAddress(), bytes=1)
@@ -478,6 +483,8 @@ class CPU6502:
         self.registers = dict.fromkeys(self.registers.keys(), 0)
         # Reset all flags to zero
         self.flags = dict.fromkeys(self.flags.keys(), 0)
+        # self.flags['U'] = 1
+        # self.flags['B'] = 1
 
         self.initializeMemory()
 
@@ -578,31 +585,23 @@ class CPU6502:
         return address
 
     def getProcessorStatus(self) -> int:
-        order = ['C', 'Z', 'I', 'D', 'B', 'X', 'V', 'N']
+        order = ['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N']
         state = 0
         for shift, flag in enumerate(order):
-            if flag == 'X':
-                state += (1 << shift)
-            else:
-                state += (self.flags[flag] << shift)
+            state += (self.flags[flag] << shift)
         return state
 
     def getProcessorStatusString(self) -> str:
-        order = ['C', 'Z', 'I', 'D', 'B', 'X', 'V', 'N']
+        order = ['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N']
         flag_string = ''
         for shift, flag in enumerate(reversed(order)):
-            if flag == 'X':
-                flag_string += '-'
-                continue
             # flag_string += bcolors.CBLUEBG + flag.upper() + bcolors.ENDC if self.flags[flag] == 1 else bcolors.CGREY + flag.lower() + bcolors.ENDC
             flag_string += flag.upper() if self.flags[flag] == 1 else flag.lower()
         return flag_string
 
     def setProcessorStatus(self, flags: int):
-        order = ['C', 'Z', 'I', 'D', 'B', 'X', 'V', 'N']
+        order = ['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N']
         for shift, flag in enumerate(order):
-            if flag == 'X':
-                continue
             flag_value = (flags >> shift) & 0b00000001
             self.setFlagsManually(flags=[flag], value=flag_value)
 
@@ -622,27 +621,52 @@ class CPU6502:
 
         data = self.readMemory()
         self.INS = CPU6502.opcodes.get(data, None)
-        while self.INS is not None and self.cycles <= max(self.cycle_limit, 100):
+        bne_count = 0
+        while self.INS is not None and self.cycles <= max(self.cycle_limit, 100) and bne_count <= 20:
+
+            # Remove this when done testing
+            if self.INS == 'BNE' or self.program_counter in [0x336D, 0x336E, 0x336F]:
+                bne_count += 1
+            else:
+                bne_count = 0
 
             if self.INS == 'BRK':
+                # Reference wiki.nesdev.com/w/index.php/Status_flags
+                # Possibly need a readMemory() call here according to http://nesdev.com/the%20%27B%27%20flag%20&%20BRK%20instruction.txt
+                self.readMemory()  # BRK is 2 byte instruction - this byte is read and ignored
                 # Save program counter to stack
                 self.savePCAtStackPointer()
                 # Save flags to stack
                 value = self.getProcessorStatus()
+                # Manually set bits 4 and 5 to 1
+                value = value | 0b00110000
                 self.saveByteAtStackPointer(data=value)
                 # Set B flag
                 self.setFlagsManually(['B'], 1)
+                # Set interrupt disable flag
+                self.setFlagsManually(['I'], 1)
                 # Manually change PC to 0xFFFE
                 self.handleBRK()
+
+            if self.INS == 'RTI':
+                # Set flags from stack
+                flags = self.loadByteFromStackPointer()
+                # PLP and BRK should ignore bits 4 & 5
+                self.setProcessorStatus(flags=flags)
+                # Get PC from stack
+                self.loadPCFromStackPointer()
 
             if self.INS in ['PHP_IMP', 'PLP_IMP']:
                 # Push
                 if self.INS == 'PHP_IMP':
                     value = self.getProcessorStatus()
+                    # Manually set bits 4 and 5 to 1
+                    value = value | 0b00110000
                     self.saveByteAtStackPointer(data=value)
                     self.handleSingleByteInstruction()
                 elif self.INS == 'PLP_IMP':
                     # Pull
+                    # PLP and BRK should ignore bits 4 & 5
                     flags = self.loadByteFromStackPointer()
                     self.setProcessorStatus(flags=flags)
                     self.handleSingleByteInstruction()
@@ -872,17 +896,16 @@ class CPU6502:
 
             if self.INS in ['SBC_ZP', 'SBC_ZP_X', 'SBC_ABS', 'SBC_ABS_X', 'SBC_ABS_Y', 'SBC_IND_X', 'SBC_IND_Y']:
                 orig_A_register_value = self.registers['A']
-
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
                 value = self.readMemory(address=address, increment_pc=False, bytes=1)
-
+                value =  0b11111111 - value
                 orig_value = value
-                value = self.registers['A'] - orig_value - (1 - self.flags['C'])
+                value += self.registers['A'] + self.flags['C']
                 self.registers['A'] = value & 0b0000000011111111
                 self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-                carry_flag = 0 if (value & 0b1111111100000000) > 0 else 1
+                carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
                 self.setFlagsManually(flags=['C'], value=carry_flag)
                 overflow_flag = 0
                 if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
@@ -892,14 +915,13 @@ class CPU6502:
 
             if self.INS == 'SBC_IM':
                 orig_A_register_value = self.registers['A']
-
                 value = self.readMemory()
-
+                value =  0b11111111 - value
                 orig_value = value
-                value = self.registers['A'] - orig_value - (1 - self.flags['C'])
+                value += self.registers['A'] + self.flags['C']
                 self.registers['A'] = value & 0b0000000011111111
                 self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-                carry_flag = 0 if (value & 0b1111111100000000) > 0 else 1
+                carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
                 self.setFlagsManually(flags=['C'], value=carry_flag)
                 overflow_flag = 0
                 if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
@@ -1066,19 +1088,22 @@ class CPU6502:
         valueString = '\t'.join(str(v) for v in combined.values())
         if self.cycles == 0:
             print(headerString)
-            self.logFile.write(headerString)
         print(valueString)
 
     def initializeLog(self):
+        self.log = []
         headerString = self.getLogHeaderString()
         self.log.append(headerString)
-        # self.logFile.write(headerString)
+        self.logFile.write(headerString)
 
     def logState(self):
         combined = self.getLogString()
         # valueString = bcolors.ENDC + '\t'.join(str(v) for v in combined.values()) + bcolors.ENDC
         valueString = '\t'.join(str(v) for v in combined.values())
-        self.log.append(valueString)
+        # self.log.append(valueString)
+        if self.cycles % 250000 == 0:
+            self.logFile.close()
+            self.logFile = open(self.logFile.name, 'w')
         self.logFile.write(valueString + '\n')
         # headerString = self.getLogHeaderString()
         # if self.cycles % 10 == 0:
@@ -1134,7 +1159,7 @@ def run():
 
 
 def fibonacci_test():
-    cpu = CPU6502(cycle_limit=5000)
+    cpu = CPU6502(cycle_limit=399)
     cpu.reset(program_counter=0x0000)
 
     program = [0xA9, 0x01,  # LDA_IM 1
@@ -1184,12 +1209,12 @@ def fast_multiply_10():
 
 def flags_test():
     cpu = CPU6502(cycle_limit=10)
-    cpu.setFlagsManually(['C', 'Z', 'I', 'D', 'B', 'V', 'N'], 0)
+    cpu.setFlagsManually(['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N'], 0)
     cpu.getProcessorStatus()
-    cpu.setFlagsManually(['C', 'Z', 'I', 'D', 'B', 'V', 'N'], 1)
+    cpu.setFlagsManually(['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N'], 1)
     cpu.getProcessorStatus()
-    cpu.setFlagsManually(['C', 'Z', 'I', 'D', 'B', 'V', 'N'], 0)
-    flags = ['N', 'V', 'B', 'D', 'I', 'Z', 'C']
+    cpu.setFlagsManually(['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N'], 0)
+    flags = ['N', 'V', 'U', 'B', 'D', 'I', 'Z', 'C']
     for flag in flags:
         print(f'Flag: {flag}')
         cpu.setFlagsManually([flag], 1)
@@ -1209,24 +1234,24 @@ def load_program():
     for d in data:
         program.append(d)
 
-    # print(program[0x0400: 0x04FF])
+    # print(program[0x03F6: 0x040F])
+    # print(len(program))
     cpu = None
-    cpu = CPU6502(cycle_limit=100_000_000, printActivity=True)
+    cpu = CPU6502(cycle_limit=100_000_000, printActivity=False)
     cpu.reset(program_counter=0x0400)
-    cpu.loadProgram(instructions=program, memoryAddress=0x0000, mainProgram=False)
+    #cpu.loadProgram(instructions=program, memoryAddress=0x0000, mainProgram=False)
+    cpu.loadProgram(instructions=program, memoryAddress=0x000A, mainProgram=False)
     cpu.program_counter = 0x0400
-    print(cpu.program_counter)
+    print(cpu.memory[0x400:0x40F])
     cpu.execute()
-    # cpu.printLog()
-    # cpu.memoryDump(startingAddress=0x0400, endingAddress=0x04FF)
 
 
 if __name__ == '__main__':
     # run()
-    # fibonacci_test()
+    fibonacci_test()
     # print()
     # fast_multiply_10()
     # print()
     # flags_test()
     # print()
-    load_program()
+    # load_program()
