@@ -417,7 +417,6 @@ class CPU6502:
 
     def cycleInc(self):
         self.logState()
-        # self.memoryDump(startingAddress=0x00F0, endingAddress=0x00F7)
         if self.printActivity:
             self.printState()
         self.action = []
@@ -459,8 +458,7 @@ class CPU6502:
 
     def saveByteAtStackPointer(self, data=None):
         # Enforce 1 byte size
-        assert(data <= 0xFF)
-        assert(data >= 0x00)
+        assert(0x00 <= data <= 0xFF)
         assert(data is not None)
         self.writeMemory(data=data, address=self.getStackPointerAddress(), bytes=1)
         self.stackPointerDec()
@@ -470,11 +468,8 @@ class CPU6502:
         lo_byte = self.readMemory(increment_pc=False, address=self.getStackPointerAddress(), bytes=1)
         self.stackPointerInc()
         hi_byte = self.readMemory(increment_pc=False, address=self.getStackPointerAddress(), bytes=1)
-        # address = lo_byte + (hi_byte << 8)
         self.program_counter = lo_byte
-        # self.cycleInc()
         self.program_counter += (hi_byte << 8)
-        # self.cycleInc()
 
     def loadByteFromStackPointer(self):
         self.stackPointerInc()
@@ -488,10 +483,10 @@ class CPU6502:
 
         # Reset all registers to zero
         self.registers = dict.fromkeys(self.registers.keys(), 0)
-        # Reset all flags to zero
-        self.flags = dict.fromkeys(self.flags.keys(), 0)
         self.flags['U'] = 1
         # self.flags['B'] = 1
+        # Reset all flags to zero
+        self.flags = dict.fromkeys(self.flags.keys(), 0)
 
     def readMemory(self, increment_pc=True, address=None, bytes=1) -> int:
         data = 0
@@ -549,7 +544,7 @@ class CPU6502:
             return
         for flag in flags:
             self.flags[flag] = value
-            self.logAction(action=f'Setting {flag} flag manually to [{value:>01b}]')
+            self.logAction(action=f'Setting {flag} flag manually to [{value}]')
 
     def determineAddress(self, mode):
         address = 0
@@ -1122,6 +1117,7 @@ class CPU6502:
         if self.cycles % 250000 == 0:
             self.logFile.close()
             self.logFile = open(self.logFile.name, 'w')
+            self.log = []
         self.logFile.write(valueString + '\n')
         # headerString = self.getLogHeaderString()
         # if self.cycles % 10 == 0:
@@ -1177,7 +1173,7 @@ def run():
 
 
 def fibonacci_test():
-    cpu = CPU6502(cycle_limit=1000, printActivity=True)
+    cpu = CPU6502(cycle_limit=1000, printActivity=False)
     cpu.reset(program_counter=0x0000)
 
     program = [0xA9, 0x01,  # LDA_IM 1
@@ -1243,7 +1239,7 @@ def flags_test():
         print('*' * 50)
 
 
-def load_program():
+def functional_test_program():
     program = []
     with open('binary/6502_functional_test.bin', 'rb') as f:
         data = f.read()
@@ -1257,8 +1253,9 @@ def load_program():
     cpu.reset(program_counter=0x0400)
     cpu.loadProgram(instructions=program, memoryAddress=0x000A, mainProgram=False)
     cpu.program_counter = 0x0400
-    print(cpu.memory[0x400:0x40F])
+    # print(cpu.memory[0x400:0x40F])
     cpu.execute()
+    print(f'{cpu.cycles:,} cycles. Elapesd time {cpu.execution_time}.')
 
 
 if __name__ == '__main__':
@@ -1269,5 +1266,5 @@ if __name__ == '__main__':
     # print()
     # flags_test()
     # print()
-    # load_program()
+    # functional_test_program()
     print()
