@@ -1258,13 +1258,39 @@ def functional_test_program():
     print(f'{cpu.cycles:,} cycles. Elapesd time {cpu.execution_time}.')
 
 
+def runBenchmark():
+    cpu = None
+    cpu = CPU6502(cycle_limit=750_000, printActivity=False, enableBRK=False)
+    cpu.reset(program_counter=0x8000)
+    cpu.memory[0x0090] = 0
+    program = [
+        0xA2, 0x00,  # LDX 0
+        0xA0, 0x00,  # LDY 0
+        0xE8,  # INX ; 0x8004
+        0xE0, 0xFF,  # CPX 255
+        0xF0, 0x03,  # BEQ +4
+        0x4C, 0x04, 0x80,  # JMP to 0x8004
+        0xC8,  # INY
+        0xC0, 0xFF,  # CPY 255
+        0xF0, 0x03,  # BEQ +4
+        0x4C, 0x04, 0x80,  # JMP to 0x8004
+        0x00,  # BRK
+    ]
+    cpu.loadProgram(instructions=program, memoryAddress=0x8000, mainProgram=True)
+    cpu.execute()
+    print(f'Cycles: {cpu.cycles - 1} :: Elapsed time: {cpu.execution_time} :: Cycles/sec: {(cpu.cycles - 1) / cpu.execution_time.total_seconds():0,.2f}')
+
+
+
 if __name__ == '__main__':
     # run()
-    fibonacci_test()
+    # fibonacci_test()
     # print()
     # fast_multiply_10()
     # print()
     # flags_test()
     # print()
     # functional_test_program()
+    print()
+    runBenchmark()
     print()
