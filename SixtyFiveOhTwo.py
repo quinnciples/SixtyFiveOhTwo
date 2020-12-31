@@ -628,8 +628,8 @@ class CPU6502:
         # Set starting position based on 0xFFFE/F
         # self.handleBRK()
 
-        data = self.readMemory()
-        self.INS = CPU6502.opcodes.get(data, None)
+        self.OPCODE = self.readMemory()
+        self.INS = CPU6502.opcodes.get(self.OPCODE, None)
         bne_count = 0
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 100) and bne_count <= 20:
 
@@ -657,7 +657,7 @@ class CPU6502:
                 # Manually change PC to 0xFFFE
                 self.handleBRK()
 
-            if self.INS == 'RTI':
+            elif self.INS == 'RTI':
                 # Set flags from stack
                 flags = self.loadByteFromStackPointer()
                 # PLP and BRK should ignore bits 4 & 5
@@ -665,7 +665,7 @@ class CPU6502:
                 # Get PC from stack
                 self.loadPCFromStackPointer()
 
-            if self.INS in ['PHP_IMP', 'PLP_IMP']:
+            elif self.INS in ['PHP_IMP', 'PLP_IMP']:
                 # Push
                 if self.INS == 'PHP_IMP':
                     value = self.getProcessorStatus()
@@ -680,7 +680,7 @@ class CPU6502:
                     self.setProcessorStatus(flags=flags)
                     self.handleSingleByteInstruction()
 
-            if self.INS in ['BIT_ZP', 'BIT_ABS']:
+            elif self.INS in ['BIT_ZP', 'BIT_ABS']:
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
@@ -694,18 +694,18 @@ class CPU6502:
                 overflow_flag = (value & 0b01000000) >> 6
                 self.setFlagsManually(flags=['V'], value=overflow_flag)
 
-            if self.INS == 'PHA_IMP':
+            elif self.INS == 'PHA_IMP':
                 value = self.registers['A']
                 self.saveByteAtStackPointer(data=value)
                 self.handleSingleByteInstruction()
 
-            if self.INS == 'PLA_IMP':
+            elif self.INS == 'PLA_IMP':
                 value = self.loadByteFromStackPointer()
                 self.registers['A'] = value
                 self.setFlagsByRegister(register='A', flags=['N', 'Z'])
                 self.handleSingleByteInstruction()
 
-            if self.INS in ['ROL_ACC', 'ROL_ZP', 'ROL_ZP_X', 'ROL_ABS', 'ROL_ABS_X', 'ROR_ACC', 'ROR_ZP', 'ROR_ZP_X', 'ROR_ABS', 'ROR_ABS_X']:
+            elif self.INS in ['ROL_ACC', 'ROL_ZP', 'ROL_ZP_X', 'ROL_ABS', 'ROL_ABS_X', 'ROR_ACC', 'ROR_ZP', 'ROR_ZP_X', 'ROR_ABS', 'ROR_ABS_X']:
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 if address_mode == 'ACC':
@@ -742,9 +742,9 @@ class CPU6502:
                 else:
                     self.writeMemory(data=value, address=address, bytes=1)
 
-            if self.INS in ['CMP_IM', 'CMP_ZP', 'CMP_ZP_X', 'CMP_ABS', 'CMP_ABS_X', 'CMP_ABS_Y', 'CMP_IND_X', 'CMP_IND_Y',
-                            'CPX_IM', 'CPX_ZP', 'CPX_ABS',
-                            'CPY_IM', 'CPY_ZP', 'CPY_ABS']:
+            elif self.INS in ['CMP_IM', 'CMP_ZP', 'CMP_ZP_X', 'CMP_ABS', 'CMP_ABS_X', 'CMP_ABS_Y', 'CMP_IND_X', 'CMP_IND_Y',
+                              'CPX_IM', 'CPX_ZP', 'CPX_ABS',
+                              'CPY_IM', 'CPY_ZP', 'CPY_ABS']:
                 target = 'A' if self.INS[2] not in ['X', 'Y'] else self.INS[2]
                 if self.INS in ['CMP_IM', 'CPX_IM', 'CPY_IM']:
                     value = self.readMemory()
@@ -767,10 +767,10 @@ class CPU6502:
                 result = (compare - value) & 0b0000000011111111
                 self.setFlagsByValue(value=result, flags=['N'])
 
-            if self.INS in ['BEQ', 'BNE',
-                            'BCC', 'BCS',
-                            'BMI', 'BPL',
-                            'BVC', 'BVS']:
+            elif self.INS in ['BEQ', 'BNE',
+                              'BCC', 'BCS',
+                              'BMI', 'BPL',
+                              'BVC', 'BVS']:
 
                 # Instruction: [Flag, Value to Test]
                 comparisons = {'BEQ': ['Z', 1],
@@ -795,14 +795,14 @@ class CPU6502:
                     if ((self.program_counter & 0b1111111100000000) != ((self.program_counter - offset) & 0b1111111100000000)):
                         self.cycleInc()
 
-            if self.INS in ['TAX_IMP', 'TXA_IMP', 'TAY_IMP', 'TYA_IMP']:
+            elif self.INS in ['TAX_IMP', 'TXA_IMP', 'TAY_IMP', 'TYA_IMP']:
                 source = self.INS[1]
                 dest = self.INS[2]
                 self.registers[dest] = self.registers[source]
                 self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
                 self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
 
-            if self.INS in ['TXS_IMP', 'TSX_IMP']:
+            elif self.INS in ['TXS_IMP', 'TSX_IMP']:
                 source = self.INS[1]
                 dest = self.INS[2]
                 if dest == 'X':
@@ -813,7 +813,7 @@ class CPU6502:
 
                 self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
 
-            if self.INS in ['ASL_ACC', 'ASL_ZP', 'ASL_ZP_X', 'ASL_ABS', 'ASL_ABS_X']:
+            elif self.INS in ['ASL_ACC', 'ASL_ZP', 'ASL_ZP_X', 'ASL_ABS', 'ASL_ABS_X']:
                 if self.INS == 'ASL_ACC':
                     value = self.registers['A']
                     carry_flag = 1 if (value & 0b10000000) > 0 else 0
@@ -836,7 +836,7 @@ class CPU6502:
                     self.setFlagsByValue(value=value, flags=['Z', 'N'])
                     self.setFlagsManually(flags=['C'], value=carry_flag)
 
-            if self.INS in ['LSR_ACC', 'LSR_ZP', 'LSR_ZP_X', 'LSR_ABS', 'LSR_ABS_X']:
+            elif self.INS in ['LSR_ACC', 'LSR_ZP', 'LSR_ZP_X', 'LSR_ABS', 'LSR_ABS_X']:
                 if self.INS == 'LSR_ACC':
                     value = self.registers['A']
                     carry_flag = 1 if (value & 0b00000001) > 0 else 0
@@ -859,13 +859,13 @@ class CPU6502:
                     self.setFlagsByValue(value=value, flags=['Z', 'N'])
                     self.setFlagsManually(flags=['C'], value=carry_flag)
 
-            if self.INS == 'ORA_IM':
+            elif self.INS == 'ORA_IM':
                 value = self.readMemory()
                 result = self.registers['A'] | value
                 self.registers['A'] = result
                 self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
-            if self.INS in ['ORA_ZP', 'ORA_ZP_X', 'ORA_ABS', 'ORA_ABS_X', 'ORA_ABS_Y', 'ORA_IND_X', 'ORA_IND_Y']:
+            elif self.INS in ['ORA_ZP', 'ORA_ZP_X', 'ORA_ABS', 'ORA_ABS_X', 'ORA_ABS_Y', 'ORA_IND_X', 'ORA_IND_Y']:
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
@@ -874,13 +874,13 @@ class CPU6502:
                 self.registers['A'] = result
                 self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
-            if self.INS == 'EOR_IM':
+            elif self.INS == 'EOR_IM':
                 value = self.readMemory()
                 result = self.registers['A'] ^ value
                 self.registers['A'] = result
                 self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
-            if self.INS in ['EOR_ZP', 'EOR_ZP_X', 'EOR_ABS', 'EOR_ABS_X', 'EOR_ABS_Y', 'EOR_IND_X', 'EOR_IND_Y']:
+            elif self.INS in ['EOR_ZP', 'EOR_ZP_X', 'EOR_ABS', 'EOR_ABS_X', 'EOR_ABS_Y', 'EOR_IND_X', 'EOR_IND_Y']:
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
@@ -889,13 +889,13 @@ class CPU6502:
                 self.registers['A'] = result
                 self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
-            if self.INS == 'AND_IM':
+            elif self.INS == 'AND_IM':
                 value = self.readMemory()
                 result = self.registers['A'] & value
                 self.registers['A'] = result
                 self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
-            if self.INS in ['AND_ZP', 'AND_ZP_X', 'AND_ABS', 'AND_ABS_X', 'AND_ABS_Y', 'AND_IND_X', 'AND_IND_Y']:
+            elif self.INS in ['AND_ZP', 'AND_ZP_X', 'AND_ABS', 'AND_ABS_X', 'AND_ABS_Y', 'AND_IND_X', 'AND_IND_Y']:
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
@@ -904,13 +904,13 @@ class CPU6502:
                 self.registers['A'] = result
                 self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
-            if self.INS in ['SBC_ZP', 'SBC_ZP_X', 'SBC_ABS', 'SBC_ABS_X', 'SBC_ABS_Y', 'SBC_IND_X', 'SBC_IND_Y']:
+            elif self.INS in ['SBC_ZP', 'SBC_ZP_X', 'SBC_ABS', 'SBC_ABS_X', 'SBC_ABS_Y', 'SBC_IND_X', 'SBC_IND_Y']:
                 orig_A_register_value = self.registers['A']
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
                 value = self.readMemory(address=address, increment_pc=False, bytes=1)
-                value =  0b11111111 - value
+                value = 0b11111111 - value
                 orig_value = value
                 value += self.registers['A'] + self.flags['C']
                 self.registers['A'] = value & 0b0000000011111111
@@ -923,10 +923,10 @@ class CPU6502:
                         overflow_flag = 1
                 self.setFlagsManually(flags=['V'], value=overflow_flag)
 
-            if self.INS == 'SBC_IM':
+            elif self.INS == 'SBC_IM':
                 orig_A_register_value = self.registers['A']
                 value = self.readMemory()
-                value =  0b11111111 - value
+                value = 0b11111111 - value
                 orig_value = value
                 value += self.registers['A'] + self.flags['C']
                 self.registers['A'] = value & 0b0000000011111111
@@ -939,7 +939,7 @@ class CPU6502:
                         overflow_flag = 1
                 self.setFlagsManually(flags=['V'], value=overflow_flag)
 
-            if self.INS == 'ADC_IM':
+            elif self.INS == 'ADC_IM':
                 orig_A_register_value = self.registers['A']
                 value = self.readMemory()
                 orig_value = value
@@ -954,7 +954,7 @@ class CPU6502:
                         overflow_flag = 1
                 self.setFlagsManually(flags=['V'], value=overflow_flag)
 
-            if self.INS in ['ADC_ZP', 'ADC_ZP_X', 'ADC_ABS', 'ADC_ABS_X', 'ADC_ABS_Y', 'ADC_IND_X', 'ADC_IND_Y']:
+            elif self.INS in ['ADC_ZP', 'ADC_ZP_X', 'ADC_ABS', 'ADC_ABS_X', 'ADC_ABS_Y', 'ADC_IND_X', 'ADC_IND_Y']:
                 orig_A_register_value = self.registers['A']
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
@@ -972,7 +972,7 @@ class CPU6502:
                         overflow_flag = 1
                 self.setFlagsManually(flags=['V'], value=overflow_flag)
 
-            if self.INS == 'JSR_ABS':
+            elif self.INS == 'JSR_ABS':
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
@@ -980,12 +980,12 @@ class CPU6502:
                 self.program_counter = address
                 self.cycleInc()
 
-            if self.INS == 'RTS_IMP':
+            elif self.INS == 'RTS_IMP':
                 self.handleSingleByteInstruction()
                 self.loadPCFromStackPointer()
                 self.programCounterInc()
 
-            if self.INS in ['INC_ZP', 'INC_ZP_X', 'INC_ABS', 'INC_ABS_X']:
+            elif self.INS in ['INC_ZP', 'INC_ZP_X', 'INC_ABS', 'INC_ABS_X']:
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
@@ -996,7 +996,7 @@ class CPU6502:
                 self.writeMemory(data=value, address=address, bytes=1)
                 self.setFlagsByValue(value=value, flags=['N', 'Z'])
 
-            if self.INS in ['INX_IMP', 'INY_IMP']:
+            elif self.INS in ['INX_IMP', 'INY_IMP']:
                 value = self.registers[self.INS[2]]
                 value += 1
                 value = value % 0x100
@@ -1004,7 +1004,7 @@ class CPU6502:
                 self.registers[self.INS[2]] = value
                 self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
 
-            if self.INS in ['DEC_ZP', 'DEC_ZP_X', 'DEC_ABS', 'DEC_ABS_X']:
+            elif self.INS in ['DEC_ZP', 'DEC_ZP_X', 'DEC_ABS', 'DEC_ABS_X']:
                 ins_set = self.INS.split('_')
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
@@ -1016,7 +1016,7 @@ class CPU6502:
                 self.writeMemory(data=value, address=address, bytes=1)
                 self.setFlagsByValue(value=value, flags=['N', 'Z'])
 
-            if self.INS in ['DEX_IMP', 'DEY_IMP']:
+            elif self.INS in ['DEX_IMP', 'DEY_IMP']:
                 self.handleSingleByteInstruction()
                 value = self.registers[self.INS[2]]
                 value -= 1
@@ -1025,23 +1025,21 @@ class CPU6502:
                 self.registers[self.INS[2]] = value
                 self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
 
-            if self.INS.startswith('ST'):
+            elif self.INS.startswith('ST'):
                 ins_set = self.INS.split('_')
                 target = ins_set[0][2]
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
                 self.writeMemory(data=self.registers[target], address=address, bytes=1)
 
-            if self.INS in ['CLC_IMP', 'CLI_IMP', 'CLD_IMP', 'CLV_IMP', 'SEC_IMP', 'SED_IMP', 'SEI_IMP']:
+            elif self.INS in ['CLC_IMP', 'CLI_IMP', 'CLD_IMP', 'CLV_IMP', 'SEC_IMP', 'SED_IMP', 'SEI_IMP']:
                 if self.INS in ['CLC_IMP', 'CLI_IMP', 'CLD_IMP', 'CLV_IMP']:
                     self.setFlagsManually(flags=[self.INS[2]], value=0)
                 else:
                     self.setFlagsManually(flags=[self.INS[2]], value=1)
                 self.handleSingleByteInstruction()
 
-            elif self.INS in ['LDA_IM', 'LDA_ZP', 'LDA_ZP_X', 'LDA_ABS', 'LDA_ABS_X', 'LDA_ABS_Y', 'LDA_IND_X', 'LDA_IND_Y',
-                              'LDX_IM', 'LDX_ZP', 'LDX_ZP_Y', 'LDX_ABS', 'LDX_ABS_Y',
-                              'LDY_IM', 'LDY_ZP', 'LDY_ZP_X', 'LDY_ABS', 'LDY_ABS_X']:
+            elif self.INS.startswith('LD'):
                 ins_set = self.INS.split('_')
                 register = ins_set[0][2]
                 address_mode = '_'.join(_ for _ in ins_set[1:])
@@ -1067,8 +1065,8 @@ class CPU6502:
             elif self.INS == 'NOP':
                 self.handleSingleByteInstruction()
 
-            data = self.readMemory()
-            self.INS = CPU6502.opcodes.get(data, None)
+            self.OPCODE = self.readMemory()
+            self.INS = CPU6502.opcodes.get(self.OPCODE, None)
 
         # Cleanup
         self.execution_time = datetime.datetime.now() - self.start_time
@@ -1084,7 +1082,7 @@ class CPU6502:
                     'PC': '0x{0:0{1}X}'.format(self.program_counter, 4),
                         'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2),
                         '%-10s' % 'FLAGS': '%-10s' % self.getProcessorStatusString()
-                        },
+                       },
                     '%-20s' % 'ACTION': '%-20s' % ' -> '.join(self.action)
                     }
         return combined
@@ -1119,13 +1117,16 @@ class CPU6502:
             self.logFile = open(self.logFile.name, 'w')
             self.log = []
         self.logFile.write(valueString + '\n')
-        # headerString = self.getLogHeaderString()
-        # if self.cycles % 10 == 0:
-        #     self.log.append(headerString)
 
     def printLog(self):
         for line in self.log:
             print(line)
+
+    def benchmarkInfo(self) -> str:
+        return f'Cycles: {self.cycles - 1} :: Elapsed time: {self.execution_time} :: Cycles/sec: {(self.cycles - 1) / self.execution_time.total_seconds():0,.2f}'
+
+    def printBenchmarkInfo(self):
+        print(self.benchmarkInfo())
 
     def loadProgram(self, instructions=[], memoryAddress=0x0000, mainProgram=True):
         if mainProgram:
@@ -1278,8 +1279,111 @@ def runBenchmark():
     ]
     cpu.loadProgram(instructions=program, memoryAddress=0x8000, mainProgram=True)
     cpu.execute()
-    print(f'Cycles: {cpu.cycles - 1} :: Elapsed time: {cpu.execution_time} :: Cycles/sec: {(cpu.cycles - 1) / cpu.execution_time.total_seconds():0,.2f}')
+    print(f'Cycles: {cpu.cycles - 1:,} :: Elapsed time: {cpu.execution_time} :: Cycles/sec: {(cpu.cycles - 1) / cpu.execution_time.total_seconds():0,.2f}')
 
+
+def hundred_doors():
+    import programs.hundred_doors
+    program = programs.hundred_doors.program
+    starting_address = programs.hundred_doors.starting_address
+
+    cpu = None
+    cpu = CPU6502(cycle_limit=1000, printActivity=True, enableBRK=False)
+    cpu.reset(program_counter=starting_address)
+    cpu.loadProgram(instructions=program, memoryAddress=starting_address, mainProgram=True)
+    cpu.execute()
+
+    for test in programs.hundred_doors.tests:
+        cpu.memoryDump(startingAddress=test['memory_range'][0], endingAddress=test['memory_range'][1] + 1, display_format='Dec')
+        if test['expected_values'] is not None:
+            print(cpu.memory[test['memory_range'][0]:test['memory_range'][1] + 1] == test['expected_values'])
+
+    print(cpu.benchmarkInfo())
+
+
+
+def sieve_of_erastosthenes():
+    """
+    The Sieve of Eratosthenes is a simple algorithm that finds the prime numbers up to a given integer.
+
+
+    Task
+
+    Implement the   Sieve of Eratosthenes   algorithm, with the only allowed optimization that the outer loop can stop at the square root of the limit, and the inner loop may start at the square of the prime just found.
+
+    That means especially that you shouldn't optimize by using pre-computed wheels, i.e. don't assume you need only to cross out odd numbers (wheel based on 2), numbers equal to 1 or 5 modulo 6 (wheel based on 2 and 3), or similar wheels based on low primes.
+
+    If there's an easy way to add such a wheel based optimization, implement it as an alternative version.
+
+
+    Note
+
+        It is important that the sieve algorithm be the actual algorithm used to find prime numbers for the task.
+    """
+    """
+    ERATOS: STA  $D0      ; value of n
+            LDA  #$00
+            LDX  #$00
+    SETUP:  STA  $1000,X  ; populate array
+            ADC  #$01
+            INX
+            CPX  $D0
+            BPL  SET
+            JMP  SETUP
+    SET:    LDX  #$02
+    SIEVE:  LDA  $1000,X  ; find non-zero
+            INX
+            CPX  $D0
+            BPL  SIEVED
+            CMP  #$00
+            BEQ  SIEVE
+            STA  $D1      ; current prime
+    MARK:   CLC
+            ADC  $D1
+            TAY
+            LDA  #$00
+            STA  $1000,Y
+            TYA
+            CMP  $D0
+            BPL  SIEVE
+            JMP  MARK
+    SIEVED: LDX  #$01
+            LDY  #$00
+    COPY:   INX
+            CPX  $D0
+            BPL  COPIED
+            LDA  $1000,X
+            CMP  #$00
+            BEQ  COPY
+            STA  $2000,Y
+            INY
+            JMP  COPY
+    COPIED: TYA           ; how many found
+            RTS
+    """
+    program = [
+        0xa9, 0x80,
+        0x85, 0xd0, 0xa9, 0x00, 0xa2, 0x00, 0x9d, 0x00, 0x10, 0x69, 0x01, 0xe8, 0xe4, 0xd0,
+        0x10, 0x03, 0x4c, 0x08, 0x06, 0xa2, 0x02, 0xbd, 0x00, 0x10, 0xe8, 0xe4, 0xd0, 0x10, 0x17, 0xc9,
+        0x00, 0xf0, 0xf4, 0x85, 0xd1, 0x18, 0x65, 0xd1, 0xa8, 0xa9, 0x00, 0x99, 0x00, 0x10, 0x98, 0xc5,
+        0xd0, 0x10, 0xe4, 0x4c, 0x25, 0x06, 0xa2, 0x01, 0xa0, 0x00, 0xe8, 0xe4, 0xd0, 0x10, 0x0e, 0xbd,
+        0x00, 0x10, 0xc9, 0x00, 0xf0, 0xf4, 0x99, 0x00, 0x20, 0xc8, 0x4c, 0x3a, 0x06, 0x98, 0x60
+    ]
+    cpu = None
+    cpu = CPU6502(cycle_limit=100_000, printActivity=False, enableBRK=False)
+    cpu.reset(program_counter=0x0600)
+    cpu.loadProgram(instructions=program, memoryAddress=0x0600, mainProgram=True)
+    # cpu.memory[0x0601] = 0x64
+    cpu.execute()
+
+    cpu.memoryDump(startingAddress=0x1000, endingAddress=0x1000 + 127, display_format='Dec')
+    print(f'Cycles: {cpu.cycles - 1:,} :: Elapsed time: {cpu.execution_time} :: Cycles/sec: {(cpu.cycles - 1) / cpu.execution_time.total_seconds():0,.2f}')
+    print(cpu.registers['A'])
+    print(cpu.memory[0x1000:0x1000 + 127 + 1] == [0, 1, 2, 3, 0, 5, 0, 7, 0, 0, 0, 11, 0, 13, 0, 0, 0, 17, 0, 19, 0, 0, 0, 23, 0, 0, 0, 0, 0, 29, 0, 31, 0, 0, 0, 0, 0, 37, 0, 0, 0, 41, 0, 43, 0, 0, 0, 47, 0, 0, 0, 0, 0, 53, 0, 0, 0, 0, 0, 59, 0, 61, 0, 0, 0, 0, 0, 67, 0, 0, 0, 71, 0, 73, 0, 0, 0, 0, 0, 79, 0, 0, 0, 83, 0, 0, 0, 0, 0, 89, 0, 0, 0, 0, 0, 0, 0, 97, 0, 0, 0, 101, 0, 103, 0, 0, 0, 107, 0, 109, 0, 0, 0, 113, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 127])
+    print(cpu.registers['A'] == 31)
+    """
+    [0, 1, 2, 3, 0, 5, 0, 7, 0, 0, 0, 11, 0, 13, 0, 0, 0, 17, 0, 19, 0, 0, 0, 23, 0, 0, 0, 0, 0, 29, 0, 31, 0, 0, 0, 0, 0, 37, 0, 0, 0, 41, 0, 43, 0, 0, 0, 47, 0, 0, 0, 0, 0, 53, 0, 0, 0, 0, 0, 59, 0, 61, 0, 0, 0, 0, 0, 67, 0, 0, 0, 71, 0, 73, 0, 0, 0, 0, 0, 79, 0, 0, 0, 83, 0, 0, 0, 0, 0, 89, 0, 0, 0, 0, 0, 0, 0, 97, 0, 0, 0, 101, 0, 103, 0, 0, 0, 107, 0, 109, 0, 0, 0, 113, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 127]
+    """
 
 
 if __name__ == '__main__':
@@ -1291,6 +1395,10 @@ if __name__ == '__main__':
     # flags_test()
     # print()
     # functional_test_program()
+    # print()
+    # runBenchmark()
     print()
-    runBenchmark()
+    hundred_doors()
+    print()
+    # sieve_of_erastosthenes()
     print()
