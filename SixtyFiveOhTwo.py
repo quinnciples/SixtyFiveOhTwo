@@ -398,6 +398,7 @@ class CPU6502:
     def initializeMemory(self):
         self.memory = [0x00] * CPU6502.MAX_MEMORY_SIZE
         self.value = 0
+        self.idx = 0
 
     def memoryDump(self, startingAddress=None, endingAddress=None, display_format='Hex'):
         # print('\nMemory Dump:\n')
@@ -426,14 +427,29 @@ class CPU6502:
         if self.value != self.memory[0xD012]:
             self.memory[0xD012] = self.memory[0xD012] & 0b01111111
             self.value = self.memory[0xD012]
-            print(chr(0x20 + ((self.value + 0x20) % 0x40)), end='\n')
+            if self.value != 0x0D:
+                print(chr(0x20 + ((self.value + 0x20) % 0x40)), end='')
+            else:
+                print('\n')
+
 
         # if self.memory[0xD013] > 170:
             # print('\n')
+        #self.inputs = [0x00, 0x0D, 0x34, 0x46, 0x2E, 0x35, 0x41, 0x0D, 0x00]  #0x0D?
+        # self.inputs = [0x34 + 0x80, 0x46 + 0x80, 0x2E + 0x80, 0x46 + 0x80, 0x46 + 0x80, 0x0D + 0x80]  #0x0D?
+        self.inputs = [0x8D]  #0x0D?
+        # KBD = 0xD010
+        # KBDCR = 0xD011
+        # DSP = 0xD012
+        # DSPCR = 0xD013
 
         """
-        if self.cycles % 1000 == 0:
-            self.memory[0xD011] = 0b11111111
+        if self.cycles >= 50000 and (self.memory[0xD011] != 0b10000000) and self.cycles % 5000 == 0:
+            if self.idx < len(self.inputs):
+                self.memory[0xD010] = self.inputs[self.idx]  # | 0b10000000
+                self.idx += 1
+                self.memory[0xD011] = 0b10000000
+            # print(self.memory[0xD011])
         """
 
     def logAction(self, action=''):
@@ -1410,7 +1426,7 @@ def wozmon():
         0x10, 0x0F, 0xA9, 0xDC, 0x20, 0xEF, 0xFF, 0xA9,
         0x8D, 0x20, 0xEF, 0xFF, 0xA0, 0x01, 0x88, 0x30,
         0xF6, 0xAD, 0x11, 0xD0, 0x10, 0xFB, 0xAD, 0x10,
-        0xD0, 0x99, 0x00, 0x02, 0x20, 0xEF, 0xFF, 0xC9,
+        0xD0, 0x99, 0x00, 0x02, 0x20, 0xEF, 0xFF, 0xC9,  #
         0x8D, 0xD0, 0xD4, 0xA0, 0xFF, 0xA9, 0x00, 0xAA,
         0x0A, 0x85, 0x2B, 0xC8, 0xB9, 0x00, 0x02, 0xC9,
         0x8D, 0xF0, 0xD4, 0xC9, 0xAE, 0x90, 0xF4, 0xF0,
@@ -1446,16 +1462,28 @@ def wozmon():
     cpu.reset(program_counter=0xFF00)
     cpu.loadProgram(instructions=program, memoryAddress=0xFF00, mainProgram=False)
     cpu.loadProgram(instructions=hello_world, memoryAddress=0x0280, mainProgram=False)
-    # cpu.memory[0x0200] = 0x12 | 0b10000000
-    # cpu.memory[0x0201] = 0x23 | 0b10000000
-    cpu.program_counter = 0x0280
+    # 4F.5A
+    # 200 - 27F
+    # | 0b10000000
+    # cpu.program_counter = 0x0280
     # cpu.program_counter = 0xFF00
+    cpu.program_counter = 0xFF47
+    cpu.memory[0x0200] = 0x34 + 0x80
+    cpu.memory[0x0201] = 0x46 + 0x80
+    cpu.memory[0x0202] = 0x2E + 0x80
+    cpu.memory[0x0203] = 0x46 + 0x80
+    cpu.memory[0x0204] = 0x46 + 0x80
+    cpu.memory[0x0205] = 0x0D + 0x80
     cpu.execute()
+    print(cpu.memory[0x027A:0x0280])
+    print(cpu.memory[0x0200:0x0206])
+    print(f'{cpu.memory[0xFF47]:02x}')
 
 
 def apple_i_basic():
     """
     http://www.willegal.net/appleii/apple1-software.htm
+    https://www.applefritter.com/replica/appendixa
     """
 
     wozmon = [
@@ -2013,6 +2041,7 @@ def apple_i_basic():
     cpu.reset(program_counter=0xE000)
     cpu.loadProgram(instructions=wozmon, memoryAddress=0xFF00, mainProgram=False)
     cpu.loadProgram(instructions=basic, memoryAddress=0xE000, mainProgram=False)
+    cpu.program_counter = 0xE000
     cpu.execute()
 
 if __name__ == '__main__':
