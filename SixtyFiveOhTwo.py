@@ -2,6 +2,7 @@
 import datetime
 import time
 from bcolors import bcolors as bcolors
+import msvcrt
 
 
 class CPU6502:
@@ -351,10 +352,15 @@ class CPU6502:
             startingAddress += 8
 
     def extraFunctions(self):
-        # if self.value != self.memory[0xD012]:
-        if (self.memory[0xD012] & 0b10000000) > 0:
-            self.memory[0xD012] = self.memory[0xD012] & 0b01111111
-            self.value = self.memory[0xD012]
+        KBD = 0xD010
+        KBDCR = 0xD011
+        DSP = 0xD012
+        DSPCR = 0xD013
+
+        # Printing character to the screen
+        if (self.memory[DSP] & 0b10000000) > 0:
+            self.memory[DSP] = self.memory[DSP] & 0b01111111
+            self.value = self.memory[DSP]
             if self.value != 0x0D:
                 if self.value >= 0x20:
                     # print(chr(0x20 + ((self.value + 0x20) % 0x40)), end='', flush=True)
@@ -364,6 +370,13 @@ class CPU6502:
             else:
                 # print('\r', end='', flush=True)
                 print('', flush=True)
+
+        # Handling keyboard input
+        if msvcrt.kbhit():
+            key = msvcrt.getch().upper()
+            key_ascii = ord(key)
+            self.memory[KBD] = key_ascii | 0b10000000
+            self.memory[KBDCR] = self.memory[KBDCR] | 0b10000000
 
     def cycleInc(self):
         self.logState()
@@ -440,6 +453,11 @@ class CPU6502:
         # self.flags['B'] = 1
 
     def readMemory(self, increment_pc=True, address=None, bytes=1) -> int:
+        KBD = 0xD010
+        KBDCR = 0xD011
+        DSP = 0xD012
+        DSPCR = 0xD013
+
         data = 0
         for byte in range(bytes):
             self.cycleInc()
@@ -452,13 +470,27 @@ class CPU6502:
 
             if increment_pc:
                 self.programCounterInc()
+
+            # Begin Apple I hooks
+            if address is not None and (address + byte) == KBD:  # Reading KBD clears b7 on KBDCR
+                self.memory[KBDCR] = self.memory[KBDCR] & 0b01111111
+
         return data
 
     def writeMemory(self, data, address, bytes=1):
+        KBD = 0xD010
+        KBDCR = 0xD011
+        DSP = 0xD012
+        DSPCR = 0xD013
+
         for byte in range(bytes):
             self.cycleInc()
             self.memory[address + byte] = data
             self.logAction(f'Write memory address [{address + byte:04X}] : value [{data:02X}]')
+
+            # Begin Apple I hooks
+            if (address + byte) == DSP:
+                self.memory[DSP] = self.memory[DSP] | 0b10000000
 
     def setFlagsByRegister(self, register=None, flags=[]):
         if 'Z' in flags:
@@ -1293,8 +1325,10 @@ def wozmon():
     # cpu.program_counter = 0x0280
     # cpu.program_counter = 0xFF00
     # Starts at 201 for some reason.
-    cpu.program_counter = 0xFF47
-    # cpu.program_counter = wozmon_address
+
+    # cpu.program_counter = 0xFF47
+    cpu.program_counter = wozmon_address
+    """
     cpu.memory[0x0200] = 0x41 + 0x80
     cpu.memory[0x0201] = 0x41 + 0x80
     cpu.memory[0x0202] = 0x41 + 0x80
@@ -1303,6 +1337,7 @@ def wozmon():
     cpu.memory[0x0205] = 0x46 + 0x80
     cpu.memory[0x0206] = 0x0D + 0x80
     cpu.memory[0x0207] = 0x0D + 0x80
+    """
 
     cpu.execute()
     # print(cpu.memory[0x027A:0x0280])
@@ -1320,7 +1355,7 @@ def apple_i_basic():
     basic_address = programs.apple_1_basic.starting_address
 
     cpu = None
-    cpu = CPU6502(cycle_limit=100_000, printActivity=False, enableBRK=False)
+    cpu = CPU6502(cycle_limit=100_000_000, printActivity=False, enableBRK=False)
     cpu.reset(program_counter=basic_address)
     cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
     cpu.loadProgram(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
@@ -1362,8 +1397,8 @@ if __name__ == '__main__':
     # print()
     # sieve_of_erastosthenes()
     # print()
-    wozmon()
+    # wozmon()
     # print()
-    # apple_i_basic()
+    apple_i_basic()
     # print()
     # apple_i_print_chars()
