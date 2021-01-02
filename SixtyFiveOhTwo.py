@@ -1,7 +1,6 @@
 # 6502 machine code processor
 import datetime
-import time
-from bcolors import bcolors as bcolors
+# from bcolors import bcolors as bcolors
 import msvcrt
 
 
@@ -329,6 +328,13 @@ class CPU6502:
             'N': 0   # Negative flag
         }
 
+        self.hooks = {
+            'KBD': 0xD010,
+            'KBDCR': 0xD011,
+            'DSP': 0xD012,
+            'DSPCR': 0xD013
+        }
+
         self.initializeMemory()
         self.cycles = 0
         self.initializeLog()
@@ -355,15 +361,17 @@ class CPU6502:
             startingAddress += 8
 
     def extraFunctions(self):
+        """
         KBD = 0xD010
         KBDCR = 0xD011
         DSP = 0xD012
         DSPCR = 0xD013
+        """
 
         # Printing character to the screen
-        if (self.memory[DSP] & 0b10000000) > 0:
-            self.memory[DSP] = self.memory[DSP] & 0b01111111
-            self.value = self.memory[DSP]
+        if (self.memory[self.hooks['DSP']] & 0b10000000) > 0:
+            self.memory[self.hooks['DSP']] = self.memory[self.hooks['DSP']] & 0b01111111
+            self.value = self.memory[self.hooks['DSP']]
             if self.value != 0x0D:
                 if self.value >= 0x20:
                     # print(chr(0x20 + ((self.value + 0x20) % 0x40)), end='', flush=True)
@@ -378,8 +386,8 @@ class CPU6502:
         if msvcrt.kbhit():
             key = msvcrt.getch().upper()
             key_ascii = ord(key)
-            self.memory[KBD] = key_ascii | 0b10000000
-            self.memory[KBDCR] = self.memory[KBDCR] | 0b10000000
+            self.memory[self.hooks['KBD']] = key_ascii | 0b10000000
+            self.memory[self.hooks['KBDCR']] = self.memory[self.hooks['KBDCR']] | 0b10000000
 
     def cycleInc(self):
         self.logState()
@@ -456,10 +464,12 @@ class CPU6502:
         # self.flags['B'] = 1
 
     def readMemory(self, increment_pc=True, address=None, bytes=1) -> int:
+        """
         KBD = 0xD010
         KBDCR = 0xD011
         DSP = 0xD012
         DSPCR = 0xD013
+        """
 
         data = 0
         for byte in range(bytes):
@@ -475,16 +485,18 @@ class CPU6502:
                 self.programCounterInc()
 
             # Begin Apple I hooks
-            if address is not None and (address + byte) == KBD:  # Reading KBD clears b7 on KBDCR
-                self.memory[KBDCR] = self.memory[KBDCR] & 0b01111111
+            if address is not None and (address + byte) == self.hooks['KBD']:  # Reading KBD clears b7 on KBDCR
+                self.memory[self.hooks['KBDCR']] = self.memory[self.hooks['KBDCR']] & 0b01111111
 
         return data
 
     def writeMemory(self, data, address, bytes=1):
+        """
         KBD = 0xD010
         KBDCR = 0xD011
         DSP = 0xD012
         DSPCR = 0xD013
+        """
 
         for byte in range(bytes):
             self.cycleInc()
@@ -492,8 +504,8 @@ class CPU6502:
             self.logAction(f'Write memory address [{address + byte:04X}] : value [{data:02X}]')
 
             # Begin Apple I hooks
-            if (address + byte) == DSP:
-                self.memory[DSP] = self.memory[DSP] | 0b10000000
+            if (address + byte) == self.hooks['DSP']:
+                self.memory[self.hooks['DSP']] = self.memory[self.hooks['DSP']] | 0b10000000
 
     def setFlagsByRegister(self, register=None, flags=[]):
         if 'Z' in flags:
@@ -1686,8 +1698,8 @@ def blackjack():
     cpu.reset(program_counter=basic_address)
     cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
     cpu.loadProgram(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
-    cpu.loadProgram(instructions=part1, memoryAddress=0x004A, mainProgram=False )
-    cpu.loadProgram(instructions=part2, memoryAddress=0x0800, mainProgram=False )
+    cpu.loadProgram(instructions=part1, memoryAddress=0x004A, mainProgram=False)
+    cpu.loadProgram(instructions=part2, memoryAddress=0x0800, mainProgram=False)
     cpu.program_counter = wozmon_address
     cpu.execute()
 
@@ -1702,7 +1714,7 @@ if __name__ == '__main__':
     # print()
     # functional_test_program()
     # print()
-    runBenchmark()
+    # runBenchmark()
     # print()
     # hundred_doors()
     # print()
@@ -1710,7 +1722,7 @@ if __name__ == '__main__':
     # print()
     # wozmon()
     # print()
-    # apple_i_basic()
+    apple_i_basic()
     # print()
     # apple_i_print_chars()
     print()
