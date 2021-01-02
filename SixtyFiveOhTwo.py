@@ -1,6 +1,6 @@
 # 6502 machine code processor
 import datetime
-
+import time
 
 class bcolors:
     HEADER = '\033[95m'
@@ -417,15 +417,19 @@ class CPU6502:
             startingAddress += 8
 
     def extraFunctions(self):
-        if self.value != self.memory[0xD012]:
+        # if self.value != self.memory[0xD012]:
+        if (self.memory[0xD012] & 0b10000000) > 0:
             self.memory[0xD012] = self.memory[0xD012] & 0b01111111
             self.value = self.memory[0xD012]
-            if (self.value | 0b10000000) != 0x8D:
-                print(chr(0x20 + ((self.value + 0x20) % 0x40)), end='')
-                # print(f'{(self.value + 0x20):02X}')
-                # print(chr((self.value + 32)), end='', flush=True)
+            if self.value != 0x0D:
+                if self.value >= 0x20:
+                    # print(chr(0x20 + ((self.value + 0x20) % 0x40)), end='', flush=True)
+                    # print(f'{(self.value + 0x20):02X}')
+                    # print(chr((self.value + 32)), end='', flush=True)
+                    print(chr((self.value)), end='', flush=True)
             else:
-                print('\n')
+                # print('\r', end='', flush=True)
+                print('', flush=True)
 
     def cycleInc(self):
         self.logState()
@@ -433,7 +437,6 @@ class CPU6502:
             self.printState()
         self.action = []
         self.cycles += 1
-        self.extraFunctions()
 
     def logAction(self, action=''):
         self.action.append(action)
@@ -646,6 +649,8 @@ class CPU6502:
         self.INS = CPU6502.opcodes.get(self.OPCODE, None)
         bne_count = 0
         while self.INS is not None and self.cycles <= max(self.cycle_limit, 100) and bne_count <= 20:
+
+            self.extraFunctions()
 
             # Remove this when done testing
             if self.INS == 'BNE' or self.program_counter in [0x336D, 0x336E, 0x336F]:
@@ -1354,7 +1359,8 @@ def wozmon():
     # cpu.program_counter = 0x0280
     # cpu.program_counter = 0xFF00
     # Starts at 201 for some reason.
-    cpu.program_counter = 0xFF47
+    # cpu.program_counter = 0xFF47
+    cpu.program_counter = wozmon_address
     cpu.memory[0x0200] = 0x41 + 0x80
     cpu.memory[0x0201] = 0x41 + 0x80
     cpu.memory[0x0202] = 0x41 + 0x80
@@ -1398,7 +1404,7 @@ def apple_i_print_chars():
     char_address = programs.apple_1_print_characters.starting_address
 
     cpu = None
-    cpu = CPU6502(cycle_limit=10000, printActivity=False, enableBRK=False)
+    cpu = CPU6502(cycle_limit=20000, printActivity=False, enableBRK=False)
     cpu.reset(program_counter=char_address)
     cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
     cpu.loadProgram(instructions=char_program, memoryAddress=char_address, mainProgram=False)
@@ -1421,9 +1427,8 @@ if __name__ == '__main__':
     # print()
     # sieve_of_erastosthenes()
     # print()
-    wozmon()
+    # wozmon()
     # print()
     # apple_i_basic()
     # print()
     apple_i_print_chars()
-    print()
