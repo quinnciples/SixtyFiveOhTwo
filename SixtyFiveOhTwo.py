@@ -1359,8 +1359,8 @@ def wozmon():
     # cpu.program_counter = 0x0280
     # cpu.program_counter = 0xFF00
     # Starts at 201 for some reason.
-    # cpu.program_counter = 0xFF47
-    cpu.program_counter = wozmon_address
+    cpu.program_counter = 0xFF47
+    # cpu.program_counter = wozmon_address
     cpu.memory[0x0200] = 0x41 + 0x80
     cpu.memory[0x0201] = 0x41 + 0x80
     cpu.memory[0x0202] = 0x41 + 0x80
@@ -1427,8 +1427,8 @@ if __name__ == '__main__':
     # print()
     # sieve_of_erastosthenes()
     # print()
-    # wozmon()
+    wozmon()
     # print()
     # apple_i_basic()
     # print()
-    apple_i_print_chars()
+    # apple_i_print_chars()
