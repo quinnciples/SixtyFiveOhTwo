@@ -397,7 +397,7 @@ class CPU6502:
 
     def initializeMemory(self):
         self.memory = [0x00] * CPU6502.MAX_MEMORY_SIZE
-        self.value = 0
+        self.value = 0xFA
 
     def memoryDump(self, startingAddress=None, endingAddress=None, display_format='Hex'):
         # print('\nMemory Dump:\n')
@@ -416,20 +416,24 @@ class CPU6502:
             print(line)
             startingAddress += 8
 
+    def extraFunctions(self):
+        if self.value != self.memory[0xD012]:
+            self.memory[0xD012] = self.memory[0xD012] & 0b01111111
+            self.value = self.memory[0xD012]
+            if (self.value | 0b00100000) != 0x2D:
+                # print(chr(0x20 + ((self.value + 0x20) % 0x40)), end='')
+                # print(f'{(self.value + 0x20):02X}')
+                print(chr(self.value | 0b00100000), end='')
+            else:
+                print('\n')
+
     def cycleInc(self):
         self.logState()
         if self.printActivity:
             self.printState()
         self.action = []
         self.cycles += 1
-
-        if self.value != self.memory[0xD012]:
-            self.memory[0xD012] = self.memory[0xD012] & 0b01111111
-            self.value = self.memory[0xD012]
-            if self.value != 0x0D:
-                print(chr(0x20 + ((self.value + 0x20) % 0x40)), end='')
-            else:
-                print('\n')
+        self.extraFunctions()
 
     def logAction(self, action=''):
         self.action.append(action)
@@ -492,10 +496,11 @@ class CPU6502:
 
         # Reset all registers to zero
         self.registers = dict.fromkeys(self.registers.keys(), 0)
-        self.flags['U'] = 1
-        # self.flags['B'] = 1
+
         # Reset all flags to zero
         self.flags = dict.fromkeys(self.flags.keys(), 0)
+        self.flags['U'] = 1
+        # self.flags['B'] = 1
 
     def readMemory(self, increment_pc=True, address=None, bytes=1) -> int:
         data = 0
@@ -1382,6 +1387,24 @@ def apple_i_basic():
     cpu.program_counter = basic_address
     cpu.execute()
 
+
+def apple_i_print_chars():
+    import programs.wozmon
+    wozmon_program = programs.wozmon.program
+    wozmon_address = programs.wozmon.starting_address
+
+    import programs.apple_1_print_characters
+    char_program = programs.apple_1_print_characters.program
+    char_address = programs.apple_1_print_characters.starting_address
+
+    cpu = None
+    cpu = CPU6502(cycle_limit=10000, printActivity=False, enableBRK=False)
+    cpu.reset(program_counter=char_address)
+    cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
+    cpu.loadProgram(instructions=char_program, memoryAddress=char_address, mainProgram=False)
+    cpu.program_counter = char_address
+    cpu.execute()
+
 if __name__ == '__main__':
     # run()
     # fibonacci_test()
@@ -1402,3 +1425,5 @@ if __name__ == '__main__':
     # print()
     # apple_i_basic()
     # print()
+    # apple_i_print_chars()
+    print()
