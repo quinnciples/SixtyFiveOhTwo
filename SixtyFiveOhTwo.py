@@ -2,6 +2,7 @@
 import datetime
 import time
 
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -1410,6 +1411,7 @@ def apple_i_print_chars():
     cpu.loadProgram(instructions=char_program, memoryAddress=char_address, mainProgram=False)
     cpu.program_counter = char_address
     cpu.execute()
+
 
 if __name__ == '__main__':
     # run()
