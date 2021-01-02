@@ -420,10 +420,10 @@ class CPU6502:
         if self.value != self.memory[0xD012]:
             self.memory[0xD012] = self.memory[0xD012] & 0b01111111
             self.value = self.memory[0xD012]
-            if (self.value | 0b00100000) != 0x2D:
-                # print(chr(0x20 + ((self.value + 0x20) % 0x40)), end='')
+            if (self.value | 0b10000000) != 0x8D:
+                print(chr(0x20 + ((self.value + 0x20) % 0x40)), end='')
                 # print(f'{(self.value + 0x20):02X}')
-                print(chr(self.value | 0b00100000), end='')
+                # print(chr((self.value + 32)), end='', flush=True)
             else:
                 print('\n')
 
@@ -1425,5 +1425,5 @@ if __name__ == '__main__':
     # print()
     # apple_i_basic()
     # print()
-    # apple_i_print_chars()
+    apple_i_print_chars()
     print()
