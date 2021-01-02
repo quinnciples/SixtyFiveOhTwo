@@ -398,7 +398,6 @@ class CPU6502:
     def initializeMemory(self):
         self.memory = [0x00] * CPU6502.MAX_MEMORY_SIZE
         self.value = 0
-        self.idx = 0
 
     def memoryDump(self, startingAddress=None, endingAddress=None, display_format='Hex'):
         # print('\nMemory Dump:\n')
@@ -431,26 +430,6 @@ class CPU6502:
                 print(chr(0x20 + ((self.value + 0x20) % 0x40)), end='')
             else:
                 print('\n')
-
-
-        # if self.memory[0xD013] > 170:
-            # print('\n')
-        #self.inputs = [0x00, 0x0D, 0x34, 0x46, 0x2E, 0x35, 0x41, 0x0D, 0x00]  #0x0D?
-        # self.inputs = [0x34 + 0x80, 0x46 + 0x80, 0x2E + 0x80, 0x46 + 0x80, 0x46 + 0x80, 0x0D + 0x80]  #0x0D?
-        self.inputs = [0x8D]  #0x0D?
-        # KBD = 0xD010
-        # KBDCR = 0xD011
-        # DSP = 0xD012
-        # DSPCR = 0xD013
-
-        """
-        if self.cycles >= 50000 and (self.memory[0xD011] != 0b10000000) and self.cycles % 5000 == 0:
-            if self.idx < len(self.inputs):
-                self.memory[0xD010] = self.inputs[self.idx]  # | 0b10000000
-                self.idx += 1
-                self.memory[0xD011] = 0b10000000
-            # print(self.memory[0xD011])
-        """
 
     def logAction(self, action=''):
         self.action.append(action)
@@ -1417,9 +1396,9 @@ if __name__ == '__main__':
     # print()
     # hundred_doors()
     # print()
-    sieve_of_erastosthenes()
+    # sieve_of_erastosthenes()
     # print()
-    # wozmon()
+    wozmon()
     # print()
     # apple_i_basic()
     # print()
