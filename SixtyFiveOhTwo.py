@@ -292,7 +292,7 @@ class CPU6502:
                0x11: 'ORA_IND_Y',
                }
 
-    def __init__(self, cycle_limit=10_000, printActivity=False, logFile=None, enableBRK=False):
+    def __init__(self, cycle_limit=10_000, logging=False, printActivity=False, logFile=None, enableBRK=False):
 
         self.program_counter = 0xFFFE
         self.stack_pointer = 0xFF  # This is technically 0x01FF since the stack pointer lives on page 01.
@@ -303,6 +303,7 @@ class CPU6502:
         if self.enableBRK:
             CPU6502.opcodes[0x00] = 'BRK'
 
+        self.logging = logging
         if logFile:
             self.logFile = open(logFile, 'w')
         else:
@@ -390,14 +391,16 @@ class CPU6502:
             self.memory[self.hooks['KBDCR']] = self.memory[self.hooks['KBDCR']] | 0b10000000
 
     def cycleInc(self):
-        self.logState()
-        if self.printActivity:
-            self.printState()
-        self.action = []
+        if self.logging:
+            self.logState()
+            if self.printActivity:
+                self.printState()
+            self.action = []
         self.cycles += 1
 
     def logAction(self, action=''):
-        self.action.append(action)
+        if self.logging:
+            self.action.append(action)
 
     def programCounterInc(self):
         self.program_counter += 1
@@ -476,10 +479,12 @@ class CPU6502:
             self.cycleInc()
             if not address:
                 data += (self.memory[self.program_counter] * (0x100 ** byte))
-                self.logAction(f'Read  memory address [{self.program_counter:04X}] : value [{self.memory[self.program_counter]:02X}]')
+                if self.logging:
+                    self.logAction(f'Read  memory address [{self.program_counter:04X}] : value [{self.memory[self.program_counter]:02X}]')
             else:
                 data += (self.memory[address + byte] * (0x100 ** byte))
-                self.logAction(f'Read  memory address [{(address + byte):04X}] : value [{self.memory[address + byte]:02X}]')
+                if self.logging:
+                    self.logAction(f'Read  memory address [{(address + byte):04X}] : value [{self.memory[address + byte]:02X}]')
 
             if increment_pc:
                 self.programCounterInc()
@@ -501,7 +506,8 @@ class CPU6502:
         for byte in range(bytes):
             self.cycleInc()
             self.memory[address + byte] = data
-            self.logAction(f'Write memory address [{address + byte:04X}] : value [{data:02X}]')
+            if self.logging:
+                self.logAction(f'Write memory address [{address + byte:04X}] : value [{data:02X}]')
 
             # Begin Apple I hooks
             if (address + byte) == self.hooks['DSP']:
@@ -513,11 +519,13 @@ class CPU6502:
                 self.flags['Z'] = 1
             else:
                 self.flags['Z'] = 0
-            self.logAction(action=f'Setting Z flag based on register [{register}] : value [{self.registers[register]:02X}]')
+            if self.logging:
+                self.logAction(action=f'Setting Z flag based on register [{register}] : value [{self.registers[register]:02X}]')
 
         if 'N' in flags:
             self.flags['N'] = self.registers[register] >> 7 & 1
-            self.logAction(action=f'Setting N flag based on register [{register}] : value [{self.registers[register]:>08b}]')
+            if self.logging:
+                self.logAction(action=f'Setting N flag based on register [{register}] : value [{self.registers[register]:>08b}]')
 
     def setFlagsByValue(self, value=None, flags=[]):
         if value is None or len(flags) == 0:
@@ -528,21 +536,24 @@ class CPU6502:
                 self.flags['Z'] = 1
             else:
                 self.flags['Z'] = 0
-            self.logAction(action=f'Setting Z flag based on value [{value:02X}]')
+            if self.logging:
+                self.logAction(action=f'Setting Z flag based on value [{value:02X}]')
 
         if 'N' in flags:
             if value & 0b10000000 > 0:
                 self.flags['N'] = 1
             else:
                 self.flags['N'] = 0
-            self.logAction(action=f'Setting N flag based on value [{value:>08b}]')
+            if self.logging:
+                self.logAction(action=f'Setting N flag based on value [{value:>08b}]')
 
     def setFlagsManually(self, flags=[], value=None):
         if value is None or value < 0 or value > 1:
             return
         for flag in flags:
             self.flags[flag] = value
-            self.logAction(action=f'Setting {flag} flag manually to [{value}]')
+            if self.logging:
+                self.logAction(action=f'Setting {flag} flag manually to [{value}]')
 
     def determineAddress(self, mode):
         address = 0
@@ -790,7 +801,8 @@ class CPU6502:
                         offset = (256 - offset) * (-1)
                     self.program_counter += offset
                     self.cycleInc()
-                    self.logAction(f'Branch test passed. Jumping to location [{self.program_counter:04X}] offset [{offset}] bytes')
+                    if self.logging:
+                        self.logAction(f'Branch test passed. Jumping to location [{self.program_counter:04X}] offset [{offset}] bytes')
                     # Check if page was crossed
                     if ((self.program_counter & 0b1111111100000000) != ((self.program_counter - offset) & 0b1111111100000000)):
                         self.cycleInc()
@@ -1378,6 +1390,7 @@ def apple_i_basic():
     cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
     cpu.loadProgram(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
     cpu.program_counter = wozmon_address
+    print(f'{basic_address:04X}')
     cpu.execute()
 
 
@@ -1703,6 +1716,13 @@ def blackjack():
     cpu.program_counter = wozmon_address
     cpu.execute()
 
+    """
+    C100R
+    004A.00FFR 0800.0FFFR
+    E2B3R
+    RUN
+    """
+
 
 if __name__ == '__main__':
     # run()
@@ -1714,7 +1734,7 @@ if __name__ == '__main__':
     # print()
     # functional_test_program()
     # print()
-    # runBenchmark()
+    runBenchmark()
     # print()
     # hundred_doors()
     # print()
@@ -1722,8 +1742,8 @@ if __name__ == '__main__':
     # print()
     # wozmon()
     # print()
-    apple_i_basic()
+    # apple_i_basic()
     # print()
     # apple_i_print_chars()
     print()
-    # blackjack()
+    blackjack()
