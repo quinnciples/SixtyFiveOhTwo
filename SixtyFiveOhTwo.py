@@ -374,7 +374,7 @@ class CPU6502:
             self.memory[self.hooks['DSP']] = self.memory[self.hooks['DSP']] & 0b01111111
             self.value = self.memory[self.hooks['DSP']]
             if self.value != 0x0D:
-                if self.value >= 0x20:
+                if self.value >= 0x20 or self.value == 0x08:
                     # print(chr(0x20 + ((self.value + 0x20) % 0x40)), end='', flush=True)
                     # print(f'{(self.value + 0x20):02X}')
                     # print(chr((self.value + 32)), end='', flush=True)
@@ -628,7 +628,7 @@ class CPU6502:
         bne_count = 0
         while self.INS is not None and self.cycles <= self.cycle_limit and bne_count <= 20:
 
-            # self.extraFunctions()
+            self.extraFunctions()
 
             # Remove this when done testing
             """
@@ -1525,7 +1525,7 @@ if __name__ == '__main__':
     # print()
     # functional_test_program()
     # print()
-    runBenchmark()
+    # runBenchmark()
     # print()
     # hundred_doors()
     # print()
@@ -1533,7 +1533,7 @@ if __name__ == '__main__':
     # print()
     # wozmon()
     # print()
-    # apple_i_basic()
+    apple_i_basic()
     # print()
     # apple_i_print_chars()
     print()
