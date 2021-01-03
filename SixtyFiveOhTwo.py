@@ -467,13 +467,6 @@ class CPU6502:
         # self.flags['B'] = 1
 
     def readMemory(self, increment_pc=True, address=None, bytes=1) -> int:
-        """
-        KBD = 0xD010
-        KBDCR = 0xD011
-        DSP = 0xD012
-        DSPCR = 0xD013
-        """
-
         data = 0
         for byte in range(bytes):
             self.cycleInc()
@@ -496,13 +489,6 @@ class CPU6502:
         return data
 
     def writeMemory(self, data, address, bytes=1):
-        """
-        KBD = 0xD010
-        KBDCR = 0xD011
-        DSP = 0xD012
-        DSPCR = 0xD013
-        """
-
         for byte in range(bytes):
             self.cycleInc()
             self.memory[address + byte] = data
@@ -640,9 +626,9 @@ class CPU6502:
         self.OPCODE = self.readMemory()
         self.INS = CPU6502.OPCODES.get(self.OPCODE, None)
         bne_count = 0
-        while self.INS is not None and self.cycles <= max(self.cycle_limit, 100) and bne_count <= 20:
+        while self.INS is not None and self.cycles <= self.cycle_limit and bne_count <= 20:
 
-            self.extraFunctions()
+            # self.extraFunctions()
 
             # Remove this when done testing
             """
@@ -1070,11 +1056,15 @@ class CPU6502:
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
                 self.program_counter = address
+                if self.logging:
+                    self.logAction(f'Jumping to location [{self.program_counter:04X}]')
 
             elif self.INS == 'JMP_IND':
                 address = self.determineAddress(mode='IND')
                 address = self.readMemory(address=address, increment_pc=False, bytes=2)
                 self.program_counter = address
+                if self.logging:
+                    self.logAction(f'Jumping to location [{self.program_counter:04X}]')
 
             elif self.INS == 'NOP':
                 self.handleSingleByteInstruction()
@@ -1535,7 +1525,7 @@ if __name__ == '__main__':
     # print()
     # functional_test_program()
     # print()
-    # runBenchmark()
+    runBenchmark()
     # print()
     # hundred_doors()
     # print()
@@ -1557,4 +1547,4 @@ if __name__ == '__main__':
     print()
     # shut_the_box()
     print()
-    codebreaker()
+    # codebreaker()
