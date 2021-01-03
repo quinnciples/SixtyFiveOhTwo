@@ -1,7 +1,7 @@
 # 6502 machine code processor
 import datetime
-import time
-from bcolors import bcolors as bcolors
+# from bcolors import bcolors as bcolors
+import msvcrt
 
 
 class CPU6502:
@@ -108,10 +108,10 @@ class CPU6502:
 
     """
 
-    version = '0.80'
+    version = '0.90'
     MAX_MEMORY_SIZE = 1024 * 64  # 64k memory size
     OPCODES_WRITE_TO_MEMORY = ['STA', 'STX', 'STY', 'ROL', 'ROR', 'ASL', 'LSR', 'INC', 'DEC']
-    opcodes = {0x29: 'AND_IM',
+    OPCODES = {0x29: 'AND_IM',
                0x25: 'AND_ZP',
                0x35: 'AND_ZP_X',
                0x2D: 'AND_ABS',
@@ -292,7 +292,7 @@ class CPU6502:
                0x11: 'ORA_IND_Y',
                }
 
-    def __init__(self, cycle_limit=100, printActivity=False, logFile='log.txt', enableBRK=False):
+    def __init__(self, cycle_limit=10_000, logging=False, printActivity=False, logFile=None, enableBRK=False):
 
         self.program_counter = 0xFFFE
         self.stack_pointer = 0xFF  # This is technically 0x01FF since the stack pointer lives on page 01.
@@ -301,9 +301,13 @@ class CPU6502:
         self.INS = None
         self.enableBRK = enableBRK
         if self.enableBRK:
-            CPU6502.opcodes[0x00] = 'BRK'
+            CPU6502.OPCODES[0x00] = 'BRK'
 
-        self.logFile = open(logFile, 'w')
+        self.logging = logging
+        if logFile:
+            self.logFile = open(logFile, 'w')
+        else:
+            self.logFile = logFile
         self.action = []
 
         self.printActivity = printActivity
@@ -323,6 +327,13 @@ class CPU6502:
             'U': 0,  # Unused flag
             'V': 0,  # Overflow flag
             'N': 0   # Negative flag
+        }
+
+        self.hooks = {
+            'KBD': 0xD010,
+            'KBDCR': 0xD011,
+            'DSP': 0xD012,
+            'DSPCR': 0xD013
         }
 
         self.initializeMemory()
@@ -351,12 +362,12 @@ class CPU6502:
             startingAddress += 8
 
     def extraFunctions(self):
-        # if self.value != self.memory[0xD012]:
-        if (self.memory[0xD012] & 0b10000000) > 0:
-            self.memory[0xD012] = self.memory[0xD012] & 0b01111111
-            self.value = self.memory[0xD012]
+        # Printing character to the screen
+        if (self.memory[self.hooks['DSP']] & 0b10000000) > 0:
+            self.memory[self.hooks['DSP']] = self.memory[self.hooks['DSP']] & 0b01111111
+            self.value = self.memory[self.hooks['DSP']]
             if self.value != 0x0D:
-                if self.value >= 0x20:
+                if self.value >= 0x20 or self.value == 0x08:
                     # print(chr(0x20 + ((self.value + 0x20) % 0x40)), end='', flush=True)
                     # print(f'{(self.value + 0x20):02X}')
                     # print(chr((self.value + 32)), end='', flush=True)
@@ -365,15 +376,24 @@ class CPU6502:
                 # print('\r', end='', flush=True)
                 print('', flush=True)
 
+        # Handling keyboard input
+        if msvcrt.kbhit():
+            key = msvcrt.getch().upper()
+            key_ascii = ord(key)
+            self.memory[self.hooks['KBD']] = key_ascii | 0b10000000
+            self.memory[self.hooks['KBDCR']] = self.memory[self.hooks['KBDCR']] | 0b10000000
+
     def cycleInc(self):
-        self.logState()
-        if self.printActivity:
-            self.printState()
-        self.action = []
+        if self.logging:
+            self.logState()
+            if self.printActivity:
+                self.printState()
+            self.action = []
         self.cycles += 1
 
     def logAction(self, action=''):
-        self.action.append(action)
+        if self.logging:
+            self.action.append(action)
 
     def programCounterInc(self):
         self.program_counter += 1
@@ -445,20 +465,32 @@ class CPU6502:
             self.cycleInc()
             if not address:
                 data += (self.memory[self.program_counter] * (0x100 ** byte))
-                self.logAction(f'Read  memory address [{self.program_counter:04X}] : value [{self.memory[self.program_counter]:02X}]')
+                if self.logging:
+                    self.logAction(f'Read  memory address [{self.program_counter:04X}] : value [{self.memory[self.program_counter]:02X}]')
             else:
                 data += (self.memory[address + byte] * (0x100 ** byte))
-                self.logAction(f'Read  memory address [{(address + byte):04X}] : value [{self.memory[address + byte]:02X}]')
+                if self.logging:
+                    self.logAction(f'Read  memory address [{(address + byte):04X}] : value [{self.memory[address + byte]:02X}]')
 
             if increment_pc:
                 self.programCounterInc()
+
+            # Begin Apple I hooks
+            if address is not None and (address + byte) == self.hooks['KBD']:  # Reading KBD clears b7 on KBDCR
+                self.memory[self.hooks['KBDCR']] = self.memory[self.hooks['KBDCR']] & 0b01111111
+
         return data
 
     def writeMemory(self, data, address, bytes=1):
         for byte in range(bytes):
             self.cycleInc()
             self.memory[address + byte] = data
-            self.logAction(f'Write memory address [{address + byte:04X}] : value [{data:02X}]')
+            if self.logging:
+                self.logAction(f'Write memory address [{address + byte:04X}] : value [{data:02X}]')
+
+            # Begin Apple I hooks
+            if (address + byte) == self.hooks['DSP']:
+                self.memory[self.hooks['DSP']] = self.memory[self.hooks['DSP']] | 0b10000000
 
     def setFlagsByRegister(self, register=None, flags=[]):
         if 'Z' in flags:
@@ -466,11 +498,13 @@ class CPU6502:
                 self.flags['Z'] = 1
             else:
                 self.flags['Z'] = 0
-            self.logAction(action=f'Setting Z flag based on register [{register}] : value [{self.registers[register]:02X}]')
+            if self.logging:
+                self.logAction(action=f'Setting Z flag based on register [{register}] : value [{self.registers[register]:02X}]')
 
         if 'N' in flags:
             self.flags['N'] = self.registers[register] >> 7 & 1
-            self.logAction(action=f'Setting N flag based on register [{register}] : value [{self.registers[register]:>08b}]')
+            if self.logging:
+                self.logAction(action=f'Setting N flag based on register [{register}] : value [{self.registers[register]:>08b}]')
 
     def setFlagsByValue(self, value=None, flags=[]):
         if value is None or len(flags) == 0:
@@ -481,52 +515,62 @@ class CPU6502:
                 self.flags['Z'] = 1
             else:
                 self.flags['Z'] = 0
-            self.logAction(action=f'Setting Z flag based on value [{value:02X}]')
+            if self.logging:
+                self.logAction(action=f'Setting Z flag based on value [{value:02X}]')
 
         if 'N' in flags:
             if value & 0b10000000 > 0:
                 self.flags['N'] = 1
             else:
                 self.flags['N'] = 0
-            self.logAction(action=f'Setting N flag based on value [{value:>08b}]')
+            if self.logging:
+                self.logAction(action=f'Setting N flag based on value [{value:>08b}]')
 
     def setFlagsManually(self, flags=[], value=None):
         if value is None or value < 0 or value > 1:
             return
         for flag in flags:
             self.flags[flag] = value
-            self.logAction(action=f'Setting {flag} flag manually to [{value}]')
+            if self.logging:
+                self.logAction(action=f'Setting {flag} flag manually to [{value}]')
 
     def determineAddress(self, mode):
         address = 0
         if mode == 'ZP':
             address = self.readMemory()
+            return address
         elif mode == 'ZP_X':
             address = self.readMemory()
             address += self.registers['X']
             # Zero Page address wraps around if the value exceeds 0xFF
             address = address % 0x100
             self.cycleInc()
+            return address
         elif mode == 'ZP_Y':
             address = self.readMemory()
             address += self.registers['Y']
             # Zero Page address wraps around if the value exceeds 0xFF
             address = address % 0x100
             self.cycleInc()
+            return address
         elif mode == 'ABS':
             address = self.readMemory(bytes=2)
+            return address
         elif mode == 'ABS_X':
             address = self.readMemory(bytes=2)
             address += self.registers['X']
             if int(address / 0x100) != int((address - self.registers['X']) / 0x100) or (self.INS[0:3] in CPU6502.OPCODES_WRITE_TO_MEMORY):
                 self.cycleInc()  # Only if PAGE crossed or instruction writes to memory
+            return address
         elif mode == 'ABS_Y':
             address = self.readMemory(bytes=2)
             address += self.registers['Y']
             if (int(address / 0x100) != int((address - self.registers['Y']) / 0x100)) or (self.INS[0:3] in CPU6502.OPCODES_WRITE_TO_MEMORY):
                 self.cycleInc()  # Only if PAGE crossed or instruction writes to memory
+            return address
         elif mode == 'IND':  # Indirect
             address = self.readMemory(bytes=2)
+            return address
         elif mode == 'IND_X':
             address = self.readMemory()
             address += self.registers['X']
@@ -534,12 +578,14 @@ class CPU6502:
             address = address % 0x100
             self.cycleInc()
             address = self.readMemory(address=address, increment_pc=False, bytes=2)
+            return address
         elif mode == 'IND_Y':
             address = self.readMemory()
             address = self.readMemory(address=address, increment_pc=False, bytes=2)
             address += self.registers['Y']
             if int(address / 0x100) != int((address - self.registers['Y']) / 0x100) or (self.INS[0:3] in CPU6502.OPCODES_WRITE_TO_MEMORY):
                 self.cycleInc()  # Only if PAGE crossed or instruction writes to memory
+            return address
 
         return address
 
@@ -580,17 +626,19 @@ class CPU6502:
         # self.handleBRK()
 
         self.OPCODE = self.readMemory()
-        self.INS = CPU6502.opcodes.get(self.OPCODE, None)
+        self.INS = CPU6502.OPCODES.get(self.OPCODE, None)
         bne_count = 0
-        while self.INS is not None and self.cycles <= max(self.cycle_limit, 100) and bne_count <= 20:
+        while self.INS is not None and self.cycles <= self.cycle_limit and bne_count <= 20:
 
             self.extraFunctions()
 
             # Remove this when done testing
+            """
             if self.INS == 'BNE' or self.program_counter in [0x336D, 0x336E, 0x336F]:
                 bne_count += 1
             else:
                 bne_count = 0
+            """
 
             if self.INS == 'BRK' and self.enableBRK:
                 # Reference wiki.nesdev.com/w/index.php/Status_flags
@@ -743,7 +791,8 @@ class CPU6502:
                         offset = (256 - offset) * (-1)
                     self.program_counter += offset
                     self.cycleInc()
-                    self.logAction(f'Branch test passed. Jumping to location [{self.program_counter:04X}] offset [{offset}] bytes')
+                    if self.logging:
+                        self.logAction(f'Branch test passed. Jumping to location [{self.program_counter:04X}] offset [{offset}] bytes')
                     # Check if page was crossed
                     if ((self.program_counter & 0b1111111100000000) != ((self.program_counter - offset) & 0b1111111100000000)):
                         self.cycleInc()
@@ -931,6 +980,8 @@ class CPU6502:
                 address = self.determineAddress(mode=address_mode)
                 self.savePCAtStackPointer()
                 self.program_counter = address
+                if self.logging:
+                    self.logAction(f'Jumping to location [{self.program_counter:04X}]')
                 self.cycleInc()
 
             elif self.INS == 'RTS_IMP':
@@ -1009,22 +1060,29 @@ class CPU6502:
                 address_mode = '_'.join(_ for _ in ins_set[1:])
                 address = self.determineAddress(mode=address_mode)
                 self.program_counter = address
+                if self.logging:
+                    self.logAction(f'Jumping to location [{self.program_counter:04X}]')
 
             elif self.INS == 'JMP_IND':
                 address = self.determineAddress(mode='IND')
                 address = self.readMemory(address=address, increment_pc=False, bytes=2)
                 self.program_counter = address
+                if self.logging:
+                    self.logAction(f'Jumping to location [{self.program_counter:04X}]')
 
             elif self.INS == 'NOP':
                 self.handleSingleByteInstruction()
 
             self.OPCODE = self.readMemory()
-            self.INS = CPU6502.opcodes.get(self.OPCODE, None)
+            self.INS = CPU6502.OPCODES.get(self.OPCODE, None)
 
         # Cleanup
         self.execution_time = datetime.datetime.now() - self.start_time
-        # print(f'Execution time: {self.execution_time}')
-        self.logFile.close()
+        self.printBenchmarkInfo()
+
+        if self.logging:
+            if self.logFile:
+                self.logFile.close()
 
     def getLogString(self):
         combined = {**{'%-10s' % 'Cycle': '%-10s' % str(self.cycles),
@@ -1058,18 +1116,21 @@ class CPU6502:
         self.log = []
         headerString = self.getLogHeaderString()
         self.log.append(headerString)
-        self.logFile.write(headerString)
+        if self.logFile:
+            self.logFile.write(headerString)
 
     def logState(self):
-        combined = self.getLogString()
-        # valueString = bcolors.ENDC + '\t'.join(str(v) for v in combined.values()) + bcolors.ENDC
-        valueString = '\t'.join(str(v) for v in combined.values())
-        self.log.append(valueString)
-        if self.cycles % 250000 == 0:
-            self.logFile.close()
-            self.logFile = open(self.logFile.name, 'w')
-            self.log = []
-        self.logFile.write(valueString + '\n')
+        if self.logging:
+            combined = self.getLogString()
+            # valueString = bcolors.ENDC + '\t'.join(str(v) for v in combined.values()) + bcolors.ENDC
+            valueString = '\t'.join(str(v) for v in combined.values())
+            self.log.append(valueString)
+            if self.logFile:
+                if self.cycles % 250000 == 0:
+                    self.logFile.close()
+                    self.logFile = open(self.logFile.name, 'w')
+                    self.log = []
+                self.logFile.write(valueString + '\n')
 
     def printLog(self):
         for line in self.log:
@@ -1214,7 +1275,7 @@ def functional_test_program():
 
 def runBenchmark():
     cpu = None
-    cpu = CPU6502(cycle_limit=750_000, printActivity=False, enableBRK=False)
+    cpu = CPU6502(cycle_limit=750_000, printActivity=False, enableBRK=False, logFile=None)
     cpu.reset(program_counter=0x8000)
     cpu.memory[0x0090] = 0
     program = [
@@ -1278,36 +1339,12 @@ def wozmon():
     wozmon_program = programs.wozmon.program
     wozmon_address = programs.wozmon.starting_address
 
-    import programs.hello_world
-    hello_world_program = programs.hello_world.program
-    hello_world_address = programs.hello_world.starting_address
-
     cpu = None
-    cpu = CPU6502(cycle_limit=100_000, printActivity=False, enableBRK=False)
+    cpu = CPU6502(cycle_limit=100_000_000, printActivity=False, enableBRK=False)
     cpu.reset(program_counter=0xFF00)
     cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
-    cpu.loadProgram(instructions=hello_world_program, memoryAddress=hello_world_address, mainProgram=False)
-    # 4F.5A
-    # 200 - 27F
-    # | 0b10000000
-    # cpu.program_counter = 0x0280
-    # cpu.program_counter = 0xFF00
-    # Starts at 201 for some reason.
-    cpu.program_counter = 0xFF47
-    # cpu.program_counter = wozmon_address
-    cpu.memory[0x0200] = 0x41 + 0x80
-    cpu.memory[0x0201] = 0x41 + 0x80
-    cpu.memory[0x0202] = 0x41 + 0x80
-    cpu.memory[0x0203] = 0x2E + 0x80
-    cpu.memory[0x0204] = 0x46 + 0x80
-    cpu.memory[0x0205] = 0x46 + 0x80
-    cpu.memory[0x0206] = 0x0D + 0x80
-    cpu.memory[0x0207] = 0x0D + 0x80
-
+    cpu.program_counter = wozmon_address
     cpu.execute()
-    # print(cpu.memory[0x027A:0x0280])
-    # print(cpu.memory[0x0200:0x0206])
-    # print(f'{cpu.memory[0xFF47]:02x}')
 
 
 def apple_i_basic():
@@ -1320,11 +1357,12 @@ def apple_i_basic():
     basic_address = programs.apple_1_basic.starting_address
 
     cpu = None
-    cpu = CPU6502(cycle_limit=100_000, printActivity=False, enableBRK=False)
+    cpu = CPU6502(cycle_limit=100_000_000_000, printActivity=False, enableBRK=False)
     cpu.reset(program_counter=basic_address)
     cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
     cpu.loadProgram(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
-    cpu.program_counter = basic_address
+    cpu.program_counter = wozmon_address
+    print(f'{basic_address:04X}')
     cpu.execute()
 
 
@@ -1346,6 +1384,162 @@ def apple_i_print_chars():
     cpu.execute()
 
 
+def blackjack():
+    import programs.wozmon
+    wozmon_program = programs.wozmon.program
+    wozmon_address = programs.wozmon.starting_address
+
+    import programs.apple_1_basic
+    basic_program = programs.apple_1_basic.program
+    basic_address = programs.apple_1_basic.starting_address
+
+    import programs.blackjack
+
+    cpu = None
+    cpu = CPU6502(cycle_limit=100_000_000_000, printActivity=False, enableBRK=True, logging=False)
+    cpu.reset(program_counter=basic_address)
+    cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
+    cpu.loadProgram(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
+
+    for tape in programs.blackjack.tapes:
+        cpu.loadProgram(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
+
+    cpu.program_counter = wozmon_address
+    print(f'Running {programs.blackjack.name}...')
+    print(programs.blackjack.instructions)
+    cpu.execute()
+
+
+def lunar_lander():
+    import programs.wozmon
+    wozmon_program = programs.wozmon.program
+    wozmon_address = programs.wozmon.starting_address
+
+    import programs.apple_1_basic
+    basic_program = programs.apple_1_basic.program
+    basic_address = programs.apple_1_basic.starting_address
+
+    import programs.lunar_lander
+
+    cpu = None
+    cpu = CPU6502(cycle_limit=100_000_000_000, printActivity=False, enableBRK=True, logging=True, logFile='log.txt')
+    cpu.reset(program_counter=basic_address)
+    cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
+    cpu.loadProgram(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
+
+    for tape in programs.lunar_lander.tapes:
+        cpu.loadProgram(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
+
+    cpu.program_counter = wozmon_address
+    print(programs.lunar_lander.instructions)
+    cpu.execute()
+
+
+def hammurabi():
+    import programs.wozmon
+    wozmon_program = programs.wozmon.program
+    wozmon_address = programs.wozmon.starting_address
+
+    import programs.apple_1_basic
+    basic_program = programs.apple_1_basic.program
+    basic_address = programs.apple_1_basic.starting_address
+
+    import programs.hammurabi
+
+    cpu = None
+    cpu = CPU6502(cycle_limit=100_000_000_000, printActivity=False, enableBRK=True, logging=False)
+    cpu.reset(program_counter=basic_address)
+    cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
+    cpu.loadProgram(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
+
+    for tape in programs.hammurabi.tapes:
+        cpu.loadProgram(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
+
+    cpu.program_counter = wozmon_address
+    print(programs.hammurabi.instructions)
+    cpu.execute()
+
+
+def microchess():
+    import programs.wozmon
+    wozmon_program = programs.wozmon.program
+    wozmon_address = programs.wozmon.starting_address
+
+    import programs.microchess as game
+
+    cpu = None
+    cpu = CPU6502(cycle_limit=100_000_000_000, printActivity=False, enableBRK=False, logging=False)
+    cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
+    # cpu.loadProgram(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
+
+    for tape in game.tapes:
+        cpu.loadProgram(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
+
+    cpu.program_counter = wozmon_address
+    print(game.instructions)
+    cpu.execute()
+
+
+def shut_the_box():
+    import programs.wozmon
+    wozmon_program = programs.wozmon.program
+    wozmon_address = programs.wozmon.starting_address
+
+    import programs.shut_the_box as game
+
+    cpu = None
+    cpu = CPU6502(cycle_limit=100_000_000_000, printActivity=False, enableBRK=False, logging=False)
+    cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
+    # cpu.loadProgram(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
+
+    for tape in game.tapes:
+        cpu.loadProgram(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
+
+    cpu.program_counter = wozmon_address
+    print(game.instructions)
+    cpu.execute()
+
+
+def codebreaker():
+    import programs.wozmon
+    wozmon_program = programs.wozmon.program
+    wozmon_address = programs.wozmon.starting_address
+
+    import programs.codebreaker as game
+
+    cpu = None
+    cpu = CPU6502(cycle_limit=100_000_000_000, printActivity=False, enableBRK=False, logging=False)
+    cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
+    # cpu.loadProgram(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
+
+    for tape in game.tapes:
+        cpu.loadProgram(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
+
+    cpu.program_counter = wozmon_address
+    print(game.instructions)
+    cpu.execute()
+
+
+def applesoft_basic():
+    import programs.wozmon
+    wozmon_program = programs.wozmon.program
+    wozmon_address = programs.wozmon.starting_address
+
+    import programs.applesoft_basic as game
+
+    cpu = None
+    cpu = CPU6502(cycle_limit=100_000_000_000, printActivity=False, enableBRK=True, logging=False)
+    cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
+
+    for tape in game.tapes:
+        cpu.loadProgram(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
+
+    cpu.program_counter = wozmon_address
+    print(f'Running {game.name}...')
+    print(game.instructions)
+    cpu.execute()
+
+
 if __name__ == '__main__':
     # run()
     # fibonacci_test()
@@ -1362,8 +1556,22 @@ if __name__ == '__main__':
     # print()
     # sieve_of_erastosthenes()
     # print()
-    wozmon()
+    # wozmon()
     # print()
     # apple_i_basic()
     # print()
     # apple_i_print_chars()
+    print()
+    blackjack()
+    print()
+    # lunar_lander()
+    print()
+    # hammurabi()
+    print()
+    # microchess()
+    print()
+    # shut_the_box()
+    print()
+    # codebreaker()
+    print()
+    # applesoft_basic()
