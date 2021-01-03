@@ -362,13 +362,6 @@ class CPU6502:
             startingAddress += 8
 
     def extraFunctions(self):
-        """
-        KBD = 0xD010
-        KBDCR = 0xD011
-        DSP = 0xD012
-        DSPCR = 0xD013
-        """
-
         # Printing character to the screen
         if (self.memory[self.hooks['DSP']] & 0b10000000) > 0:
             self.memory[self.hooks['DSP']] = self.memory[self.hooks['DSP']] & 0b01111111
@@ -545,32 +538,39 @@ class CPU6502:
         address = 0
         if mode == 'ZP':
             address = self.readMemory()
+            return address
         elif mode == 'ZP_X':
             address = self.readMemory()
             address += self.registers['X']
             # Zero Page address wraps around if the value exceeds 0xFF
             address = address % 0x100
             self.cycleInc()
+            return address
         elif mode == 'ZP_Y':
             address = self.readMemory()
             address += self.registers['Y']
             # Zero Page address wraps around if the value exceeds 0xFF
             address = address % 0x100
             self.cycleInc()
+            return address
         elif mode == 'ABS':
             address = self.readMemory(bytes=2)
+            return address
         elif mode == 'ABS_X':
             address = self.readMemory(bytes=2)
             address += self.registers['X']
             if int(address / 0x100) != int((address - self.registers['X']) / 0x100) or (self.INS[0:3] in CPU6502.OPCODES_WRITE_TO_MEMORY):
                 self.cycleInc()  # Only if PAGE crossed or instruction writes to memory
+            return address
         elif mode == 'ABS_Y':
             address = self.readMemory(bytes=2)
             address += self.registers['Y']
             if (int(address / 0x100) != int((address - self.registers['Y']) / 0x100)) or (self.INS[0:3] in CPU6502.OPCODES_WRITE_TO_MEMORY):
                 self.cycleInc()  # Only if PAGE crossed or instruction writes to memory
+            return address
         elif mode == 'IND':  # Indirect
             address = self.readMemory(bytes=2)
+            return address
         elif mode == 'IND_X':
             address = self.readMemory()
             address += self.registers['X']
@@ -578,12 +578,14 @@ class CPU6502:
             address = address % 0x100
             self.cycleInc()
             address = self.readMemory(address=address, increment_pc=False, bytes=2)
+            return address
         elif mode == 'IND_Y':
             address = self.readMemory()
             address = self.readMemory(address=address, increment_pc=False, bytes=2)
             address += self.registers['Y']
             if int(address / 0x100) != int((address - self.registers['Y']) / 0x100) or (self.INS[0:3] in CPU6502.OPCODES_WRITE_TO_MEMORY):
                 self.cycleInc()  # Only if PAGE crossed or instruction writes to memory
+            return address
 
         return address
 
@@ -1403,6 +1405,7 @@ def blackjack():
         cpu.loadProgram(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
 
     cpu.program_counter = wozmon_address
+    print(f'Running {programs.blackjack.name}...')
     print(programs.blackjack.instructions)
     cpu.execute()
 
@@ -1559,7 +1562,7 @@ if __name__ == '__main__':
     # print()
     # apple_i_print_chars()
     print()
-    # blackjack()
+    blackjack()
     print()
     # lunar_lander()
     print()
@@ -1571,4 +1574,4 @@ if __name__ == '__main__':
     print()
     # codebreaker()
     print()
-    applesoft_basic()
+    # applesoft_basic()
