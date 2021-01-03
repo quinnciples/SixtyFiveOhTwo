@@ -978,6 +978,8 @@ class CPU6502:
                 address = self.determineAddress(mode=address_mode)
                 self.savePCAtStackPointer()
                 self.program_counter = address
+                if self.logging:
+                    self.logAction(f'Jumping to location [{self.program_counter:04X}]')
                 self.cycleInc()
 
             elif self.INS == 'RTS_IMP':
@@ -1515,6 +1517,26 @@ def codebreaker():
     cpu.execute()
 
 
+def applesoft_basic():
+    import programs.wozmon
+    wozmon_program = programs.wozmon.program
+    wozmon_address = programs.wozmon.starting_address
+
+    import programs.applesoft_basic as game
+
+    cpu = None
+    cpu = CPU6502(cycle_limit=100_000_000_000, printActivity=False, enableBRK=True, logging=False)
+    cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
+
+    for tape in game.tapes:
+        cpu.loadProgram(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
+
+    cpu.program_counter = wozmon_address
+    print(f'Running {game.name}...')
+    print(game.instructions)
+    cpu.execute()
+
+
 if __name__ == '__main__':
     # run()
     # fibonacci_test()
@@ -1533,7 +1555,7 @@ if __name__ == '__main__':
     # print()
     # wozmon()
     # print()
-    apple_i_basic()
+    # apple_i_basic()
     # print()
     # apple_i_print_chars()
     print()
@@ -1548,3 +1570,5 @@ if __name__ == '__main__':
     # shut_the_box()
     print()
     # codebreaker()
+    print()
+    applesoft_basic()
