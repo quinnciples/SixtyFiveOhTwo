@@ -1540,6 +1540,27 @@ def applesoft_basic():
     cpu.execute()
 
 
+def applesoft_30th():
+    import programs.wozmon
+    wozmon_program = programs.wozmon.program
+    wozmon_address = programs.wozmon.starting_address
+
+    import programs.apple_30th as game
+
+    cpu = None
+    cpu = CPU6502(cycle_limit=100_000_000_000, printActivity=False, enableBRK=True, logging=False)
+    cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
+
+    for tape in game.tapes:
+        cpu.loadProgram(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
+
+    cpu.program_counter = wozmon_address
+    print(f'Running {game.name}...')
+    print(game.description)
+    print(game.instructions)
+    cpu.execute()
+
+
 if __name__ == '__main__':
     # run()
     # fibonacci_test()
@@ -1562,7 +1583,7 @@ if __name__ == '__main__':
     # print()
     # apple_i_print_chars()
     print()
-    blackjack()
+    # blackjack()
     print()
     # lunar_lander()
     print()
@@ -1575,3 +1596,5 @@ if __name__ == '__main__':
     # codebreaker()
     print()
     # applesoft_basic()
+    print()
+    applesoft_30th()
