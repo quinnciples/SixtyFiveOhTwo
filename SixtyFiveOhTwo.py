@@ -1548,7 +1548,7 @@ def applesoft_basic():
     cpu.execute()
 
 
-def applesoft_30th():
+def apple_30th():
     import programs.wozmon
     wozmon_program = programs.wozmon.program
     wozmon_address = programs.wozmon.starting_address
@@ -1558,6 +1558,32 @@ def applesoft_30th():
     cpu = None
     cpu = CPU6502(cycle_limit=100_000_000_000, printActivity=False, enableBRK=True, logging=False)
     cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
+
+    for tape in game.tapes:
+        cpu.loadProgram(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
+
+    cpu.program_counter = wozmon_address
+    print(f'Running {game.name}...')
+    print(game.description)
+    print(game.instructions)
+    cpu.execute()
+
+
+def startrek():
+    import programs.wozmon
+    wozmon_program = programs.wozmon.program
+    wozmon_address = programs.wozmon.starting_address
+
+    import programs.apple_1_basic
+    basic_program = programs.apple_1_basic.program
+    basic_address = programs.apple_1_basic.starting_address
+
+    import programs.startrek as game
+
+    cpu = None
+    cpu = CPU6502(cycle_limit=100_000_000_000, printActivity=False, enableBRK=True, logging=False)
+    cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
+    cpu.loadProgram(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
 
     for tape in game.tapes:
         cpu.loadProgram(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
@@ -1605,4 +1631,5 @@ if __name__ == '__main__':
     print()
     # applesoft_basic()
     print()
-    applesoft_30th()
+    # apple_30th()
+    startrek()
