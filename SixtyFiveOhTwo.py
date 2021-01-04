@@ -340,6 +340,8 @@ class CPU6502:
         self.cycles = 0
         self.initializeLog()
 
+        self.chars = 0
+
     def initializeMemory(self):
         self.memory = [0x00] * CPU6502.MAX_MEMORY_SIZE
         self.value = 0xFA
@@ -372,9 +374,15 @@ class CPU6502:
                     # print(f'{(self.value + 0x20):02X}')
                     # print(chr((self.value + 32)), end='', flush=True)
                     print(chr((self.value)), end='', flush=True)
+                    self.chars += 1
             else:
                 # print('\r', end='', flush=True)
                 print('', flush=True)
+                self.chars = 0
+
+            if self.chars >= 40:
+                print('', flush=True)
+                self.chars = 0
 
         # Handling keyboard input
         if msvcrt.kbhit():
