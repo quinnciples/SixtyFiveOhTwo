@@ -8,7 +8,7 @@ import traceback
 class CPU6502:
 
     """
-
+    Notes:
     0000-00FF  - RAM for Zero-Page & Indirect-Memory Addressing
     0100-01FF  - RAM for Stack Space & Absolute Addressing
     0200-3FFF  - RAM for programmer use
@@ -21,7 +21,12 @@ class CPU6502:
     FFFE       - Vector address for IRQ & BRK (low byte)
     FFFF       - Vector address for IRQ & BRK  (high byte)
     """
-
+    VECTORS = {
+        'NMI': 0xFFFA,
+        'RESET': 0xFFFC,
+        'IRQ': 0xFFFE,
+        'BRK': 0xFFFE
+    }
     """
     ADC - Done
     AND - Done
