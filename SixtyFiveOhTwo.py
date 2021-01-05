@@ -490,8 +490,8 @@ class CPU6502:
                 self.programCounterInc()
 
             # Begin Apple I hooks
-            if address is not None and (address + byte) == self.hooks['KBD']:  # Reading KBD clears b7 on KBDCR
-                self.memory[self.hooks['KBDCR']] = self.memory[self.hooks['KBDCR']] & 0b01111111
+            # if address is not None and (address + byte) == self.hooks['KBD']:  # Reading KBD clears b7 on KBDCR
+                # self.memory[self.hooks['KBDCR']] = self.memory[self.hooks['KBDCR']] & 0b01111111
 
         return data
 
@@ -503,8 +503,8 @@ class CPU6502:
                 self.logAction(f'Write memory address [{address + byte:04X}] : value [{data:02X}]')
 
             # Begin Apple I hooks
-            if (address + byte) == self.hooks['DSP']:
-                self.memory[self.hooks['DSP']] = self.memory[self.hooks['DSP']] | 0b10000000
+            # if (address + byte) == self.hooks['DSP']:
+                # self.memory[self.hooks['DSP']] = self.memory[self.hooks['DSP']] | 0b10000000
 
     def setFlagsByRegister(self, register=None, flags=[]):
         if 'Z' in flags:
@@ -645,15 +645,14 @@ class CPU6502:
             bne_count = 0
             while self.INS is not None and self.cycles <= self.cycle_limit and bne_count <= 20:
 
-                self.extraFunctions()
+                # self.extraFunctions()
 
                 # Remove this when done testing
-                """
+
                 if self.INS == 'BNE' or self.program_counter in [0x336D, 0x336E, 0x336F]:
                     bne_count += 1
                 else:
                     bne_count = 0
-                """
 
                 if self.INS == 'BRK' and self.enableBRK:
                     # Reference wiki.nesdev.com/w/index.php/Status_flags
@@ -928,7 +927,7 @@ class CPU6502:
                     address_mode = '_'.join(_ for _ in ins_set[1:])
                     address = self.determineAddress(mode=address_mode)
                     value = self.readMemory(address=address, increment_pc=False, bytes=1)
-                    
+
                     if self.flags['D'] == 0:
                         value = 0b11111111 - value
                         orig_value = value
@@ -1025,7 +1024,6 @@ class CPU6502:
                         if (((self.registers['A'] ^ value) & 0x80) != 0):
                             v = 0
                         self.setFlagsManually(flags='V', value=1 if v > 0 else 0)
-                        
 
                 elif self.INS in ['ADC_ZP', 'ADC_ZP_X', 'ADC_ABS', 'ADC_ABS_X', 'ADC_ABS_Y', 'ADC_IND_X', 'ADC_IND_Y']:
                     orig_A_register_value = self.registers['A']
@@ -1357,7 +1355,7 @@ def functional_test_program():
     # print(program[0x03F6: 0x040F])
     # print(len(program))
     cpu = None
-    cpu = CPU6502(cycle_limit=100_000_000, printActivity=False, enableBRK=True)
+    cpu = CPU6502(cycle_limit=200_000_000, printActivity=False, enableBRK=True, logging=True, logFile='log.txt')
     cpu.reset(program_counter=0x0400)
     cpu.loadProgram(instructions=program, memoryAddress=0x000A, mainProgram=False)
     cpu.program_counter = 0x0400
@@ -1688,7 +1686,7 @@ if __name__ == '__main__':
     # print()
     # flags_test()
     # print()
-    # functional_test_program()
+    functional_test_program()
     # print()
     # runBenchmark()
     # print()
@@ -1701,20 +1699,20 @@ if __name__ == '__main__':
     # apple_i_basic()
     # print()
     # apple_i_print_chars()
-    print()
+    # print()
     # blackjack()
-    print()
-    lunar_lander()
-    print()
+    # print()
+    # lunar_lander()
+    # print()
     # hammurabi()
-    print()
+    # print()
     # microchess()
-    print()
+    # print()
     # shut_the_box()
-    print()
+    # print()
     # codebreaker()
-    print()
+    # print()
     # applesoft_basic()
-    print()
+    # print()
     # apple_30th()
     # startrek()
