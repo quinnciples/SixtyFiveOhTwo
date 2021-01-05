@@ -645,7 +645,7 @@ class CPU6502:
             bne_count = 0
             while self.INS is not None and self.cycles <= self.cycle_limit and bne_count <= 20:
 
-                # self.extraFunctions()
+                self.extraFunctions()
 
                 # Remove this when done testing
                 """
@@ -759,8 +759,8 @@ class CPU6502:
                         self.writeMemory(data=value, address=address, bytes=1)
 
                 elif self.INS in ['CMP_IM', 'CMP_ZP', 'CMP_ZP_X', 'CMP_ABS', 'CMP_ABS_X', 'CMP_ABS_Y', 'CMP_IND_X', 'CMP_IND_Y',
-                                'CPX_IM', 'CPX_ZP', 'CPX_ABS',
-                                'CPY_IM', 'CPY_ZP', 'CPY_ABS']:
+                                  'CPX_IM', 'CPX_ZP', 'CPX_ABS',
+                                  'CPY_IM', 'CPY_ZP', 'CPY_ABS']:
                     target = 'A' if self.INS[2] not in ['X', 'Y'] else self.INS[2]
                     if self.INS in ['CMP_IM', 'CPX_IM', 'CPY_IM']:
                         value = self.readMemory()
@@ -784,20 +784,21 @@ class CPU6502:
                     self.setFlagsByValue(value=result, flags=['N'])
 
                 elif self.INS in ['BEQ', 'BNE',
-                                'BCC', 'BCS',
-                                'BMI', 'BPL',
-                                'BVC', 'BVS']:
+                                  'BCC', 'BCS',
+                                  'BMI', 'BPL',
+                                  'BVC', 'BVS']:
 
                     # Instruction: [Flag, Value to Test]
-                    comparisons = {'BEQ': ['Z', 1],
-                                'BNE': ['Z', 0],
-                                'BCC': ['C', 0],
-                                'BCS': ['C', 1],
-                                'BMI': ['N', 1],
-                                'BPL': ['N', 0],
-                                'BVS': ['V', 1],
-                                'BVC': ['V', 0],
-                                }
+                    comparisons = {
+                        'BEQ': ['Z', 1],
+                        'BNE': ['Z', 0],
+                        'BCC': ['C', 0],
+                        'BCS': ['C', 1],
+                        'BMI': ['N', 1],
+                        'BPL': ['N', 0],
+                        'BVS': ['V', 1],
+                        'BVC': ['V', 0],
+                    }
                     offset = self.readMemory()
                     flag = comparisons[self.INS][0]
                     test_value = comparisons[self.INS][1]
@@ -927,49 +928,104 @@ class CPU6502:
                     address_mode = '_'.join(_ for _ in ins_set[1:])
                     address = self.determineAddress(mode=address_mode)
                     value = self.readMemory(address=address, increment_pc=False, bytes=1)
-                    value = 0b11111111 - value
-                    orig_value = value
-                    value += self.registers['A'] + self.flags['C']
-                    self.registers['A'] = value & 0b0000000011111111
-                    self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-                    carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
-                    self.setFlagsManually(flags=['C'], value=carry_flag)
-                    overflow_flag = 0
-                    if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
-                        if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
-                            overflow_flag = 1
-                    self.setFlagsManually(flags=['V'], value=overflow_flag)
+                    
+                    if self.flags['D'] == 0:
+                        value = 0b11111111 - value
+                        orig_value = value
+                        value += self.registers['A'] + self.flags['C']
+                        self.registers['A'] = value & 0b0000000011111111
+                        self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                        carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
+                        self.setFlagsManually(flags=['C'], value=carry_flag)
+                        overflow_flag = 0
+                        if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
+                            if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
+                                overflow_flag = 1
+                        self.setFlagsManually(flags=['V'], value=overflow_flag)
+                    elif self.flags['D'] == 1:
+                        value = value ^ 0xFF
+                        c = (self.registers['A'] & 0x0f) + (value & 0x0f) + (self.flags['C'])
+                        if (c < 0x10):
+                            c = (c - 0x06) & 0x0f
+                        c += (self.registers['A'] & 0xf0) + (value & 0xf0)
+                        v = (c >> 1) ^ c
+                        if (c < 0x100):
+                            c = (c + 0xa0) & 0xff
+                        self.registers['A'] = c & 0xFF
+                        self.setFlagsByRegister(register='A', flags=['N', 'Z'])
+                        self.setFlagsManually(flags='C', value=0)
+                        if c > 0xFF:
+                            self.setFlagsManually(flags='C', value=1)
+                        if (((self.registers['A'] ^ value) & 0x80) != 0):
+                            v = 0
+                        self.setFlagsManually(flags='V', value=1 if v > 0 else 0)
 
                 elif self.INS == 'SBC_IM':
                     orig_A_register_value = self.registers['A']
                     value = self.readMemory()
-                    value = 0b11111111 - value
-                    orig_value = value
-                    value += self.registers['A'] + self.flags['C']
-                    self.registers['A'] = value & 0b0000000011111111
-                    self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-                    carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
-                    self.setFlagsManually(flags=['C'], value=carry_flag)
-                    overflow_flag = 0
-                    if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
-                        if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
-                            overflow_flag = 1
-                    self.setFlagsManually(flags=['V'], value=overflow_flag)
+                    if self.flags['D'] == 0:
+                        value = 0b11111111 - value
+                        orig_value = value
+                        value += self.registers['A'] + self.flags['C']
+                        self.registers['A'] = value & 0b0000000011111111
+                        self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                        carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
+                        self.setFlagsManually(flags=['C'], value=carry_flag)
+                        overflow_flag = 0
+                        if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
+                            if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
+                                overflow_flag = 1
+                        self.setFlagsManually(flags=['V'], value=overflow_flag)
+                    elif self.flags['D'] == 1:
+                        value = value ^ 0xFF
+                        c = (self.registers['A'] & 0x0f) + (value & 0x0f) + (self.flags['C'])
+                        if (c < 0x10):
+                            c = (c - 0x06) & 0x0f
+                        c += (self.registers['A'] & 0xf0) + (value & 0xf0)
+                        v = (c >> 1) ^ c
+                        if (c < 0x100):
+                            c = (c + 0xa0) & 0xff
+                        self.registers['A'] = c & 0xFF
+                        self.setFlagsByRegister(register='A', flags=['N', 'Z'])
+                        self.setFlagsManually(flags='C', value=0)
+                        if c > 0xFF:
+                            self.setFlagsManually(flags='C', value=1)
+                        if (((self.registers['A'] ^ value) & 0x80) != 0):
+                            v = 0
+                        self.setFlagsManually(flags='V', value=1 if v > 0 else 0)
 
                 elif self.INS == 'ADC_IM':
                     orig_A_register_value = self.registers['A']
                     value = self.readMemory()
-                    orig_value = value
-                    value += self.registers['A'] + self.flags['C']
-                    self.registers['A'] = value & 0b0000000011111111
-                    self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-                    carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
-                    self.setFlagsManually(flags=['C'], value=carry_flag)
-                    overflow_flag = 0
-                    if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
-                        if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
-                            overflow_flag = 1
-                    self.setFlagsManually(flags=['V'], value=overflow_flag)
+                    if self.flags['D'] == 0:
+                        orig_value = value
+                        value += self.registers['A'] + self.flags['C']
+                        self.registers['A'] = value & 0b0000000011111111
+                        self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                        carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
+                        self.setFlagsManually(flags=['C'], value=carry_flag)
+                        overflow_flag = 0
+                        if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
+                            if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
+                                overflow_flag = 1
+                        self.setFlagsManually(flags=['V'], value=overflow_flag)
+                    elif self.flags['D'] == 1:
+                        c = (self.registers['A'] & 0x0f) + (value & 0x0f) + (self.flags['C'])
+                        if c > 0x09:
+                            c = (c - 0x0a) | 0x10
+                        c += (self.registers['A'] & 0xf0) + (value & 0xf0)
+                        v = (c >> 1) ^ c
+                        if (c > 0x99):
+                            c += 0x60
+                        self.registers['A'] = c & 0xFF
+                        self.setFlagsByRegister(register='A', flags=['N', 'Z'])
+                        self.setFlagsManually(flags='C', value=0)
+                        if c > 0xFF:
+                            self.setFlagsManually(flags='C', value=1)
+                        if (((self.registers['A'] ^ value) & 0x80) != 0):
+                            v = 0
+                        self.setFlagsManually(flags='V', value=1 if v > 0 else 0)
+                        
 
                 elif self.INS in ['ADC_ZP', 'ADC_ZP_X', 'ADC_ABS', 'ADC_ABS_X', 'ADC_ABS_Y', 'ADC_IND_X', 'ADC_IND_Y']:
                     orig_A_register_value = self.registers['A']
@@ -977,17 +1033,34 @@ class CPU6502:
                     address_mode = '_'.join(_ for _ in ins_set[1:])
                     address = self.determineAddress(mode=address_mode)
                     value = self.readMemory(address=address, increment_pc=False, bytes=1)
-                    orig_value = value
-                    value += self.registers['A'] + self.flags['C']
-                    self.registers['A'] = value & 0b0000000011111111
-                    self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-                    carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
-                    self.setFlagsManually(flags=['C'], value=carry_flag)
-                    overflow_flag = 0
-                    if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
-                        if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
-                            overflow_flag = 1
-                    self.setFlagsManually(flags=['V'], value=overflow_flag)
+                    if self.flags['D'] == 0:
+                        orig_value = value
+                        value += self.registers['A'] + self.flags['C']
+                        self.registers['A'] = value & 0b0000000011111111
+                        self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                        carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
+                        self.setFlagsManually(flags=['C'], value=carry_flag)
+                        overflow_flag = 0
+                        if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
+                            if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
+                                overflow_flag = 1
+                        self.setFlagsManually(flags=['V'], value=overflow_flag)
+                    elif self.flags['D'] == 1:
+                        c = (self.registers['A'] & 0x0f) + (value & 0x0f) + (self.flags['C'])
+                        if c > 0x09:
+                            c = (c - 0x0a) | 0x10
+                        c += (self.registers['A'] & 0xf0) + (value & 0xf0)
+                        v = (c >> 1) ^ c
+                        if (c > 0x99):
+                            c += 0x60
+                        self.registers['A'] = c & 0xFF
+                        self.setFlagsByRegister(register='A', flags=['N', 'Z'])
+                        self.setFlagsManually(flags='C', value=0)
+                        if c > 0xFF:
+                            self.setFlagsManually(flags='C', value=1)
+                        if (((self.registers['A'] ^ value) & 0x80) != 0):
+                            v = 0
+                        self.setFlagsManually(flags='V', value=1 if v > 0 else 0)
 
                 elif self.INS == 'JSR_ABS':
                     ins_set = self.INS.split('_')
@@ -1617,7 +1690,7 @@ if __name__ == '__main__':
     # print()
     # functional_test_program()
     # print()
-    runBenchmark()
+    # runBenchmark()
     # print()
     # hundred_doors()
     # print()
@@ -1631,7 +1704,7 @@ if __name__ == '__main__':
     print()
     # blackjack()
     print()
-    # lunar_lander()
+    lunar_lander()
     print()
     # hammurabi()
     print()
