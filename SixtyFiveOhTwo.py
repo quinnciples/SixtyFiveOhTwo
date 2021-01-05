@@ -111,7 +111,7 @@ class CPU6502:
 
     version = '0.90'
     MAX_MEMORY_SIZE = 1024 * 64  # 64k memory size
-    OPCODES_WRITE_TO_MEMORY = ['STA', 'STX', 'STY', 'ROL', 'ROR', 'ASL', 'LSR', 'INC', 'DEC']
+    OPCODES_WRITE_TO_MEMORY = ('STA', 'STX', 'STY', 'ROL', 'ROR', 'ASL', 'LSR', 'INC', 'DEC')
     OPCODES = {0x29: 'AND_IM',
                0x25: 'AND_ZP',
                0x35: 'AND_ZP_X',
@@ -640,7 +640,7 @@ class CPU6502:
             bne_count = 0
             while self.INS is not None and self.cycles <= self.cycle_limit and bne_count <= 20:
 
-                self.extraFunctions()
+                # self.extraFunctions()
 
                 # Remove this when done testing
                 """
@@ -1151,10 +1151,11 @@ class CPU6502:
             print(line)
 
     def benchmarkInfo(self) -> str:
-        return f'Cycles: {self.cycles - 1:,} :: Elapsed time: {self.execution_time} :: Cycles/sec: {(self.cycles - 1) / self.execution_time.total_seconds():0,.2f}'
+        return f'Cycles: {self.cycles - 1:,} :: Elapsed time: {self.execution_time} :: Cycles/sec: {(self.cycles - 1) / (.0001 + self.execution_time.total_seconds()):0,.2f}'
 
     def printBenchmarkInfo(self):
-        print(self.benchmarkInfo())
+        # print(self.benchmarkInfo())
+        pass
 
     def loadProgram(self, instructions=[], memoryAddress=0x0000, mainProgram=True):
         if mainProgram:
@@ -1611,7 +1612,7 @@ if __name__ == '__main__':
     # print()
     # functional_test_program()
     # print()
-    # runBenchmark()
+    runBenchmark()
     # print()
     # hundred_doors()
     # print()
@@ -1638,4 +1639,4 @@ if __name__ == '__main__':
     # applesoft_basic()
     print()
     # apple_30th()
-    startrek()
+    # startrek()

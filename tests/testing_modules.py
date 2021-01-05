@@ -18,7 +18,7 @@ class bcolors:
 def generateProgram(instruction: str, registers: dict, immediate_value: int, zp_address: int, ind_zp_address: int, sixteen_bit_address: int, CYCLE_COUNTS: dict) -> list:
     program = {}
 
-    for opcode, command in CPU6502.opcodes.items():
+    for opcode, command in CPU6502.OPCODES.items():
         ins_set = command.split('_')
         instruct = ins_set[0]
         if instruct != instruction:
