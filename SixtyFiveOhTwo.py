@@ -1,14 +1,45 @@
 # 6502 machine code processor
 import datetime
+import time
 # from bcolors import bcolors as bcolors
 import msvcrt
 import traceback
+
+global tabcount
+tabcount = 0
+
+monitoring = False
+if monitoring:
+    global log
+    log = open('time.txt', 'w')
+
+
+def timetrack(func):
+    if not monitoring:
+        return func
+
+    def timing(*args, **kwargs):
+        global tabcount
+        start_time = time.time()
+        func_name = func.__name__
+        spacer = ''.join(['\t' * i for i in range(tabcount)])
+        arg = [f'{k}: {v}' for k, v in kwargs.items()]
+        log.write(' '.join([spacer, func_name, 'STARTED', *arg, '\n']))
+        tabcount += 1
+        result = func(*args, **kwargs)
+        tabcount -= 1
+        end_time = time.time()
+        ex_time = str(end_time - start_time)
+        spacer = ''.join(['\t' * i for i in range(tabcount)])
+        log.write(' '.join([spacer, func_name, 'FINISHED', ex_time, '\n']))
+        return result
+    return timing
 
 
 class CPU6502:
 
     """
-
+    Notes:
     0000-00FF  - RAM for Zero-Page & Indirect-Memory Addressing
     0100-01FF  - RAM for Stack Space & Absolute Addressing
     0200-3FFF  - RAM for programmer use
@@ -21,7 +52,12 @@ class CPU6502:
     FFFE       - Vector address for IRQ & BRK (low byte)
     FFFF       - Vector address for IRQ & BRK  (high byte)
     """
-
+    VECTORS = {
+        'NMI': 0xFFFA,
+        'RESET': 0xFFFC,
+        'IRQ': 0xFFFE,
+        'BRK': 0xFFFE
+    }
     """
     ADC - Done
     AND - Done
@@ -109,189 +145,190 @@ class CPU6502:
 
     """
 
-    version = '0.90'
+    VERSION = '0.95'
     MAX_MEMORY_SIZE = 1024 * 64  # 64k memory size
     OPCODES_WRITE_TO_MEMORY = ('STA', 'STX', 'STY', 'ROL', 'ROR', 'ASL', 'LSR', 'INC', 'DEC')
-    OPCODES = {0x29: 'AND_IM',
-               0x25: 'AND_ZP',
-               0x35: 'AND_ZP_X',
-               0x2D: 'AND_ABS',
-               0x3D: 'AND_ABS_X',
-               0x39: 'AND_ABS_Y',
-               0x21: 'AND_IND_X',
-               0x31: 'AND_IND_Y',
+    OPCODES = {
+        0x29: 'AND_IM',
+        0x25: 'AND_ZP',
+        0x35: 'AND_ZP_X',
+        0x2D: 'AND_ABS',
+        0x3D: 'AND_ABS_X',
+        0x39: 'AND_ABS_Y',
+        0x21: 'AND_IND_X',
+        0x31: 'AND_IND_Y',
 
-               0x0A: 'ASL_ACC',
-               0x06: 'ASL_ZP',
-               0x16: 'ASL_ZP_X',
-               0x0E: 'ASL_ABS',
-               0x1E: 'ASL_ABS_X',
+        0x0A: 'ASL_ACC',
+        0x06: 'ASL_ZP',
+        0x16: 'ASL_ZP_X',
+        0x0E: 'ASL_ABS',
+        0x1E: 'ASL_ABS_X',
 
-               0x24: 'BIT_ZP',
-               0x2C: 'BIT_ABS',
+        0x24: 'BIT_ZP',
+        0x2C: 'BIT_ABS',
 
-               0x90: 'BCC',
-               0xB0: 'BCS',
-               0xF0: 'BEQ',
-               0xD0: 'BNE',
-               0x50: 'BVC',
-               0x70: 'BVS',
-               0x10: 'BPL',
-               0x30: 'BMI',
+        0x90: 'BCC',
+        0xB0: 'BCS',
+        0xF0: 'BEQ',
+        0xD0: 'BNE',
+        0x50: 'BVC',
+        0x70: 'BVS',
+        0x10: 'BPL',
+        0x30: 'BMI',
 
-               0xC9: 'CMP_IM',
-               0xC5: 'CMP_ZP',
-               0xD5: 'CMP_ZP_X',
-               0xCD: 'CMP_ABS',
-               0xDD: 'CMP_ABS_X',
-               0xD9: 'CMP_ABS_Y',
-               0xC1: 'CMP_IND_X',
-               0xD1: 'CMP_IND_Y',
+        0xC9: 'CMP_IM',
+        0xC5: 'CMP_ZP',
+        0xD5: 'CMP_ZP_X',
+        0xCD: 'CMP_ABS',
+        0xDD: 'CMP_ABS_X',
+        0xD9: 'CMP_ABS_Y',
+        0xC1: 'CMP_IND_X',
+        0xD1: 'CMP_IND_Y',
 
-               0xE0: 'CPX_IM',
-               0xE4: 'CPX_ZP',
-               0xEC: 'CPX_ABS',
+        0xE0: 'CPX_IM',
+        0xE4: 'CPX_ZP',
+        0xEC: 'CPX_ABS',
 
-               0xC0: 'CPY_IM',
-               0xC4: 'CPY_ZP',
-               0xCC: 'CPY_ABS',
+        0xC0: 'CPY_IM',
+        0xC4: 'CPY_ZP',
+        0xCC: 'CPY_ABS',
 
-               0xC6: 'DEC_ZP',
-               0xD6: 'DEC_ZP_X',
-               0xCE: 'DEC_ABS',
-               0xDE: 'DEC_ABS_X',
-               0xCA: 'DEX_IMP',
-               0x88: 'DEY_IMP',
+        0xC6: 'DEC_ZP',
+        0xD6: 'DEC_ZP_X',
+        0xCE: 'DEC_ABS',
+        0xDE: 'DEC_ABS_X',
+        0xCA: 'DEX_IMP',
+        0x88: 'DEY_IMP',
 
-               0x49: 'EOR_IM',
-               0x45: 'EOR_ZP',
-               0x55: 'EOR_ZP_X',
-               0x4D: 'EOR_ABS',
-               0x5D: 'EOR_ABS_X',
-               0x59: 'EOR_ABS_Y',
-               0x41: 'EOR_IND_X',
-               0x51: 'EOR_IND_Y',
+        0x49: 'EOR_IM',
+        0x45: 'EOR_ZP',
+        0x55: 'EOR_ZP_X',
+        0x4D: 'EOR_ABS',
+        0x5D: 'EOR_ABS_X',
+        0x59: 'EOR_ABS_Y',
+        0x41: 'EOR_IND_X',
+        0x51: 'EOR_IND_Y',
 
-               0x4A: 'LSR_ACC',
-               0x46: 'LSR_ZP',
-               0x56: 'LSR_ZP_X',
-               0x4E: 'LSR_ABS',
-               0x5E: 'LSR_ABS_X',
+        0x4A: 'LSR_ACC',
+        0x46: 'LSR_ZP',
+        0x56: 'LSR_ZP_X',
+        0x4E: 'LSR_ABS',
+        0x5E: 'LSR_ABS_X',
 
-               0xA9: 'LDA_IM',
-               0xA5: 'LDA_ZP',
-               0xB5: 'LDA_ZP_X',
-               0xAD: 'LDA_ABS',
-               0xBD: 'LDA_ABS_X',
-               0xB9: 'LDA_ABS_Y',
-               0xA1: 'LDA_IND_X',
-               0xB1: 'LDA_IND_Y',
+        0xA9: 'LDA_IM',
+        0xA5: 'LDA_ZP',
+        0xB5: 'LDA_ZP_X',
+        0xAD: 'LDA_ABS',
+        0xBD: 'LDA_ABS_X',
+        0xB9: 'LDA_ABS_Y',
+        0xA1: 'LDA_IND_X',
+        0xB1: 'LDA_IND_Y',
 
-               0xA2: 'LDX_IM',
-               0xA6: 'LDX_ZP',
-               0xB6: 'LDX_ZP_Y',
-               0xAE: 'LDX_ABS',
-               0xBE: 'LDX_ABS_Y',
+        0xA2: 'LDX_IM',
+        0xA6: 'LDX_ZP',
+        0xB6: 'LDX_ZP_Y',
+        0xAE: 'LDX_ABS',
+        0xBE: 'LDX_ABS_Y',
 
-               0xA0: 'LDY_IM',
-               0xA4: 'LDY_ZP',
-               0xB4: 'LDY_ZP_X',
-               0xAC: 'LDY_ABS',
-               0xBC: 'LDY_ABS_X',
+        0xA0: 'LDY_IM',
+        0xA4: 'LDY_ZP',
+        0xB4: 'LDY_ZP_X',
+        0xAC: 'LDY_ABS',
+        0xBC: 'LDY_ABS_X',
 
-               0x48: 'PHA_IMP',
-               0x68: 'PLA_IMP',
+        0x48: 'PHA_IMP',
+        0x68: 'PLA_IMP',
 
-               0x08: 'PHP_IMP',
-               0x28: 'PLP_IMP',
+        0x08: 'PHP_IMP',
+        0x28: 'PLP_IMP',
 
-               0x2A: 'ROL_ACC',
-               0X26: 'ROL_ZP',
-               0X36: 'ROL_ZP_X',
-               0X2E: 'ROL_ABS',
-               0X3E: 'ROL_ABS_X',
+        0x2A: 'ROL_ACC',
+        0X26: 'ROL_ZP',
+        0X36: 'ROL_ZP_X',
+        0X2E: 'ROL_ABS',
+        0X3E: 'ROL_ABS_X',
 
-               0x6A: 'ROR_ACC',
-               0X66: 'ROR_ZP',
-               0X76: 'ROR_ZP_X',
-               0X6E: 'ROR_ABS',
-               0X7E: 'ROR_ABS_X',
+        0x6A: 'ROR_ACC',
+        0X66: 'ROR_ZP',
+        0X76: 'ROR_ZP_X',
+        0X6E: 'ROR_ABS',
+        0X7E: 'ROR_ABS_X',
 
-               0xE9: 'SBC_IM',
-               0xE5: 'SBC_ZP',
-               0xF5: 'SBC_ZP_X',
-               0xED: 'SBC_ABS',
-               0xFD: 'SBC_ABS_X',
-               0xF9: 'SBC_ABS_Y',
-               0xE1: 'SBC_IND_X',
-               0xF1: 'SBC_IND_Y',
+        0xE9: 'SBC_IM',
+        0xE5: 'SBC_ZP',
+        0xF5: 'SBC_ZP_X',
+        0xED: 'SBC_ABS',
+        0xFD: 'SBC_ABS_X',
+        0xF9: 'SBC_ABS_Y',
+        0xE1: 'SBC_IND_X',
+        0xF1: 'SBC_IND_Y',
 
-               0x85: 'STA_ZP',
-               0x95: 'STA_ZP_X',
-               0x8D: 'STA_ABS',
-               0x9D: 'STA_ABS_X',
-               0x99: 'STA_ABS_Y',
-               0x81: 'STA_IND_X',
-               0x91: 'STA_IND_Y',
+        0x85: 'STA_ZP',
+        0x95: 'STA_ZP_X',
+        0x8D: 'STA_ABS',
+        0x9D: 'STA_ABS_X',
+        0x99: 'STA_ABS_Y',
+        0x81: 'STA_IND_X',
+        0x91: 'STA_IND_Y',
 
-               0x86: 'STX_ZP',
-               0x96: 'STX_ZP_Y',
-               0x8E: 'STX_ABS',
+        0x86: 'STX_ZP',
+        0x96: 'STX_ZP_Y',
+        0x8E: 'STX_ABS',
 
-               0x84: 'STY_ZP',
-               0x94: 'STY_ZP_X',
-               0x8c: 'STY_ABS',
+        0x84: 'STY_ZP',
+        0x94: 'STY_ZP_X',
+        0x8c: 'STY_ABS',
 
-               0xAA: 'TAX_IMP',
-               0x8A: 'TXA_IMP',
-               0xA8: 'TAY_IMP',
-               0x98: 'TYA_IMP',
-               0x9A: 'TXS_IMP',
-               0xBA: 'TSX_IMP',
+        0xAA: 'TAX_IMP',
+        0x8A: 'TXA_IMP',
+        0xA8: 'TAY_IMP',
+        0x98: 'TYA_IMP',
+        0x9A: 'TXS_IMP',
+        0xBA: 'TSX_IMP',
 
-               0x4C: 'JMP_ABS',
-               0x6C: 'JMP_IND',
-               0x20: 'JSR_ABS',
-               0x60: 'RTS_IMP',
+        0x4C: 'JMP_ABS',
+        0x6C: 'JMP_IND',
+        0x20: 'JSR_ABS',
+        0x60: 'RTS_IMP',
 
-               0x40: 'RTI',
+        0x40: 'RTI',
 
-               0x38: 'SEC_IMP',
-               0xF8: 'SED_IMP',
-               0x78: 'SEI_IMP',
+        0x38: 'SEC_IMP',
+        0xF8: 'SED_IMP',
+        0x78: 'SEI_IMP',
 
-               0x18: 'CLC_IMP',
-               0x58: 'CLI_IMP',
-               0xB8: 'CLV_IMP',
-               0xD8: 'CLD_IMP',
+        0x18: 'CLC_IMP',
+        0x58: 'CLI_IMP',
+        0xB8: 'CLV_IMP',
+        0xD8: 'CLD_IMP',
 
-               0xEA: 'NOP',
+        0xEA: 'NOP',
 
-               0xE6: 'INC_ZP',
-               0xF6: 'INC_ZP_X',
-               0xEE: 'INC_ABS',
-               0xFE: 'INC_ABS_X',
-               0xC8: 'INY_IMP',
-               0xE8: 'INX_IMP',
+        0xE6: 'INC_ZP',
+        0xF6: 'INC_ZP_X',
+        0xEE: 'INC_ABS',
+        0xFE: 'INC_ABS_X',
+        0xC8: 'INY_IMP',
+        0xE8: 'INX_IMP',
 
-               0x69: 'ADC_IM',
-               0x65: 'ADC_ZP',
-               0x75: 'ADC_ZP_X',
-               0x6D: 'ADC_ABS',
-               0x7D: 'ADC_ABS_X',
-               0x79: 'ADC_ABS_Y',
-               0x61: 'ADC_IND_X',
-               0x71: 'ADC_IND_Y',
+        0x69: 'ADC_IM',
+        0x65: 'ADC_ZP',
+        0x75: 'ADC_ZP_X',
+        0x6D: 'ADC_ABS',
+        0x7D: 'ADC_ABS_X',
+        0x79: 'ADC_ABS_Y',
+        0x61: 'ADC_IND_X',
+        0x71: 'ADC_IND_Y',
 
-               0x09: 'ORA_IM',
-               0x05: 'ORA_ZP',
-               0x15: 'ORA_ZP_X',
-               0x0D: 'ORA_ABS',
-               0x1D: 'ORA_ABS_X',
-               0x19: 'ORA_ABS_Y',
-               0x01: 'ORA_IND_X',
-               0x11: 'ORA_IND_Y',
-               }
+        0x09: 'ORA_IM',
+        0x05: 'ORA_ZP',
+        0x15: 'ORA_ZP_X',
+        0x0D: 'ORA_ABS',
+        0x1D: 'ORA_ABS_X',
+        0x19: 'ORA_ABS_Y',
+        0x01: 'ORA_IND_X',
+        0x11: 'ORA_IND_Y',
+    }
 
     def __init__(self, cycle_limit=10_000, logging=False, printActivity=False, logFile=None, enableBRK=False):
 
@@ -300,6 +337,7 @@ class CPU6502:
         self.cycle_limit = cycle_limit
 
         self.INS = None
+
         self.enableBRK = enableBRK
         if self.enableBRK:
             CPU6502.OPCODES[0x00] = 'BRK'
@@ -308,9 +346,9 @@ class CPU6502:
         if logFile:
             self.logFile = open(logFile, 'w')
         else:
-            self.logFile = logFile
-        self.action = []
+            self.logFile = None
 
+        self.action = []
         self.printActivity = printActivity
 
         self.registers = {
@@ -345,7 +383,7 @@ class CPU6502:
 
     def initializeMemory(self):
         self.memory = [0x00] * CPU6502.MAX_MEMORY_SIZE
-        self.value = 0xFA
+        self.value = 0x0D
 
     def memoryDump(self, startingAddress=None, endingAddress=None, display_format='Hex'):
         # print('\nMemory Dump:\n')
@@ -364,26 +402,28 @@ class CPU6502:
             print(line)
             startingAddress += 8
 
+    @timetrack
     def extraFunctions(self):
         # Printing character to the screen
         if (self.memory[self.hooks['DSP']] & 0b10000000) > 0:
             self.memory[self.hooks['DSP']] = self.memory[self.hooks['DSP']] & 0b01111111
             self.value = self.memory[self.hooks['DSP']]
-            if self.value != 0x0D:
-                if self.value >= 0x20 or self.value == 0x08:
-                    # print(chr(0x20 + ((self.value + 0x20) % 0x40)), end='', flush=True)
-                    # print(f'{(self.value + 0x20):02X}')
-                    # print(chr((self.value + 32)), end='', flush=True)
-                    print(chr((self.value)), end='', flush=True)
-                    self.chars += 1
-            else:
+            # if self.value != 0x0D:
+            if self.value >= 0x20 or self.value == 0x08:
+                # print(chr(0x20 + ((self.value + 0x20) % 0x40)), end='', flush=True)
+                # print(f'{(self.value + 0x20):02X}')
+                # print(chr((self.value + 32)), end='', flush=True)
+                print(chr((self.value)), end='', flush=True)
+                self.chars += 1
+            # else:
+            if self.value == 0x0D or self.chars >= 40:
                 # print('\r', end='', flush=True)
                 print('', flush=True)
                 self.chars = 0
 
-            if self.chars >= 40:
-                print('', flush=True)
-                self.chars = 0
+            # if self.chars >= 40:
+                # print('', flush=True)
+                # self.chars = 0
 
         # Handling keyboard input
         if msvcrt.kbhit():
@@ -392,6 +432,7 @@ class CPU6502:
             self.memory[self.hooks['KBD']] = key_ascii | 0b10000000
             self.memory[self.hooks['KBDCR']] = self.memory[self.hooks['KBDCR']] | 0b10000000
 
+    @timetrack
     def cycleInc(self):
         if self.logging:
             self.logState()
@@ -404,25 +445,30 @@ class CPU6502:
         if self.logging:
             self.action.append(action)
 
+    @timetrack
     def programCounterInc(self):
         self.program_counter += 1
         if self.program_counter >= CPU6502.MAX_MEMORY_SIZE:
             self.program_counter = 0
 
+    @timetrack
     def stackPointerDec(self):
         self.stack_pointer -= 1
         if self.stack_pointer < 0x00:
             self.stack_pointer = 0xFF
 
+    @timetrack
     def stackPointerInc(self):
         self.cycleInc()
         self.stack_pointer += 1
         if self.stack_pointer > 0xFF:
             self.stack_pointer = 0x00
 
+    @timetrack
     def getStackPointerAddress(self):
         return self.stack_pointer | 0x0100
 
+    @timetrack
     def savePCAtStackPointer(self):
         if self.INS == 'BRK':
             hi_byte = ((self.program_counter) & 0b1111111100000000) >> 8
@@ -435,6 +481,7 @@ class CPU6502:
         self.writeMemory(data=lo_byte, address=self.getStackPointerAddress(), bytes=1)
         self.stackPointerDec()
 
+    @timetrack
     def saveByteAtStackPointer(self, data=None):
         # Enforce 1 byte size
         assert(0x00 <= data <= 0xFF)
@@ -442,6 +489,7 @@ class CPU6502:
         self.writeMemory(data=data, address=self.getStackPointerAddress(), bytes=1)
         self.stackPointerDec()
 
+    @timetrack
     def loadPCFromStackPointer(self):
         self.stackPointerInc()
         lo_byte = self.readMemory(increment_pc=False, address=self.getStackPointerAddress(), bytes=1)
@@ -450,6 +498,7 @@ class CPU6502:
         self.program_counter = lo_byte
         self.program_counter += (hi_byte << 8)
 
+    @timetrack
     def loadByteFromStackPointer(self):
         self.stackPointerInc()
         byte = self.readMemory(increment_pc=False, address=self.getStackPointerAddress(), bytes=1)
@@ -468,7 +517,10 @@ class CPU6502:
         self.flags['U'] = 1
         # self.flags['B'] = 1
 
+    @timetrack
     def readMemory(self, increment_pc=True, address=None, bytes=1) -> int:
+        if address:
+            assert(0x0000 <= address <= 0xFFFF)
         data = 0
         for byte in range(bytes):
             self.cycleInc()
@@ -490,7 +542,11 @@ class CPU6502:
 
         return data
 
+    @timetrack
     def writeMemory(self, data, address, bytes=1):
+        if address:
+            assert(0x0000 <= address <= 0xFFFF)
+
         for byte in range(bytes):
             self.cycleInc()
             self.memory[address + byte] = data
@@ -501,6 +557,7 @@ class CPU6502:
             if (address + byte) == self.hooks['DSP']:
                 self.memory[self.hooks['DSP']] = self.memory[self.hooks['DSP']] | 0b10000000
 
+    @timetrack
     def setFlagsByRegister(self, register=None, flags=[]):
         if 'Z' in flags:
             if self.registers[register] == 0:
@@ -515,6 +572,7 @@ class CPU6502:
             if self.logging:
                 self.logAction(action=f'Setting N flag based on register [{register}] : value [{self.registers[register]:>08b}]')
 
+    @timetrack
     def setFlagsByValue(self, value=None, flags=[]):
         if value is None or len(flags) == 0:
             return
@@ -535,6 +593,7 @@ class CPU6502:
             if self.logging:
                 self.logAction(action=f'Setting N flag based on value [{value:>08b}]')
 
+    @timetrack
     def setFlagsManually(self, flags=[], value=None):
         if value is None or value < 0 or value > 1:
             return
@@ -543,6 +602,7 @@ class CPU6502:
             if self.logging:
                 self.logAction(action=f'Setting {flag} flag manually to [{value}]')
 
+    @timetrack
     def determineAddress(self, mode):
         address = 0
         if mode == 'ZP':
@@ -598,6 +658,7 @@ class CPU6502:
 
         return address
 
+    @timetrack
     def getProcessorStatus(self) -> int:
         order = ['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N']
         state = 0
@@ -605,6 +666,7 @@ class CPU6502:
             state += (self.flags[flag] << shift)
         return state
 
+    @timetrack
     def getProcessorStatusString(self) -> str:
         order = ['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N']
         flag_string = ''
@@ -614,6 +676,7 @@ class CPU6502:
             flag_string += flag.upper() if self.flags.get(flag, 1) == 1 else flag.lower()
         return flag_string
 
+    @timetrack
     def setProcessorStatus(self, flags: int):
         order = ['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N']
         for shift, flag in enumerate(order):
@@ -629,6 +692,7 @@ class CPU6502:
         self.cycleInc()
         # self.readMemory()
 
+    @timetrack
     def execute(self):
         try:
             self.start_time = datetime.datetime.now()
@@ -640,15 +704,14 @@ class CPU6502:
             bne_count = 0
             while self.INS is not None and self.cycles <= self.cycle_limit and bne_count <= 20:
 
-                # self.extraFunctions()
+                self.extraFunctions()
 
                 # Remove this when done testing
-                """
+
                 if self.INS == 'BNE' or self.program_counter in [0x336D, 0x336E, 0x336F]:
                     bne_count += 1
                 else:
                     bne_count = 0
-                """
 
                 if self.INS == 'BRK' and self.enableBRK:
                     # Reference wiki.nesdev.com/w/index.php/Status_flags
@@ -754,8 +817,8 @@ class CPU6502:
                         self.writeMemory(data=value, address=address, bytes=1)
 
                 elif self.INS in ['CMP_IM', 'CMP_ZP', 'CMP_ZP_X', 'CMP_ABS', 'CMP_ABS_X', 'CMP_ABS_Y', 'CMP_IND_X', 'CMP_IND_Y',
-                                'CPX_IM', 'CPX_ZP', 'CPX_ABS',
-                                'CPY_IM', 'CPY_ZP', 'CPY_ABS']:
+                                  'CPX_IM', 'CPX_ZP', 'CPX_ABS',
+                                  'CPY_IM', 'CPY_ZP', 'CPY_ABS']:
                     target = 'A' if self.INS[2] not in ['X', 'Y'] else self.INS[2]
                     if self.INS in ['CMP_IM', 'CPX_IM', 'CPY_IM']:
                         value = self.readMemory()
@@ -779,20 +842,21 @@ class CPU6502:
                     self.setFlagsByValue(value=result, flags=['N'])
 
                 elif self.INS in ['BEQ', 'BNE',
-                                'BCC', 'BCS',
-                                'BMI', 'BPL',
-                                'BVC', 'BVS']:
+                                  'BCC', 'BCS',
+                                  'BMI', 'BPL',
+                                  'BVC', 'BVS']:
 
                     # Instruction: [Flag, Value to Test]
-                    comparisons = {'BEQ': ['Z', 1],
-                                'BNE': ['Z', 0],
-                                'BCC': ['C', 0],
-                                'BCS': ['C', 1],
-                                'BMI': ['N', 1],
-                                'BPL': ['N', 0],
-                                'BVS': ['V', 1],
-                                'BVC': ['V', 0],
-                                }
+                    comparisons = {
+                        'BEQ': ['Z', 1],
+                        'BNE': ['Z', 0],
+                        'BCC': ['C', 0],
+                        'BCS': ['C', 1],
+                        'BMI': ['N', 1],
+                        'BPL': ['N', 0],
+                        'BVS': ['V', 1],
+                        'BVC': ['V', 0],
+                    }
                     offset = self.readMemory()
                     flag = comparisons[self.INS][0]
                     test_value = comparisons[self.INS][1]
@@ -922,49 +986,103 @@ class CPU6502:
                     address_mode = '_'.join(_ for _ in ins_set[1:])
                     address = self.determineAddress(mode=address_mode)
                     value = self.readMemory(address=address, increment_pc=False, bytes=1)
-                    value = 0b11111111 - value
-                    orig_value = value
-                    value += self.registers['A'] + self.flags['C']
-                    self.registers['A'] = value & 0b0000000011111111
-                    self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-                    carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
-                    self.setFlagsManually(flags=['C'], value=carry_flag)
-                    overflow_flag = 0
-                    if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
-                        if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
-                            overflow_flag = 1
-                    self.setFlagsManually(flags=['V'], value=overflow_flag)
+
+                    if self.flags['D'] == 0:
+                        value = 0b11111111 - value
+                        orig_value = value
+                        value += self.registers['A'] + self.flags['C']
+                        self.registers['A'] = value & 0b0000000011111111
+                        self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                        carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
+                        self.setFlagsManually(flags=['C'], value=carry_flag)
+                        overflow_flag = 0
+                        if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
+                            if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
+                                overflow_flag = 1
+                        self.setFlagsManually(flags=['V'], value=overflow_flag)
+                    elif self.flags['D'] == 1:
+                        value = value ^ 0xFF
+                        c = (self.registers['A'] & 0x0f) + (value & 0x0f) + (self.flags['C'])
+                        if (c < 0x10):
+                            c = (c - 0x06) & 0x0f
+                        c += (self.registers['A'] & 0xf0) + (value & 0xf0)
+                        v = (c >> 1) ^ c
+                        if (c < 0x100):
+                            c = (c + 0xa0) & 0xff
+                        self.registers['A'] = c & 0xFF
+                        self.setFlagsByRegister(register='A', flags=['N', 'Z'])
+                        self.setFlagsManually(flags='C', value=0)
+                        if c > 0xFF:
+                            self.setFlagsManually(flags='C', value=1)
+                        if (((self.registers['A'] ^ value) & 0x80) != 0):
+                            v = 0
+                        self.setFlagsManually(flags='V', value=1 if v > 0 else 0)
 
                 elif self.INS == 'SBC_IM':
                     orig_A_register_value = self.registers['A']
                     value = self.readMemory()
-                    value = 0b11111111 - value
-                    orig_value = value
-                    value += self.registers['A'] + self.flags['C']
-                    self.registers['A'] = value & 0b0000000011111111
-                    self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-                    carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
-                    self.setFlagsManually(flags=['C'], value=carry_flag)
-                    overflow_flag = 0
-                    if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
-                        if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
-                            overflow_flag = 1
-                    self.setFlagsManually(flags=['V'], value=overflow_flag)
+                    if self.flags['D'] == 0:
+                        value = 0b11111111 - value
+                        orig_value = value
+                        value += self.registers['A'] + self.flags['C']
+                        self.registers['A'] = value & 0b0000000011111111
+                        self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                        carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
+                        self.setFlagsManually(flags=['C'], value=carry_flag)
+                        overflow_flag = 0
+                        if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
+                            if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
+                                overflow_flag = 1
+                        self.setFlagsManually(flags=['V'], value=overflow_flag)
+                    elif self.flags['D'] == 1:
+                        value = value ^ 0xFF
+                        c = (self.registers['A'] & 0x0f) + (value & 0x0f) + (self.flags['C'])
+                        if (c < 0x10):
+                            c = (c - 0x06) & 0x0f
+                        c += (self.registers['A'] & 0xf0) + (value & 0xf0)
+                        v = (c >> 1) ^ c
+                        if (c < 0x100):
+                            c = (c + 0xa0) & 0xff
+                        self.registers['A'] = c & 0xFF
+                        self.setFlagsByRegister(register='A', flags=['N', 'Z'])
+                        self.setFlagsManually(flags='C', value=0)
+                        if c > 0xFF:
+                            self.setFlagsManually(flags='C', value=1)
+                        if (((self.registers['A'] ^ value) & 0x80) != 0):
+                            v = 0
+                        self.setFlagsManually(flags='V', value=1 if v > 0 else 0)
 
                 elif self.INS == 'ADC_IM':
                     orig_A_register_value = self.registers['A']
                     value = self.readMemory()
-                    orig_value = value
-                    value += self.registers['A'] + self.flags['C']
-                    self.registers['A'] = value & 0b0000000011111111
-                    self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-                    carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
-                    self.setFlagsManually(flags=['C'], value=carry_flag)
-                    overflow_flag = 0
-                    if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
-                        if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
-                            overflow_flag = 1
-                    self.setFlagsManually(flags=['V'], value=overflow_flag)
+                    if self.flags['D'] == 0:
+                        orig_value = value
+                        value += self.registers['A'] + self.flags['C']
+                        self.registers['A'] = value & 0b0000000011111111
+                        self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                        carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
+                        self.setFlagsManually(flags=['C'], value=carry_flag)
+                        overflow_flag = 0
+                        if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
+                            if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
+                                overflow_flag = 1
+                        self.setFlagsManually(flags=['V'], value=overflow_flag)
+                    elif self.flags['D'] == 1:
+                        c = (self.registers['A'] & 0x0f) + (value & 0x0f) + (self.flags['C'])
+                        if c > 0x09:
+                            c = (c - 0x0a) | 0x10
+                        c += (self.registers['A'] & 0xf0) + (value & 0xf0)
+                        v = (c >> 1) ^ c
+                        if (c > 0x99):
+                            c += 0x60
+                        self.registers['A'] = c & 0xFF
+                        self.setFlagsByRegister(register='A', flags=['N', 'Z'])
+                        self.setFlagsManually(flags='C', value=0)
+                        if c > 0xFF:
+                            self.setFlagsManually(flags='C', value=1)
+                        if (((self.registers['A'] ^ value) & 0x80) != 0):
+                            v = 0
+                        self.setFlagsManually(flags='V', value=1 if v > 0 else 0)
 
                 elif self.INS in ['ADC_ZP', 'ADC_ZP_X', 'ADC_ABS', 'ADC_ABS_X', 'ADC_ABS_Y', 'ADC_IND_X', 'ADC_IND_Y']:
                     orig_A_register_value = self.registers['A']
@@ -972,17 +1090,34 @@ class CPU6502:
                     address_mode = '_'.join(_ for _ in ins_set[1:])
                     address = self.determineAddress(mode=address_mode)
                     value = self.readMemory(address=address, increment_pc=False, bytes=1)
-                    orig_value = value
-                    value += self.registers['A'] + self.flags['C']
-                    self.registers['A'] = value & 0b0000000011111111
-                    self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-                    carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
-                    self.setFlagsManually(flags=['C'], value=carry_flag)
-                    overflow_flag = 0
-                    if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
-                        if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
-                            overflow_flag = 1
-                    self.setFlagsManually(flags=['V'], value=overflow_flag)
+                    if self.flags['D'] == 0:
+                        orig_value = value
+                        value += self.registers['A'] + self.flags['C']
+                        self.registers['A'] = value & 0b0000000011111111
+                        self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                        carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
+                        self.setFlagsManually(flags=['C'], value=carry_flag)
+                        overflow_flag = 0
+                        if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
+                            if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
+                                overflow_flag = 1
+                        self.setFlagsManually(flags=['V'], value=overflow_flag)
+                    elif self.flags['D'] == 1:
+                        c = (self.registers['A'] & 0x0f) + (value & 0x0f) + (self.flags['C'])
+                        if c > 0x09:
+                            c = (c - 0x0a) | 0x10
+                        c += (self.registers['A'] & 0xf0) + (value & 0xf0)
+                        v = (c >> 1) ^ c
+                        if (c > 0x99):
+                            c += 0x60
+                        self.registers['A'] = c & 0xFF
+                        self.setFlagsByRegister(register='A', flags=['N', 'Z'])
+                        self.setFlagsManually(flags='C', value=0)
+                        if c > 0xFF:
+                            self.setFlagsManually(flags='C', value=1)
+                        if (((self.registers['A'] ^ value) & 0x80) != 0):
+                            v = 0
+                        self.setFlagsManually(flags='V', value=1 if v > 0 else 0)
 
                 elif self.INS == 'JSR_ABS':
                     ins_set = self.INS.split('_')
@@ -1098,6 +1233,7 @@ class CPU6502:
                 if self.logFile:
                     self.logFile.close()
 
+    @timetrack
     def getLogString(self):
         combined = {**{'%-10s' % 'Cycle': '%-10s' % str(self.cycles),
                     '%-10s' % 'INS': '%-10s' % self.INS},
@@ -1112,12 +1248,14 @@ class CPU6502:
                     }
         return combined
 
+    @timetrack
     def getLogHeaderString(self):
         combined = self.getLogString()
         # headerString = bcolors.OKBLUE + '\t'.join(combined.keys()) + bcolors.ENDC
         headerString = '\t'.join(combined.keys())
         return headerString
 
+    @timetrack
     def printState(self):
         combined = self.getLogString()
         headerString = self.getLogHeaderString()
@@ -1126,6 +1264,7 @@ class CPU6502:
             print(headerString)
         print(valueString)
 
+    @timetrack
     def initializeLog(self):
         self.log = []
         headerString = self.getLogHeaderString()
@@ -1133,6 +1272,7 @@ class CPU6502:
         if self.logFile:
             self.logFile.write(headerString)
 
+    @timetrack
     def logState(self):
         if self.logging:
             combined = self.getLogString()
@@ -1151,12 +1291,13 @@ class CPU6502:
             print(line)
 
     def benchmarkInfo(self) -> str:
-        return f'Cycles: {self.cycles - 1:,} :: Elapsed time: {self.execution_time} :: Cycles/sec: {(self.cycles - 1) / (.0001 + self.execution_time.total_seconds()):0,.2f}'
+        return f'\nCycles: {self.cycles - 1:,} :: Elapsed time: {self.execution_time} :: Cycles/sec: {(self.cycles - 1) / (.0001 + self.execution_time.total_seconds()):0,.2f}'
 
     def printBenchmarkInfo(self):
-        # print(self.benchmarkInfo())
+        print(self.benchmarkInfo())
         pass
 
+    @timetrack
     def loadProgram(self, instructions=[], memoryAddress=0x0000, mainProgram=True):
         if mainProgram:
             self.memory[0xFFFE] = memoryAddress & 0b0000000011111111
@@ -1279,7 +1420,7 @@ def functional_test_program():
     # print(program[0x03F6: 0x040F])
     # print(len(program))
     cpu = None
-    cpu = CPU6502(cycle_limit=100_000_000, printActivity=False, enableBRK=True)
+    cpu = CPU6502(cycle_limit=200_000_000, printActivity=False, enableBRK=True, logging=True, logFile='log.txt')
     cpu.reset(program_counter=0x0400)
     cpu.loadProgram(instructions=program, memoryAddress=0x000A, mainProgram=False)
     cpu.program_counter = 0x0400
@@ -1391,7 +1532,7 @@ def apple_i_print_chars():
     char_address = programs.apple_1_print_characters.starting_address
 
     cpu = None
-    cpu = CPU6502(cycle_limit=20000, printActivity=False, enableBRK=False)
+    cpu = CPU6502(cycle_limit=10_000, printActivity=False, enableBRK=False, logging=True, logFile='log.txt')
     cpu.reset(program_counter=char_address)
     cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
     cpu.loadProgram(instructions=char_program, memoryAddress=char_address, mainProgram=False)
@@ -1612,7 +1753,7 @@ if __name__ == '__main__':
     # print()
     # functional_test_program()
     # print()
-    runBenchmark()
+    # runBenchmark()
     # print()
     # hundred_doors()
     # print()
@@ -1623,20 +1764,20 @@ if __name__ == '__main__':
     # apple_i_basic()
     # print()
     # apple_i_print_chars()
-    print()
-    # blackjack()
-    print()
+    # print()
+    blackjack()
+    # print()
     # lunar_lander()
-    print()
+    # print()
     # hammurabi()
-    print()
+    # print()
     # microchess()
-    print()
+    # print()
     # shut_the_box()
-    print()
+    # print()
     # codebreaker()
-    print()
+    # print()
     # applesoft_basic()
-    print()
+    # print()
     # apple_30th()
     # startrek()

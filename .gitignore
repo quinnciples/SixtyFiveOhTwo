@@ -3,4 +3,4 @@ __pycache__
 .pytest_cache
 settings.json
 log.txt
-
+time.txt
