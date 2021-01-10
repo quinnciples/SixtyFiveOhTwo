@@ -49,6 +49,24 @@ import programs.apple_1_basic
 basic_program = programs.apple_1_basic.program
 basic_address = programs.apple_1_basic.starting_address
 
+""" SAMPLE PROGRAM
+    5 P=500
+   10 P=P+1
+   15 IF P>510 THEN GOTO 200
+   50 M=P/2
+   51 C=1
+   52 C=C+1
+   53 IF C>M THEN GOTO 60
+   55 IF (P/C)*C=P THEN GOTO 100
+   58 GOTO 52
+   60 PRINT P;" IS PRIME"
+   70 GOTO 10
+   80 GOTO 200
+  100 PRINT P;" IS DIVISIBLE BY ";C
+  110 GOTO 10
+  200 END
+"""
+
 cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
 cpu.loadProgram(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
 cpu.program_counter = wozmon_address
@@ -66,3 +84,5 @@ except Exception as e:
 
 finally:
     cpu.printBenchmarkInfo()
+    import sys
+    sys.exit()
