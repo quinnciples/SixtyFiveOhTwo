@@ -5,6 +5,12 @@ http://www.willegal.net/appleii/apple1-software.htm
 https://www.applefritter.com/replica/appendixa
 """
 
+instructions = """
+C100R
+E000.EFFFR
+E000R
+"""
+
 asm_source = """
 
 """
