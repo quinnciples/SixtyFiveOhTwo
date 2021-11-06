@@ -54,7 +54,7 @@ from custom_tests import custom_tests
 
 # import testing_modules
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
-from SixtyFiveOhTwo import CPU6502
+from cpu6502 import CPU6502
 
 """
 

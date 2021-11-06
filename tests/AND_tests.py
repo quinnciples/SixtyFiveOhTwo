@@ -2,7 +2,7 @@ from testing_modules import bcolors
 from testing_modules import generateProgram
 import sys
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
-from SixtyFiveOhTwo import CPU6502
+from cpu6502 import CPU6502
 
 
 def AND_ADDRESS_MODE_TESTS_NO_ZERO_FLAG_NO_NEGATIVE_FLAG_NO_PAGE_BOUNDARY_CROSSED() -> bool:

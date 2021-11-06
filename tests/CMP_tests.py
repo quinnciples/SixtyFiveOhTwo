@@ -2,7 +2,7 @@ from testing_modules import bcolors
 from testing_modules import generateProgram
 import sys
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
-from SixtyFiveOhTwo import CPU6502
+from cpu6502 import CPU6502
 
 
 def TEST_CMP_ADDRESS_MODE_TESTS_GREATER_THAN_CARRY_FLAG_SET_ZERO_FLAG_NOT_SET_NEGATIVE_FLAG_NOT_SET():
