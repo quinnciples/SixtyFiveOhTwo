@@ -330,7 +330,7 @@ class CPU6502:
         0x11: 'ORA_IND_Y',
     }
 
-    def __init__(self, cycle_limit=10_000, logging=False, printActivity=False, logFile=None, enableBRK=False):
+    def __init__(self, cycle_limit=10_000, logging=False, printActivity=False, logFile=None, enableBRK=False, continuous=False):
 
         self.program_counter = 0xFFFE
         self.stack_pointer = 0xFF  # This is technically 0x01FF since the stack pointer lives on page 01.
@@ -382,7 +382,7 @@ class CPU6502:
 
     def initializeMemory(self):
         self.memory = [0x00] * CPU6502.MAX_MEMORY_SIZE
-        self.value = 0x0D
+        # self.value = 0x0D
 
     def getMemory(self):
         return self.memory
@@ -668,9 +668,10 @@ class CPU6502:
         self.cycleInc()
         # self.readMemory()
 
-    def readNextInstruction(self):
+    def readNextInstruction(self) -> bool:
         self.OPCODE = self.readMemory()
         self.INS = CPU6502.OPCODES.get(self.OPCODE, None)
+        return self.INS is not None
 
     @timetrack
     def execute(self):
@@ -680,18 +681,7 @@ class CPU6502:
             # Set starting position based on 0xFFFE/F
             # self.handleBRK()
 
-            self.readNextInstruction()
-            bne_count = 0
-
-            while self.INS is not None and self.cycles <= self.cycle_limit:
-
-                # Remove this when done testing
-                """
-                if self.INS == 'BNE' or self.program_counter in [0x336D, 0x336E, 0x336F]:
-                    bne_count += 1
-                else:
-                    bne_count = 0
-                """
+            while self.readNextInstruction() and self.cycles <= self.cycle_limit:
 
                 if self.INS == 'BRK' and self.enableBRK:
                     # Reference wiki.nesdev.com/w/index.php/Status_flags
@@ -1198,9 +1188,11 @@ class CPU6502:
                 elif self.INS == 'NOP':
                     self.handleSingleByteInstruction()
 
-                self.readNextInstruction()
+                # self.readNextInstruction()
+                break
 
         except Exception as e:
+            self.exception_message = str(e)
             print(traceback.print_exc())
 
         finally:
@@ -1268,7 +1260,6 @@ class CPU6502:
 
     def printBenchmarkInfo(self):
         print(self.benchmarkInfo())
-        pass
 
     @timetrack
     def loadProgram(self, instructions=[], memoryAddress=0x0000, mainProgram=True):

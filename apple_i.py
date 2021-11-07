@@ -36,7 +36,7 @@ class PIA():
             self.memory[self.hooks['KBDCR']] = self.memory[self.hooks['KBDCR']] | 0b10000000
 
 
-cpu = CPU6502(cycle_limit=100_000, printActivity=False, enableBRK=False, logging=False)
+cpu = CPU6502(cycle_limit=100_000_000, printActivity=False, enableBRK=False, logging=False)
 mem = cpu.getMemory()
 pia = PIA(memory=mem)
 
@@ -84,5 +84,17 @@ except Exception as e:
 
 finally:
     cpu.printBenchmarkInfo()
-    import sys
-    sys.exit()
+    from PIL import Image
+
+    img = Image.new('RGB', (32, 8192), "black")  # Create a new black image
+    pixels = img.load()  # Create the pixel map
+    print('x', img.size[0], 'y', img.size[1])
+    for i, pix in enumerate(mem):
+        # print(i, i % 16, i // 16)
+        color_value = pix
+        pixels[(i % 16) * 2, (i // 16) * 2] = (color_value, color_value, color_value)  # Set the colour accordingly
+        pixels[(i % 16) * 2 + 1, (i // 16) * 2] = (color_value, color_value, color_value)  # Set the colour accordingly
+        pixels[(i % 16) * 2, (i // 16) * 2 + 1] = (color_value, color_value, color_value)  # Set the colour accordingly
+        pixels[(i % 16) * 2 + 1, (i // 16) * 2 + 1] = (color_value, color_value, color_value)  # Set the colour accordingly
+    # img.show()
+    img.save('memory.png')
