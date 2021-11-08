@@ -332,11 +332,12 @@ class CPU6502:
         0x11: 'ORA_IND_Y',
     }
 
-    def __init__(self, cycle_limit=10_000, logging=False, printActivity=False, logFile=None, enableBRK=False, continuous=False):
+    def __init__(self, cycle_limit=10_000, logging=False, printActivity=False, logFile=None, enableBRK=False, continuous=True):
 
         self.program_counter = 0xFFFE
         self.stack_pointer = 0xFF  # This is technically 0x01FF since the stack pointer lives on page 01.
         self.cycle_limit = cycle_limit
+        self.continuous = continuous
 
         self.INS = None
         self.start_time = None
@@ -583,7 +584,11 @@ class CPU6502:
     @timetrack
     def determineAddress(self, mode):
         address = 0
-        if mode == 'ZP':
+        if mode == 'IM':
+            address = self.program_counter
+            self.programCounterInc()
+            return address
+        elif mode == 'ZP':
             address = self.readMemory()
             return address
         elif mode == 'ZP_X':
@@ -673,7 +678,52 @@ class CPU6502:
     def readNextInstruction(self) -> bool:
         self.OPCODE = self.readMemory()
         self.INS = CPU6502.OPCODES.get(self.OPCODE, None)
+        if self.INS:
+            self.INS_FAMILY = '_'.join(('INS', self.INS[0:3]))
+            self.INS_SET = self.INS.split('_')
         return self.INS is not None
+
+    def INS_LDA(self) -> None:
+        register = self.INS_SET[0][2]
+        address_mode = '_'.join(_ for _ in self.INS_SET[1:])
+        address = self.determineAddress(mode=address_mode)
+        data = self.readMemory(address=address, increment_pc=False)
+        self.registers[register] = data
+        self.setFlagsByRegister(register=register, flags=['Z', 'N'])
+
+    def INS_LDX(self) -> None:
+        register = self.INS_SET[0][2]
+        address_mode = '_'.join(_ for _ in self.INS_SET[1:])
+        address = self.determineAddress(mode=address_mode)
+        data = self.readMemory(address=address, increment_pc=False)
+        self.registers[register] = data
+        self.setFlagsByRegister(register=register, flags=['Z', 'N'])
+
+    def INS_LDY(self) -> None:
+        register = self.INS_SET[0][2]
+        address_mode = '_'.join(_ for _ in self.INS_SET[1:])
+        address = self.determineAddress(mode=address_mode)
+        data = self.readMemory(address=address, increment_pc=False)
+        self.registers[register] = data
+        self.setFlagsByRegister(register=register, flags=['Z', 'N'])
+
+    def INS_STA(self) -> None:
+        target = self.INS_SET[0][2]
+        address_mode = '_'.join(_ for _ in self.INS_SET[1:])
+        address = self.determineAddress(mode=address_mode)
+        self.writeMemory(data=self.registers[target], address=address, bytes=1)
+
+    def INS_STX(self) -> None:
+        target = self.INS_SET[0][2]
+        address_mode = '_'.join(_ for _ in self.INS_SET[1:])
+        address = self.determineAddress(mode=address_mode)
+        self.writeMemory(data=self.registers[target], address=address, bytes=1)
+
+    def INS_STY(self) -> None:
+        target = self.INS_SET[0][2]
+        address_mode = '_'.join(_ for _ in self.INS_SET[1:])
+        address = self.determineAddress(mode=address_mode)
+        self.writeMemory(data=self.registers[target], address=address, bytes=1)
 
     @timetrack
     def execute(self):
@@ -685,7 +735,10 @@ class CPU6502:
 
             while self.readNextInstruction() and self.cycles <= self.cycle_limit:
 
-                if self.INS == 'BRK' and self.enableBRK:
+                if hasattr(self.__class__, self.INS_FAMILY):
+                    self.__getattribute__(self.INS_FAMILY)()
+
+                elif self.INS == 'BRK' and self.enableBRK:
                     # Reference wiki.nesdev.com/w/index.php/Status_flags
                     # Possibly need a readMemory() call here according to http://nesdev.com/the%20%27B%27%20flag%20&%20BRK%20instruction.txt
                     self.readMemory()  # BRK is 2 byte instruction - this byte is read and ignored
@@ -1146,12 +1199,12 @@ class CPU6502:
                     self.registers[self.INS[2]] = value
                     self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
 
-                elif self.INS.startswith('ST'):
-                    ins_set = self.INS.split('_')
-                    target = ins_set[0][2]
-                    address_mode = '_'.join(_ for _ in ins_set[1:])
-                    address = self.determineAddress(mode=address_mode)
-                    self.writeMemory(data=self.registers[target], address=address, bytes=1)
+                # elif self.INS.startswith('ST'):
+                #     ins_set = self.INS.split('_')
+                #     target = ins_set[0][2]
+                #     address_mode = '_'.join(_ for _ in ins_set[1:])
+                #     address = self.determineAddress(mode=address_mode)
+                #     self.writeMemory(data=self.registers[target], address=address, bytes=1)
 
                 elif self.INS in ['CLC_IMP', 'CLI_IMP', 'CLD_IMP', 'CLV_IMP', 'SEC_IMP', 'SED_IMP', 'SEI_IMP']:
                     if self.INS in ['CLC_IMP', 'CLI_IMP', 'CLD_IMP', 'CLV_IMP']:
@@ -1160,17 +1213,17 @@ class CPU6502:
                         self.setFlagsManually(flags=[self.INS[2]], value=1)
                     self.handleSingleByteInstruction()
 
-                elif self.INS.startswith('LD'):
-                    ins_set = self.INS.split('_')
-                    register = ins_set[0][2]
-                    address_mode = '_'.join(_ for _ in ins_set[1:])
-                    if address_mode == 'IM':
-                        data = self.readMemory()
-                    else:
-                        address = self.determineAddress(mode=address_mode)
-                        data = self.readMemory(address=address, increment_pc=False)
-                    self.registers[register] = data
-                    self.setFlagsByRegister(register=register, flags=['Z', 'N'])
+                # elif self.INS.startswith('LD'):
+                #     ins_set = self.INS.split('_')
+                #     register = ins_set[0][2]
+                #     address_mode = '_'.join(_ for _ in ins_set[1:])
+                #     if address_mode == 'IM':
+                #         data = self.readMemory()
+                #     else:
+                #         address = self.determineAddress(mode=address_mode)
+                #         data = self.readMemory(address=address, increment_pc=False)
+                #     self.registers[register] = data
+                #     self.setFlagsByRegister(register=register, flags=['Z', 'N'])
 
                 elif self.INS in ['JMP_ABS']:
                     ins_set = self.INS.split('_')
@@ -1190,8 +1243,9 @@ class CPU6502:
                 elif self.INS == 'NOP':
                     self.handleSingleByteInstruction()
 
-                # self.readNextInstruction()
-                # break
+                if not self.continuous:
+                    break
+
 
         except Exception as e:
             self.exception_message = str(e)
@@ -1273,6 +1327,7 @@ class CPU6502:
         for ins in instructions:
             self.memory[memoryAddress] = ins
             memoryAddress += 1
-            if memoryAddress >= CPU6502.MAX_MEMORY_SIZE:
+            if memoryAddress > CPU6502.MAX_MEMORY_SIZE:
+                print(memoryAddress, ins)
                 memoryAddress = 0
                 raise('Memory size limit exceeded!')

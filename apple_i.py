@@ -36,7 +36,7 @@ class PIA():
             self.memory[self.hooks['KBDCR']] = self.memory[self.hooks['KBDCR']] | 0b10000000
 
 
-cpu = CPU6502(cycle_limit=100_000_000, printActivity=False, enableBRK=False, logging=False)
+cpu = CPU6502(cycle_limit=100_000_000, printActivity=False, enableBRK=False, logging=False, continuous=False)
 mem = cpu.getMemory()
 pia = PIA(memory=mem)
 
@@ -86,15 +86,19 @@ finally:
     cpu.printBenchmarkInfo()
     from PIL import Image
 
-    img = Image.new('RGB', (512, 512), "black")  # Create a new black image
+    SCALE = 4
+    ITEMS_PER_ROW = 256
+    img = Image.new('RGB', (ITEMS_PER_ROW * SCALE, CPU6502.MAX_MEMORY_SIZE // ITEMS_PER_ROW * SCALE), "black")  # Create a new black image
     pixels = img.load()  # Create the pixel map
     print('x', img.size[0], 'y', img.size[1])
     for i, pix in enumerate(mem):
         # print(i, i % 16, i // 16)
         color_value = pix
-        pixels[(i % 256) * 2, (i // 256) * 2] = (color_value, color_value, color_value)  # Set the colour accordingly
-        pixels[(i % 256) * 2 + 1, (i // 256) * 2] = (color_value, color_value, color_value)  # Set the colour accordingly
-        pixels[(i % 256) * 2, (i // 256) * 2 + 1] = (color_value, color_value, color_value)  # Set the colour accordingly
-        pixels[(i % 256) * 2 + 1, (i // 256) * 2 + 1] = (color_value, color_value, color_value)  # Set the colour accordingly
+        for x_offset in range(SCALE):
+            for y_offset in range(SCALE):
+                pixels[(i % ITEMS_PER_ROW) * SCALE + x_offset, (i // ITEMS_PER_ROW) * SCALE + y_offset] = (color_value, color_value, color_value)  # Set the colour accordingly
+            # pixels[(i % 256) * SCALE + 1, (i // 256) * SCALE] = (color_value, color_value, color_value)  # Set the colour accordingly
+            # pixels[(i % 256) * SCALE, (i // 256) * SCALE + 1] = (color_value, color_value, color_value)  # Set the colour accordingly
+            # pixels[(i % 256) * SCALE + 1, (i // 256) * SCALE + 1] = (color_value, color_value, color_value)  # Set the colour accordingly
     img.show()
     # img.save('memory.png')

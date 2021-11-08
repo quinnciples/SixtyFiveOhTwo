@@ -66,7 +66,7 @@ def LDA_ADDRESS_MODE_TESTS_NON_ZERO_NON_NEGATIVE_NO_PAGE_CROSSED() -> bool:
     for label, program in programs.items():
         print(f'\tTesting {label}... ', end='')
         EXPECTED_CYCLES = program[1]
-        cpu = CPU6502(cycle_limit=100)
+        cpu = CPU6502(cycle_limit=100, logging=False)
         cpu.reset(program_counter=0xFF00)
         cpu.loadProgram(instructions=program[0], memoryAddress=0xFF00)
         cpu.registers = INITIAL_REGISTERS.copy()
