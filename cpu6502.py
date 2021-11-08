@@ -145,8 +145,10 @@ class CPU6502:
 
     """
 
-    VERSION = '0.95'
+    VERSION = '0.97'
     MAX_MEMORY_SIZE = 1024 * 64  # 64k memory size
+    SIXTEEN_BIT_HIGH_BYTE_MASK = 0b1111111100000000
+    SIXTEEN_BIT_LOW_BYTE_MASK = 0b0000000011111111
     OPCODES_WRITE_TO_MEMORY = ('STA', 'STX', 'STY', 'ROL', 'ROR', 'ASL', 'LSR', 'INC', 'DEC')
     OPCODES = {
         0x29: 'AND_IM',
@@ -1189,7 +1191,7 @@ class CPU6502:
                     self.handleSingleByteInstruction()
 
                 # self.readNextInstruction()
-                break
+                # break
 
         except Exception as e:
             self.exception_message = str(e)
@@ -1264,10 +1266,13 @@ class CPU6502:
     @timetrack
     def loadProgram(self, instructions=[], memoryAddress=0x0000, mainProgram=True):
         if mainProgram:
-            self.memory[0xFFFE] = memoryAddress & 0b0000000011111111
-            self.memory[0xFFFF] = (memoryAddress >> 8) & 0b0000000011111111
+            # self.memory[0xFFFE] = memoryAddress & 0b0000000011111111
+            # self.memory[0xFFFF] = (memoryAddress >> 8) & 0b0000000011111111
+            self.memory[0xFFFE] = memoryAddress & CPU6502.SIXTEEN_BIT_LOW_BYTE_MASK
+            self.memory[0xFFFF] = memoryAddress & CPU6502.SIXTEEN_BIT_HIGH_BYTE_MASK
         for ins in instructions:
             self.memory[memoryAddress] = ins
             memoryAddress += 1
             if memoryAddress >= CPU6502.MAX_MEMORY_SIZE:
                 memoryAddress = 0
+                raise('Memory size limit exceeded!')
