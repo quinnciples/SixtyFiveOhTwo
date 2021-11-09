@@ -437,7 +437,7 @@ def startrek():
 
 if __name__ == '__main__':
     # run()
-    # fibonacci_test()
+    fibonacci_test()
     # print()
     # fast_multiply_10()
     # print()
@@ -467,7 +467,7 @@ if __name__ == '__main__':
     # print()
     # shut_the_box()
     # print()
-    codebreaker()
+    # codebreaker()
     # print()
     # applesoft_basic()
     # print()

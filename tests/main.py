@@ -1,6 +1,7 @@
 import os
 # import logging
 import sys
+
 from testing_modules import bcolors
 # from testing_modules import generateProgram
 
@@ -68,7 +69,7 @@ Fibonacci - https://www.youtube.com/watch?v=a73ZXDJtU48
 
 
 def TEST_0x08_PHP_PLA_COMBINED_TEST():
-    TEST_NAME = f'TEST_0x08_PHP_PLA_COMBINED_TEST'
+    TEST_NAME = 'TEST_0x08_PHP_PLA_COMBINED_TEST'
     INITIAL_REGISTERS = {
         'A': 0x20,
         'X': 0x60,

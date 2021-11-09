@@ -147,6 +147,7 @@ class CPU6502:
 
     VERSION = '0.97'
     MAX_MEMORY_SIZE = 1024 * 64  # 64k memory size
+    EIGHT_BIT_MASK = 0b11111111
     SIXTEEN_BIT_HIGH_BYTE_MASK = 0b1111111100000000
     SIXTEEN_BIT_LOW_BYTE_MASK = 0b0000000011111111
     OPCODES_WRITE_TO_MEMORY = ('STA', 'STX', 'STY', 'ROL', 'ROR', 'ASL', 'LSR', 'INC', 'DEC')
@@ -396,16 +397,17 @@ class CPU6502:
         line = ''  # to clear issues with pylance
         header = ''
         row = ''
+        ITEMS_PER_ROW = 8
         while startingAddress <= endingAddress and startingAddress <= CPU6502.MAX_MEMORY_SIZE:
             if display_format == 'Hex':
                 header = '0x{0:0{1}X}:'.format(startingAddress, 4) + '\t'
-                row = '\t'.join('0x{0:0{1}X}'.format(self.memory[v], 2) for v in range(startingAddress, min(startingAddress + 8, CPU6502.MAX_MEMORY_SIZE)))
+                row = '\t'.join('0x{0:0{1}X}'.format(self.memory[v], 2) for v in range(startingAddress, min(startingAddress + ITEMS_PER_ROW, CPU6502.MAX_MEMORY_SIZE)))
             elif display_format == 'Dec':
                 header = '0x{0:0{1}X}:'.format(startingAddress, 4) + '\t'
-                row = '\t'.join('%-5s' % str(self.memory[v]) for v in range(startingAddress, min(startingAddress + 8, CPU6502.MAX_MEMORY_SIZE)))
+                row = '\t'.join('%-5s' % str(self.memory[v]) for v in range(startingAddress, min(startingAddress + ITEMS_PER_ROW, CPU6502.MAX_MEMORY_SIZE)))
             line = header + row
             print(line)
-            startingAddress += 8
+            startingAddress += ITEMS_PER_ROW
 
     @timetrack
     def extraFunctions(self):
@@ -681,49 +683,408 @@ class CPU6502:
         if self.INS:
             self.INS_FAMILY = '_'.join(('INS', self.INS[0:3]))
             self.INS_SET = self.INS.split('_')
+            self.ADDRESS_MODE = '_'.join(_ for _ in self.INS_SET[1:])
         return self.INS is not None
+
+    ################################################################
+    #
+    # BEGIN INSTRUCTION METHODS
+    #
+    ################################################################
+
+    def INS_AND(self) -> None:
+        address = self.determineAddress(mode=self.ADDRESS_MODE)
+        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+        result = self.registers['A'] & value
+        self.registers['A'] = result
+        self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+
+    def INS_ASL(self) -> None:
+        if self.INS == 'ASL_ACC':
+            value = self.registers['A']
+            carry_flag = 1 if (value & 0b10000000) > 0 else 0
+            value = value << 1
+            value = value & 0b0000000011111110
+            self.registers['A'] = value
+            self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+            self.setFlagsManually(flags=['C'], value=carry_flag)
+            self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+        else:
+            address = self.determineAddress(mode=self.ADDRESS_MODE)
+            value = self.readMemory(address=address, increment_pc=False, bytes=1)
+            carry_flag = 1 if (value & 0b10000000) > 0 else 0
+            value = value << 1
+            value = value & 0b0000000011111110
+            self.cycleInc()  # Extra cycle for modify stage in RMW instruction per note at top.
+            self.writeMemory(data=value, address=address, bytes=1)
+            self.setFlagsByValue(value=value, flags=['Z', 'N'])
+            self.setFlagsManually(flags=['C'], value=carry_flag)
+
+    def INS_BIT(self) -> None:
+        address = self.determineAddress(mode=self.ADDRESS_MODE)
+        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+        zero_flag = 1 if (self.registers['A'] & value) == 0 else 0
+        self.setFlagsManually(flags=['Z'], value=zero_flag)
+        self.setFlagsByValue(value=value, flags=['N'])
+        overflow_flag = (value & 0b01000000) >> 6
+        self.setFlagsManually(flags=['V'], value=overflow_flag)
+
+    def INS_CLC(self) -> None:
+        self.setFlagsManually(flags=[self.INS[2]], value=0)
+        self.handleSingleByteInstruction()
+
+    def INS_CLD(self) -> None:
+        self.setFlagsManually(flags=[self.INS[2]], value=0)
+        self.handleSingleByteInstruction()
+
+    def INS_CLI(self) -> None:
+        self.setFlagsManually(flags=[self.INS[2]], value=0)
+        self.handleSingleByteInstruction()
+
+    def INS_CLV(self) -> None:
+        self.setFlagsManually(flags=[self.INS[2]], value=0)
+        self.handleSingleByteInstruction()
+
+    def INS_DEC(self) -> None:
+        address = self.determineAddress(mode=self.ADDRESS_MODE)
+        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+        value -= 1
+        if value < 0:
+            value = 0xFF
+        self.cycleInc()  # Is this really necessary? -- apparently, yes
+        self.writeMemory(data=value, address=address, bytes=1)
+        self.setFlagsByValue(value=value, flags=['N', 'Z'])
+
+    def INS_DEX(self) -> None:
+        self.handleSingleByteInstruction()
+        value = self.registers[self.INS[2]]
+        value -= 1
+        if value < 0:
+            value = 0xFF
+        self.registers[self.INS[2]] = value
+        self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
+
+    def INS_DEY(self) -> None:
+        self.handleSingleByteInstruction()
+        value = self.registers[self.INS[2]]
+        value -= 1
+        if value < 0:
+            value = 0xFF
+        self.registers[self.INS[2]] = value
+        self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
+
+    def INS_EOR(self) -> None:
+        address = self.determineAddress(mode=self.ADDRESS_MODE)
+        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+        result = self.registers['A'] ^ value
+        self.registers['A'] = result
+        self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+
+    def INS_INC(self) -> None:
+        address = self.determineAddress(mode=self.ADDRESS_MODE)
+        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+        value += 1
+        value = value % 0x100
+        self.cycleInc()  # Is this really necessary? -- apparently, yes
+        self.writeMemory(data=value, address=address, bytes=1)
+        self.setFlagsByValue(value=value, flags=['N', 'Z'])
+
+    def INS_INX(self) -> None:
+        value = self.registers[self.INS[2]]
+        value += 1
+        value = value % 0x100
+        self.cycleInc()  # Is this really necessary?
+        self.registers[self.INS[2]] = value
+        self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
+
+    def INS_INY(self) -> None:
+        value = self.registers[self.INS[2]]
+        value += 1
+        value = value % 0x100
+        self.cycleInc()  # Is this really necessary?
+        self.registers[self.INS[2]] = value
+        self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
+
+    def INS_JMP(self) -> None:
+        address = self.determineAddress(mode=self.ADDRESS_MODE)
+        if self.ADDRESS_MODE == 'IND':
+            address = self.readMemory(address=address, increment_pc=False, bytes=2)
+
+        self.program_counter = address
+        if self.logging:
+            self.logAction(f'Jumping to location [{self.program_counter:04X}]')
+
+    def INS_JSR(self) -> None:
+        address = self.determineAddress(mode=self.ADDRESS_MODE)
+        self.savePCAtStackPointer()
+        self.program_counter = address
+        if self.logging:
+            self.logAction(f'Jumping to location [{self.program_counter:04X}]')
+        self.cycleInc()
 
     def INS_LDA(self) -> None:
         register = self.INS_SET[0][2]
-        address_mode = '_'.join(_ for _ in self.INS_SET[1:])
-        address = self.determineAddress(mode=address_mode)
+        address = self.determineAddress(mode=self.ADDRESS_MODE)
         data = self.readMemory(address=address, increment_pc=False)
         self.registers[register] = data
         self.setFlagsByRegister(register=register, flags=['Z', 'N'])
 
     def INS_LDX(self) -> None:
         register = self.INS_SET[0][2]
-        address_mode = '_'.join(_ for _ in self.INS_SET[1:])
-        address = self.determineAddress(mode=address_mode)
+        address = self.determineAddress(mode=self.ADDRESS_MODE)
         data = self.readMemory(address=address, increment_pc=False)
         self.registers[register] = data
         self.setFlagsByRegister(register=register, flags=['Z', 'N'])
 
     def INS_LDY(self) -> None:
         register = self.INS_SET[0][2]
-        address_mode = '_'.join(_ for _ in self.INS_SET[1:])
-        address = self.determineAddress(mode=address_mode)
+        address = self.determineAddress(mode=self.ADDRESS_MODE)
         data = self.readMemory(address=address, increment_pc=False)
         self.registers[register] = data
         self.setFlagsByRegister(register=register, flags=['Z', 'N'])
 
+    def INS_LSR(self) -> None:
+        """
+        May need to move self.handleSingleByteInstruction() to beginning
+        IF THE BIG TEST BREAKS, THIS IS WHY!!!
+        """
+        if self.ADDRESS_MODE == 'ACC':
+            value = self.registers['A']
+        else:
+            address = self.determineAddress(mode=self.ADDRESS_MODE)
+            value = self.readMemory(address=address, increment_pc=False, bytes=1)
+
+        carry_flag = 1 if (value & 0b00000001) > 0 else 0
+        value = value >> 1
+        value = value & 0b0000000001111111
+
+        if self.ADDRESS_MODE == 'ACC':
+            self.registers['A'] = value
+            self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+            self.setFlagsManually(flags=['C'], value=carry_flag)
+            self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+        else:
+            self.cycleInc()  # Extra cycle for modify stage in RMW instruction per note at top.
+            self.writeMemory(data=value, address=address, bytes=1)
+            self.setFlagsByValue(value=value, flags=['Z', 'N'])
+            self.setFlagsManually(flags=['C'], value=carry_flag)
+
+    def INS_NOP(self) -> None:
+        self.handleSingleByteInstruction()
+
+    def INS_PHA(self) -> None:
+        """
+        May need to move self.handleSingleByteInstruction() to beginning
+        IF THE BIG TEST BREAKS, THIS IS WHY!!!
+        """
+        value = self.registers['A']
+        self.saveByteAtStackPointer(data=value)
+        self.handleSingleByteInstruction()
+
+    def INS_PHP(self) -> None:
+        """
+        May need to move self.handleSingleByteInstruction() to beginning
+        IF THE BIG TEST BREAKS, THIS IS WHY!!!
+        """
+        value = self.getProcessorStatus()
+        # Manually set bits 4 and 5 to 1
+        value = value | 0b00110000
+        self.saveByteAtStackPointer(data=value)
+        self.handleSingleByteInstruction()
+
+    def INS_PLA(self) -> None:
+        """
+        May need to move self.handleSingleByteInstruction() to beginning
+        IF THE BIG TEST BREAKS, THIS IS WHY!!!
+        """
+        value = self.loadByteFromStackPointer()
+        self.registers['A'] = value
+        self.setFlagsByRegister(register='A', flags=['N', 'Z'])
+        self.handleSingleByteInstruction()
+
+    def INS_PLP(self) -> None:
+        # Pull
+        # PLP and BRK should ignore bits 4 & 5
+        flags = self.loadByteFromStackPointer()
+        self.setProcessorStatus(flags=flags)
+        self.handleSingleByteInstruction()
+
+    def INS_ROL(self) -> None:
+        """
+        May need to move self.handleSingleByteInstruction() to beginning
+        IF THE BIG TEST BREAKS, THIS IS WHY!!!
+        """
+        if self.ADDRESS_MODE == 'ACC':
+            value = self.registers['A']
+            self.handleSingleByteInstruction()
+        else:
+            address = self.determineAddress(mode=self.ADDRESS_MODE)
+            value = self.readMemory(address=address, increment_pc=False, bytes=1)
+
+        # Carry flag
+        determine_carry_flag = (value & 0b10000000) >> 7
+        current_carry_flag = self.flags['C']
+        value = value << 1
+        value = value & CPU6502.EIGHT_BIT_MASK  # 8 bit mask
+        value = value | 0b00000001 if current_carry_flag == 1 else value & 0b11111110
+        if self.ADDRESS_MODE != 'ACC':
+            self.cycleInc()  # Necessary according to notes above
+
+        self.setFlagsManually(value=determine_carry_flag, flags=['C'])
+
+        # Negative flag and Zero flag
+        self.setFlagsByValue(value=value, flags=['N', 'Z'])
+
+        if self.ADDRESS_MODE == 'ACC':
+            self.registers['A'] = value
+        else:
+            self.writeMemory(data=value, address=address, bytes=1)
+
+    def INS_ROR(self) -> None:
+        """
+        May need to move self.handleSingleByteInstruction() to beginning
+        IF THE BIG TEST BREAKS, THIS IS WHY!!!
+        """
+        if self.ADDRESS_MODE == 'ACC':
+            value = self.registers['A']
+            self.handleSingleByteInstruction()
+        else:
+            address = self.determineAddress(mode=self.ADDRESS_MODE)
+            value = self.readMemory(address=address, increment_pc=False, bytes=1)
+
+        # Carry flag
+        determine_carry_flag = value & 0b00000001
+        current_carry_flag = self.flags['C']
+        value = value >> 1
+        value = value & CPU6502.EIGHT_BIT_MASK  # 8 bit mask
+        value = value | 0b10000000 if current_carry_flag == 1 else value & 0b01111111
+        if self.ADDRESS_MODE != 'ACC':
+            self.cycleInc()  # Necessary according to notes above
+        self.setFlagsManually(value=determine_carry_flag, flags=['C'])
+
+        # Negative flag and Zero flag
+        self.setFlagsByValue(value=value, flags=['N', 'Z'])
+
+        if self.ADDRESS_MODE == 'ACC':
+            self.registers['A'] = value
+        else:
+            self.writeMemory(data=value, address=address, bytes=1)
+
+    def INS_RTS(self) -> None:
+        """
+        May need to move self.handleSingleByteInstruction() to beginning
+        IF THE BIG TEST BREAKS, THIS IS WHY!!!
+        """
+        self.handleSingleByteInstruction()
+        self.loadPCFromStackPointer()
+        self.programCounterInc()
+
+    def INS_SEC(self) -> None:
+        """
+        May need to move self.handleSingleByteInstruction() to beginning
+        IF THE BIG TEST BREAKS, THIS IS WHY!!!
+        """
+        self.setFlagsManually(flags=[self.INS[2]], value=1)
+        self.handleSingleByteInstruction()
+
+    def INS_SED(self) -> None:
+        """
+        May need to move self.handleSingleByteInstruction() to beginning
+        IF THE BIG TEST BREAKS, THIS IS WHY!!!
+        """
+        self.setFlagsManually(flags=[self.INS[2]], value=1)
+        self.handleSingleByteInstruction()
+
+    def INS_SEI(self) -> None:
+        """
+        May need to move self.handleSingleByteInstruction() to beginning
+        IF THE BIG TEST BREAKS, THIS IS WHY!!!
+        """
+        self.setFlagsManually(flags=[self.INS[2]], value=1)
+        self.handleSingleByteInstruction()
+
     def INS_STA(self) -> None:
         target = self.INS_SET[0][2]
-        address_mode = '_'.join(_ for _ in self.INS_SET[1:])
-        address = self.determineAddress(mode=address_mode)
+        address = self.determineAddress(mode=self.ADDRESS_MODE)
         self.writeMemory(data=self.registers[target], address=address, bytes=1)
 
     def INS_STX(self) -> None:
         target = self.INS_SET[0][2]
-        address_mode = '_'.join(_ for _ in self.INS_SET[1:])
-        address = self.determineAddress(mode=address_mode)
+        address = self.determineAddress(mode=self.ADDRESS_MODE)
         self.writeMemory(data=self.registers[target], address=address, bytes=1)
 
     def INS_STY(self) -> None:
         target = self.INS_SET[0][2]
-        address_mode = '_'.join(_ for _ in self.INS_SET[1:])
-        address = self.determineAddress(mode=address_mode)
+        address = self.determineAddress(mode=self.ADDRESS_MODE)
         self.writeMemory(data=self.registers[target], address=address, bytes=1)
+
+    def INS_TAX(self) -> None:
+        """
+        May need to move self.handleSingleByteInstruction() to beginning
+        IF THE BIG TEST BREAKS, THIS IS WHY!!!
+        """
+        source = self.INS[1]
+        dest = self.INS[2]
+        self.registers[dest] = self.registers[source]
+        self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
+        self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+
+    def INS_TAY(self) -> None:
+        """
+        May need to move self.handleSingleByteInstruction() to beginning
+        IF THE BIG TEST BREAKS, THIS IS WHY!!!
+        """
+        source = self.INS[1]
+        dest = self.INS[2]
+        self.registers[dest] = self.registers[source]
+        self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
+        self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+
+    def INS_TXA(self) -> None:
+        """
+        May need to move self.handleSingleByteInstruction() to beginning
+        IF THE BIG TEST BREAKS, THIS IS WHY!!!
+        """
+        source = self.INS[1]
+        dest = self.INS[2]
+        self.registers[dest] = self.registers[source]
+        self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
+        self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+
+    def INS_TXS(self) -> None:
+        """
+        May need to move self.handleSingleByteInstruction() to beginning
+        IF THE BIG TEST BREAKS, THIS IS WHY!!!
+        """
+        self.stack_pointer = self.registers['X']
+        self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+
+    def INS_TSX(self) -> None:
+        """
+        May need to move self.handleSingleByteInstruction() to beginning
+        IF THE BIG TEST BREAKS, THIS IS WHY!!!
+        """
+        self.registers['X'] = self.stack_pointer
+        self.setFlagsByRegister(register='X', flags=['N', 'Z'])
+        self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+
+    def INS_TYA(self) -> None:
+        """
+        May need to move self.handleSingleByteInstruction() to beginning
+        IF THE BIG TEST BREAKS, THIS IS WHY!!!
+        """
+        source = self.INS[1]
+        dest = self.INS[2]
+        self.registers[dest] = self.registers[source]
+        self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
+        self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+
+    def INS_ORA(self) -> None:
+        address = self.determineAddress(mode=self.ADDRESS_MODE)
+        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+        result = self.registers['A'] | value
+        self.registers['A'] = result
+        self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
     @timetrack
     def execute(self):
@@ -764,82 +1125,82 @@ class CPU6502:
                     # Get PC from stack
                     self.loadPCFromStackPointer()
 
-                elif self.INS in ['PHP_IMP', 'PLP_IMP']:
-                    # Push
-                    if self.INS == 'PHP_IMP':
-                        value = self.getProcessorStatus()
-                        # Manually set bits 4 and 5 to 1
-                        value = value | 0b00110000
-                        self.saveByteAtStackPointer(data=value)
-                        self.handleSingleByteInstruction()
-                    elif self.INS == 'PLP_IMP':
-                        # Pull
-                        # PLP and BRK should ignore bits 4 & 5
-                        flags = self.loadByteFromStackPointer()
-                        self.setProcessorStatus(flags=flags)
-                        self.handleSingleByteInstruction()
+                # elif self.INS in ['PHP_IMP', 'PLP_IMP']:
+                #     # Push
+                #     if self.INS == 'PHP_IMP':
+                #         value = self.getProcessorStatus()
+                #         # Manually set bits 4 and 5 to 1
+                #         value = value | 0b00110000
+                #         self.saveByteAtStackPointer(data=value)
+                #         self.handleSingleByteInstruction()
+                #     elif self.INS == 'PLP_IMP':
+                #         # Pull
+                #         # PLP and BRK should ignore bits 4 & 5
+                #         flags = self.loadByteFromStackPointer()
+                #         self.setProcessorStatus(flags=flags)
+                #         self.handleSingleByteInstruction()
 
-                elif self.INS in ['BIT_ZP', 'BIT_ABS']:
-                    ins_set = self.INS.split('_')
-                    address_mode = '_'.join(_ for _ in ins_set[1:])
-                    address = self.determineAddress(mode=address_mode)
-                    value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                # elif self.INS in ['BIT_ZP', 'BIT_ABS']:
+                #     ins_set = self.INS.split('_')
+                #     address_mode = '_'.join(_ for _ in ins_set[1:])
+                #     address = self.determineAddress(mode=address_mode)
+                #     value = self.readMemory(address=address, increment_pc=False, bytes=1)
 
-                    zero_flag = 1 if (self.registers['A'] & value) == 0 else 0
-                    self.setFlagsManually(flags=['Z'], value=zero_flag)
+                #     zero_flag = 1 if (self.registers['A'] & value) == 0 else 0
+                #     self.setFlagsManually(flags=['Z'], value=zero_flag)
 
-                    self.setFlagsByValue(value=value, flags=['N'])
+                #     self.setFlagsByValue(value=value, flags=['N'])
 
-                    overflow_flag = (value & 0b01000000) >> 6
-                    self.setFlagsManually(flags=['V'], value=overflow_flag)
+                #     overflow_flag = (value & 0b01000000) >> 6
+                #     self.setFlagsManually(flags=['V'], value=overflow_flag)
 
-                elif self.INS == 'PHA_IMP':
-                    value = self.registers['A']
-                    self.saveByteAtStackPointer(data=value)
-                    self.handleSingleByteInstruction()
+                # elif self.INS == 'PHA_IMP':
+                #     value = self.registers['A']
+                #     self.saveByteAtStackPointer(data=value)
+                #     self.handleSingleByteInstruction()
 
-                elif self.INS == 'PLA_IMP':
-                    value = self.loadByteFromStackPointer()
-                    self.registers['A'] = value
-                    self.setFlagsByRegister(register='A', flags=['N', 'Z'])
-                    self.handleSingleByteInstruction()
+                # elif self.INS == 'PLA_IMP':
+                #     value = self.loadByteFromStackPointer()
+                #     self.registers['A'] = value
+                #     self.setFlagsByRegister(register='A', flags=['N', 'Z'])
+                #     self.handleSingleByteInstruction()
 
-                elif self.INS in ['ROL_ACC', 'ROL_ZP', 'ROL_ZP_X', 'ROL_ABS', 'ROL_ABS_X', 'ROR_ACC', 'ROR_ZP', 'ROR_ZP_X', 'ROR_ABS', 'ROR_ABS_X']:
-                    ins_set = self.INS.split('_')
-                    address_mode = '_'.join(_ for _ in ins_set[1:])
-                    if address_mode == 'ACC':
-                        value = self.registers['A']
-                        self.handleSingleByteInstruction()
-                    else:
-                        address = self.determineAddress(mode=address_mode)
-                        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                # elif self.INS in ['ROL_ACC', 'ROL_ZP', 'ROL_ZP_X', 'ROL_ABS', 'ROL_ABS_X', 'ROR_ACC', 'ROR_ZP', 'ROR_ZP_X', 'ROR_ABS', 'ROR_ABS_X']:
+                #     ins_set = self.INS.split('_')
+                #     address_mode = '_'.join(_ for _ in ins_set[1:])
+                #     if address_mode == 'ACC':
+                #         value = self.registers['A']
+                #         self.handleSingleByteInstruction()
+                #     else:
+                #         address = self.determineAddress(mode=address_mode)
+                #         value = self.readMemory(address=address, increment_pc=False, bytes=1)
 
-                    # Carry flag
-                    if self.INS in ['ROL_ACC', 'ROL_ZP', 'ROL_ZP_X', 'ROL_ABS', 'ROL_ABS_X']:
-                        determine_carry_flag = (value & 0b10000000) >> 7
-                        current_carry_flag = self.flags['C']
-                        value = value << 1
-                        value = value & 0b0000000011111111  # 8 bit mask
-                        value = value | 0b00000001 if current_carry_flag == 1 else value & 0b11111110
-                        if self.INS != 'ROL_ACC':
-                            self.cycleInc()  # Necessary according to notes above
-                    elif self.INS in ['ROR_ACC', 'ROR_ZP', 'ROR_ZP_X', 'ROR_ABS', 'ROR_ABS_X']:
-                        determine_carry_flag = value & 0b00000001
-                        current_carry_flag = self.flags['C']
-                        value = value >> 1
-                        value = value & 0b0000000011111111  # 8 bit mask
-                        value = value | 0b10000000 if current_carry_flag == 1 else value & 0b01111111
-                        if self.INS != 'ROR_ACC':
-                            self.cycleInc()  # Necessary according to notes above
-                    self.setFlagsManually(value=determine_carry_flag, flags=['C'])
+                #     # Carry flag
+                #     if self.INS in ['ROL_ACC', 'ROL_ZP', 'ROL_ZP_X', 'ROL_ABS', 'ROL_ABS_X']:
+                #         determine_carry_flag = (value & 0b10000000) >> 7
+                #         current_carry_flag = self.flags['C']
+                #         value = value << 1
+                #         value = value & 0b0000000011111111  # 8 bit mask
+                #         value = value | 0b00000001 if current_carry_flag == 1 else value & 0b11111110
+                #         if self.INS != 'ROL_ACC':
+                #             self.cycleInc()  # Necessary according to notes above
+                #     elif self.INS in ['ROR_ACC', 'ROR_ZP', 'ROR_ZP_X', 'ROR_ABS', 'ROR_ABS_X']:
+                #         determine_carry_flag = value & 0b00000001
+                #         current_carry_flag = self.flags['C']
+                #         value = value >> 1
+                #         value = value & 0b0000000011111111  # 8 bit mask
+                #         value = value | 0b10000000 if current_carry_flag == 1 else value & 0b01111111
+                #         if self.INS != 'ROR_ACC':
+                #             self.cycleInc()  # Necessary according to notes above
+                #     self.setFlagsManually(value=determine_carry_flag, flags=['C'])
 
-                    # Negative flag and Zero flag
-                    self.setFlagsByValue(value=value, flags=['N', 'Z'])
+                #     # Negative flag and Zero flag
+                #     self.setFlagsByValue(value=value, flags=['N', 'Z'])
 
-                    if address_mode == 'ACC':
-                        self.registers['A'] = value
-                    else:
-                        self.writeMemory(data=value, address=address, bytes=1)
+                #     if address_mode == 'ACC':
+                #         self.registers['A'] = value
+                #     else:
+                #         self.writeMemory(data=value, address=address, bytes=1)
 
                 elif self.INS in ['CMP_IM', 'CMP_ZP', 'CMP_ZP_X', 'CMP_ABS', 'CMP_ABS_X', 'CMP_ABS_Y', 'CMP_IND_X', 'CMP_IND_Y',
                                   'CPX_IM', 'CPX_ZP', 'CPX_ABS',
@@ -896,114 +1257,114 @@ class CPU6502:
                         if ((self.program_counter & 0b1111111100000000) != ((self.program_counter - offset) & 0b1111111100000000)):
                             self.cycleInc()
 
-                elif self.INS in ['TAX_IMP', 'TXA_IMP', 'TAY_IMP', 'TYA_IMP']:
-                    source = self.INS[1]
-                    dest = self.INS[2]
-                    self.registers[dest] = self.registers[source]
-                    self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
-                    self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+                # elif self.INS in ['TAX_IMP', 'TXA_IMP', 'TAY_IMP', 'TYA_IMP']:
+                #     source = self.INS[1]
+                #     dest = self.INS[2]
+                #     self.registers[dest] = self.registers[source]
+                #     self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
+                #     self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
 
-                elif self.INS in ['TXS_IMP', 'TSX_IMP']:
-                    source = self.INS[1]
-                    dest = self.INS[2]
-                    if dest == 'X':
-                        self.registers[dest] = self.stack_pointer
-                        self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
-                    elif dest == 'S':
-                        self.stack_pointer = self.registers[source]
+                # elif self.INS in ['TXS_IMP', 'TSX_IMP']:
+                #     source = self.INS[1]
+                #     dest = self.INS[2]
+                #     if dest == 'X':
+                #         self.registers[dest] = self.stack_pointer
+                #         self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
+                #     elif dest == 'S':
+                #         self.stack_pointer = self.registers[source]
 
-                    self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+                #     self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
 
-                elif self.INS in ['ASL_ACC', 'ASL_ZP', 'ASL_ZP_X', 'ASL_ABS', 'ASL_ABS_X']:
-                    if self.INS == 'ASL_ACC':
-                        value = self.registers['A']
-                        carry_flag = 1 if (value & 0b10000000) > 0 else 0
-                        value = value << 1
-                        value = value & 0b0000000011111110
-                        self.registers['A'] = value
-                        self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-                        self.setFlagsManually(flags=['C'], value=carry_flag)
-                        self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
-                    else:
-                        ins_set = self.INS.split('_')
-                        address_mode = '_'.join(_ for _ in ins_set[1:])
-                        address = self.determineAddress(mode=address_mode)
-                        value = self.readMemory(address=address, increment_pc=False, bytes=1)
-                        carry_flag = 1 if (value & 0b10000000) > 0 else 0
-                        value = value << 1
-                        value = value & 0b0000000011111110
-                        self.cycleInc()  # Extra cycle for modify stage in RMW instruction per note at top.
-                        self.writeMemory(data=value, address=address, bytes=1)
-                        self.setFlagsByValue(value=value, flags=['Z', 'N'])
-                        self.setFlagsManually(flags=['C'], value=carry_flag)
+                # elif self.INS in ['ASL_ACC', 'ASL_ZP', 'ASL_ZP_X', 'ASL_ABS', 'ASL_ABS_X']:
+                #     if self.INS == 'ASL_ACC':
+                #         value = self.registers['A']
+                #         carry_flag = 1 if (value & 0b10000000) > 0 else 0
+                #         value = value << 1
+                #         value = value & 0b0000000011111110
+                #         self.registers['A'] = value
+                #         self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                #         self.setFlagsManually(flags=['C'], value=carry_flag)
+                #         self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+                #     else:
+                #         ins_set = self.INS.split('_')
+                #         address_mode = '_'.join(_ for _ in ins_set[1:])
+                #         address = self.determineAddress(mode=address_mode)
+                #         value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                #         carry_flag = 1 if (value & 0b10000000) > 0 else 0
+                #         value = value << 1
+                #         value = value & 0b0000000011111110
+                #         self.cycleInc()  # Extra cycle for modify stage in RMW instruction per note at top.
+                #         self.writeMemory(data=value, address=address, bytes=1)
+                #         self.setFlagsByValue(value=value, flags=['Z', 'N'])
+                #         self.setFlagsManually(flags=['C'], value=carry_flag)
 
-                elif self.INS in ['LSR_ACC', 'LSR_ZP', 'LSR_ZP_X', 'LSR_ABS', 'LSR_ABS_X']:
-                    if self.INS == 'LSR_ACC':
-                        value = self.registers['A']
-                        carry_flag = 1 if (value & 0b00000001) > 0 else 0
-                        value = value >> 1
-                        value = value & 0b0000000001111111
-                        self.registers['A'] = value
-                        self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-                        self.setFlagsManually(flags=['C'], value=carry_flag)
-                        self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
-                    else:
-                        ins_set = self.INS.split('_')
-                        address_mode = '_'.join(_ for _ in ins_set[1:])
-                        address = self.determineAddress(mode=address_mode)
-                        value = self.readMemory(address=address, increment_pc=False, bytes=1)
-                        carry_flag = 1 if (value & 0b00000001) > 0 else 0
-                        value = value >> 1
-                        value = value & 0b0000000001111111
-                        self.cycleInc()  # Extra cycle for modify stage in RMW instruction per note at top.
-                        self.writeMemory(data=value, address=address, bytes=1)
-                        self.setFlagsByValue(value=value, flags=['Z', 'N'])
-                        self.setFlagsManually(flags=['C'], value=carry_flag)
+                # elif self.INS in ['LSR_ACC', 'LSR_ZP', 'LSR_ZP_X', 'LSR_ABS', 'LSR_ABS_X']:
+                #     if self.INS == 'LSR_ACC':
+                #         value = self.registers['A']
+                #         carry_flag = 1 if (value & 0b00000001) > 0 else 0
+                #         value = value >> 1
+                #         value = value & 0b0000000001111111
+                #         self.registers['A'] = value
+                #         self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                #         self.setFlagsManually(flags=['C'], value=carry_flag)
+                #         self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+                #     else:
+                #         ins_set = self.INS.split('_')
+                #         address_mode = '_'.join(_ for _ in ins_set[1:])
+                #         address = self.determineAddress(mode=address_mode)
+                #         value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                #         carry_flag = 1 if (value & 0b00000001) > 0 else 0
+                #         value = value >> 1
+                #         value = value & 0b0000000001111111
+                #         self.cycleInc()  # Extra cycle for modify stage in RMW instruction per note at top.
+                #         self.writeMemory(data=value, address=address, bytes=1)
+                #         self.setFlagsByValue(value=value, flags=['Z', 'N'])
+                #         self.setFlagsManually(flags=['C'], value=carry_flag)
 
-                elif self.INS == 'ORA_IM':
-                    value = self.readMemory()
-                    result = self.registers['A'] | value
-                    self.registers['A'] = result
-                    self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                # elif self.INS == 'ORA_IM':
+                #     value = self.readMemory()
+                #     result = self.registers['A'] | value
+                #     self.registers['A'] = result
+                #     self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
-                elif self.INS in ['ORA_ZP', 'ORA_ZP_X', 'ORA_ABS', 'ORA_ABS_X', 'ORA_ABS_Y', 'ORA_IND_X', 'ORA_IND_Y']:
-                    ins_set = self.INS.split('_')
-                    address_mode = '_'.join(_ for _ in ins_set[1:])
-                    address = self.determineAddress(mode=address_mode)
-                    value = self.readMemory(address=address, increment_pc=False, bytes=1)
-                    result = self.registers['A'] | value
-                    self.registers['A'] = result
-                    self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                # elif self.INS in ['ORA_ZP', 'ORA_ZP_X', 'ORA_ABS', 'ORA_ABS_X', 'ORA_ABS_Y', 'ORA_IND_X', 'ORA_IND_Y']:
+                #     ins_set = self.INS.split('_')
+                #     address_mode = '_'.join(_ for _ in ins_set[1:])
+                #     address = self.determineAddress(mode=address_mode)
+                #     value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                #     result = self.registers['A'] | value
+                #     self.registers['A'] = result
+                #     self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
-                elif self.INS == 'EOR_IM':
-                    value = self.readMemory()
-                    result = self.registers['A'] ^ value
-                    self.registers['A'] = result
-                    self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                # elif self.INS == 'EOR_IM':
+                #     value = self.readMemory()
+                #     result = self.registers['A'] ^ value
+                #     self.registers['A'] = result
+                #     self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
-                elif self.INS in ['EOR_ZP', 'EOR_ZP_X', 'EOR_ABS', 'EOR_ABS_X', 'EOR_ABS_Y', 'EOR_IND_X', 'EOR_IND_Y']:
-                    ins_set = self.INS.split('_')
-                    address_mode = '_'.join(_ for _ in ins_set[1:])
-                    address = self.determineAddress(mode=address_mode)
-                    value = self.readMemory(address=address, increment_pc=False, bytes=1)
-                    result = self.registers['A'] ^ value
-                    self.registers['A'] = result
-                    self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                # elif self.INS in ['EOR_ZP', 'EOR_ZP_X', 'EOR_ABS', 'EOR_ABS_X', 'EOR_ABS_Y', 'EOR_IND_X', 'EOR_IND_Y']:
+                #     ins_set = self.INS.split('_')
+                #     address_mode = '_'.join(_ for _ in ins_set[1:])
+                #     address = self.determineAddress(mode=address_mode)
+                #     value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                #     result = self.registers['A'] ^ value
+                #     self.registers['A'] = result
+                #     self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
-                elif self.INS == 'AND_IM':
-                    value = self.readMemory()
-                    result = self.registers['A'] & value
-                    self.registers['A'] = result
-                    self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                # elif self.INS == 'AND_IM':
+                #     value = self.readMemory()
+                #     result = self.registers['A'] & value
+                #     self.registers['A'] = result
+                #     self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
-                elif self.INS in ['AND_ZP', 'AND_ZP_X', 'AND_ABS', 'AND_ABS_X', 'AND_ABS_Y', 'AND_IND_X', 'AND_IND_Y']:
-                    ins_set = self.INS.split('_')
-                    address_mode = '_'.join(_ for _ in ins_set[1:])
-                    address = self.determineAddress(mode=address_mode)
-                    value = self.readMemory(address=address, increment_pc=False, bytes=1)
-                    result = self.registers['A'] & value
-                    self.registers['A'] = result
-                    self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+                # elif self.INS in ['AND_ZP', 'AND_ZP_X', 'AND_ABS', 'AND_ABS_X', 'AND_ABS_Y', 'AND_IND_X', 'AND_IND_Y']:
+                #     ins_set = self.INS.split('_')
+                #     address_mode = '_'.join(_ for _ in ins_set[1:])
+                #     address = self.determineAddress(mode=address_mode)
+                #     value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                #     result = self.registers['A'] & value
+                #     self.registers['A'] = result
+                #     self.setFlagsByRegister(register='A', flags=['Z', 'N'])
 
                 elif self.INS in ['SBC_ZP', 'SBC_ZP_X', 'SBC_ABS', 'SBC_ABS_X', 'SBC_ABS_Y', 'SBC_IND_X', 'SBC_IND_Y']:
                     orig_A_register_value = self.registers['A']
@@ -1144,60 +1505,60 @@ class CPU6502:
                             v = 0
                         self.setFlagsManually(flags='V', value=1 if v > 0 else 0)
 
-                elif self.INS == 'JSR_ABS':
-                    ins_set = self.INS.split('_')
-                    address_mode = '_'.join(_ for _ in ins_set[1:])
-                    address = self.determineAddress(mode=address_mode)
-                    self.savePCAtStackPointer()
-                    self.program_counter = address
-                    if self.logging:
-                        self.logAction(f'Jumping to location [{self.program_counter:04X}]')
-                    self.cycleInc()
+                # elif self.INS == 'JSR_ABS':
+                #     ins_set = self.INS.split('_')
+                #     address_mode = '_'.join(_ for _ in ins_set[1:])
+                #     address = self.determineAddress(mode=address_mode)
+                #     self.savePCAtStackPointer()
+                #     self.program_counter = address
+                #     if self.logging:
+                #         self.logAction(f'Jumping to location [{self.program_counter:04X}]')
+                #     self.cycleInc()
 
-                elif self.INS == 'RTS_IMP':
-                    self.handleSingleByteInstruction()
-                    self.loadPCFromStackPointer()
-                    self.programCounterInc()
+                # elif self.INS == 'RTS_IMP':
+                #     self.handleSingleByteInstruction()
+                #     self.loadPCFromStackPointer()
+                #     self.programCounterInc()
 
-                elif self.INS in ['INC_ZP', 'INC_ZP_X', 'INC_ABS', 'INC_ABS_X']:
-                    ins_set = self.INS.split('_')
-                    address_mode = '_'.join(_ for _ in ins_set[1:])
-                    address = self.determineAddress(mode=address_mode)
-                    value = self.readMemory(address=address, increment_pc=False, bytes=1)
-                    value += 1
-                    value = value % 0x100
-                    self.cycleInc()  # Is this really necessary? -- apparently, yes
-                    self.writeMemory(data=value, address=address, bytes=1)
-                    self.setFlagsByValue(value=value, flags=['N', 'Z'])
+                # elif self.INS in ['INC_ZP', 'INC_ZP_X', 'INC_ABS', 'INC_ABS_X']:
+                #     ins_set = self.INS.split('_')
+                #     address_mode = '_'.join(_ for _ in ins_set[1:])
+                #     address = self.determineAddress(mode=address_mode)
+                #     value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                #     value += 1
+                #     value = value % 0x100
+                #     self.cycleInc()  # Is this really necessary? -- apparently, yes
+                #     self.writeMemory(data=value, address=address, bytes=1)
+                #     self.setFlagsByValue(value=value, flags=['N', 'Z'])
 
-                elif self.INS in ['INX_IMP', 'INY_IMP']:
-                    value = self.registers[self.INS[2]]
-                    value += 1
-                    value = value % 0x100
-                    self.cycleInc()  # Is this really necessary?
-                    self.registers[self.INS[2]] = value
-                    self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
+                # elif self.INS in ['INX_IMP', 'INY_IMP']:
+                #     value = self.registers[self.INS[2]]
+                #     value += 1
+                #     value = value % 0x100
+                #     self.cycleInc()  # Is this really necessary?
+                #     self.registers[self.INS[2]] = value
+                #     self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
 
-                elif self.INS in ['DEC_ZP', 'DEC_ZP_X', 'DEC_ABS', 'DEC_ABS_X']:
-                    ins_set = self.INS.split('_')
-                    address_mode = '_'.join(_ for _ in ins_set[1:])
-                    address = self.determineAddress(mode=address_mode)
-                    value = self.readMemory(address=address, increment_pc=False, bytes=1)
-                    value -= 1
-                    if value < 0:
-                        value = 0xFF
-                    self.cycleInc()  # Is this really necessary? -- apparently, yes
-                    self.writeMemory(data=value, address=address, bytes=1)
-                    self.setFlagsByValue(value=value, flags=['N', 'Z'])
+                # elif self.INS in ['DEC_ZP', 'DEC_ZP_X', 'DEC_ABS', 'DEC_ABS_X']:
+                #     ins_set = self.INS.split('_')
+                #     address_mode = '_'.join(_ for _ in ins_set[1:])
+                #     address = self.determineAddress(mode=address_mode)
+                #     value = self.readMemory(address=address, increment_pc=False, bytes=1)
+                #     value -= 1
+                #     if value < 0:
+                #         value = 0xFF
+                #     self.cycleInc()  # Is this really necessary? -- apparently, yes
+                #     self.writeMemory(data=value, address=address, bytes=1)
+                #     self.setFlagsByValue(value=value, flags=['N', 'Z'])
 
-                elif self.INS in ['DEX_IMP', 'DEY_IMP']:
-                    self.handleSingleByteInstruction()
-                    value = self.registers[self.INS[2]]
-                    value -= 1
-                    if value < 0:
-                        value = 0xFF
-                    self.registers[self.INS[2]] = value
-                    self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
+                # elif self.INS in ['DEX_IMP', 'DEY_IMP']:
+                #     self.handleSingleByteInstruction()
+                #     value = self.registers[self.INS[2]]
+                #     value -= 1
+                #     if value < 0:
+                #         value = 0xFF
+                #     self.registers[self.INS[2]] = value
+                #     self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
 
                 # elif self.INS.startswith('ST'):
                 #     ins_set = self.INS.split('_')
@@ -1206,12 +1567,12 @@ class CPU6502:
                 #     address = self.determineAddress(mode=address_mode)
                 #     self.writeMemory(data=self.registers[target], address=address, bytes=1)
 
-                elif self.INS in ['CLC_IMP', 'CLI_IMP', 'CLD_IMP', 'CLV_IMP', 'SEC_IMP', 'SED_IMP', 'SEI_IMP']:
-                    if self.INS in ['CLC_IMP', 'CLI_IMP', 'CLD_IMP', 'CLV_IMP']:
-                        self.setFlagsManually(flags=[self.INS[2]], value=0)
-                    else:
-                        self.setFlagsManually(flags=[self.INS[2]], value=1)
-                    self.handleSingleByteInstruction()
+                # elif self.INS in ['CLC_IMP', 'CLI_IMP', 'CLD_IMP', 'CLV_IMP', 'SEC_IMP', 'SED_IMP', 'SEI_IMP']:
+                #     if self.INS in ['CLC_IMP', 'CLI_IMP', 'CLD_IMP', 'CLV_IMP']:
+                #         self.setFlagsManually(flags=[self.INS[2]], value=0)
+                #     else:
+                #         self.setFlagsManually(flags=[self.INS[2]], value=1)
+                #     self.handleSingleByteInstruction()
 
                 # elif self.INS.startswith('LD'):
                 #     ins_set = self.INS.split('_')
@@ -1225,27 +1586,26 @@ class CPU6502:
                 #     self.registers[register] = data
                 #     self.setFlagsByRegister(register=register, flags=['Z', 'N'])
 
-                elif self.INS in ['JMP_ABS']:
-                    ins_set = self.INS.split('_')
-                    address_mode = '_'.join(_ for _ in ins_set[1:])
-                    address = self.determineAddress(mode=address_mode)
-                    self.program_counter = address
-                    if self.logging:
-                        self.logAction(f'Jumping to location [{self.program_counter:04X}]')
+                # elif self.INS in ['JMP_ABS']:
+                #     ins_set = self.INS.split('_')
+                #     address_mode = '_'.join(_ for _ in ins_set[1:])
+                #     address = self.determineAddress(mode=address_mode)
+                #     self.program_counter = address
+                #     if self.logging:
+                #         self.logAction(f'Jumping to location [{self.program_counter:04X}]')
 
-                elif self.INS == 'JMP_IND':
-                    address = self.determineAddress(mode='IND')
-                    address = self.readMemory(address=address, increment_pc=False, bytes=2)
-                    self.program_counter = address
-                    if self.logging:
-                        self.logAction(f'Jumping to location [{self.program_counter:04X}]')
+                # elif self.INS == 'JMP_IND':
+                #     address = self.determineAddress(mode='IND')
+                #     address = self.readMemory(address=address, increment_pc=False, bytes=2)
+                #     self.program_counter = address
+                #     if self.logging:
+                #         self.logAction(f'Jumping to location [{self.program_counter:04X}]')
 
-                elif self.INS == 'NOP':
-                    self.handleSingleByteInstruction()
+                # elif self.INS == 'NOP':
+                #     self.handleSingleByteInstruction()
 
                 if not self.continuous:
                     break
-
 
         except Exception as e:
             self.exception_message = str(e)
