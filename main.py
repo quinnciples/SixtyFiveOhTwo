@@ -103,22 +103,36 @@ def flags_test():
 
 
 def functional_test_program():
-    program = []
-    with open('binary/6502_functional_test.bin', 'rb') as f:
-        data = f.read()
-    for d in data:
-        program.append(d)
 
-    # print(program[0x03F6: 0x040F])
-    # print(len(program))
-    cpu = None
-    cpu = CPU6502(cycle_limit=200_000_000, printActivity=False, enableBRK=True, logging=True, logFile='log.txt')
-    cpu.reset(program_counter=0x0400)
-    cpu.loadProgram(instructions=program, memoryAddress=0x000A, mainProgram=False)
-    cpu.program_counter = 0x0400
-    # print(cpu.memory[0x400:0x40F])
-    cpu.execute()
-    print(f'{cpu.cycles:,} cycles. Elapesd time {cpu.execution_time}.')
+    try:
+
+        program = []
+        print('Loading in binary file...')
+        with open('binary/6502_functional_test.bin', 'rb') as f:
+            data = f.read()
+        print('Converting to text...')
+        for d in data:
+            program.append(d)
+
+        # print(program[0x03F6: 0x040F])
+        # print(len(program))
+
+        cpu = None
+        cpu = CPU6502(cycle_limit=200_000_000, printActivity=False, enableBRK=True, logging=True, logFile='log.txt')
+        # cpu = CPU6502(cycle_limit=10_000_000, printActivity=False, enableBRK=True, logging=False)
+        cpu.reset(program_counter=0x0400)
+        cpu.loadProgram(instructions=program, memoryAddress=0x000A, mainProgram=False)
+        cpu.program_counter = 0x0400
+        # print(cpu.memory[0x400:0x40F])
+        print('Running program...')
+        cpu.execute()
+
+    except Exception as e:
+        print(str(e))
+
+    finally:
+        # print(f'{cpu.cycles:,} cycles. Elapesd time {cpu.execution_time}.')
+        cpu.printBenchmarkInfo()
 
 
 def runBenchmark():
@@ -437,13 +451,13 @@ def startrek():
 
 if __name__ == '__main__':
     # run()
-    fibonacci_test()
+    # fibonacci_test()
     # print()
     # fast_multiply_10()
     # print()
     # flags_test()
     # print()
-    # functional_test_program()
+    functional_test_program()
     # print()
     # runBenchmark()
     # print()
@@ -473,3 +487,4 @@ if __name__ == '__main__':
     # print()
     # apple_30th()
     # startrek()
+    pass
