@@ -42,7 +42,7 @@ def TEST_0xBA_TSX():
     cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
     cpu.reset(program_counter=0xFF00)
     program = [0xBA]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.load_program(instructions=program, memoryAddress=0xFF00)
     cpu.registers = INITIAL_REGISTERS
     cpu.flags = INITIAL_FLAGS
     cpu.stack_pointer = 0x0C
@@ -57,8 +57,8 @@ def TEST_0xBA_TSX():
         return True
     except AssertionError:
         print(f'{bcolors.FAIL}FAILED{bcolors.ENDC}', end='\n')
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        cpu.print_log()
+        cpu.memory_dump(startingAddress=0xFF00, endingAddress=0xFF02)
         print(f'Cycles: {cpu.cycles-1}')
         print(f'Expected Registers: {EXPECTED_REGISTERS}')
         raise
@@ -102,7 +102,7 @@ def TEST_0xBA_TSX_ZERO_FLAG_SET():
     cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
     cpu.reset(program_counter=0xFF00)
     program = [0xBA]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.load_program(instructions=program, memoryAddress=0xFF00)
     cpu.registers = INITIAL_REGISTERS
     cpu.flags = INITIAL_FLAGS
     cpu.stack_pointer = 0x00
@@ -117,8 +117,8 @@ def TEST_0xBA_TSX_ZERO_FLAG_SET():
         return True
     except AssertionError:
         print(f'{bcolors.FAIL}FAILED{bcolors.ENDC}', end='\n')
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        cpu.print_log()
+        cpu.memory_dump(startingAddress=0xFF00, endingAddress=0xFF02)
         print(f'Cycles: {cpu.cycles-1}')
         print(f'Expected Registers: {EXPECTED_REGISTERS}')
         raise
@@ -162,7 +162,7 @@ def TEST_0xBA_TSX_NEGATIVE_FLAG_SET():
     cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
     cpu.reset(program_counter=0xFF00)
     program = [0xBA]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.load_program(instructions=program, memoryAddress=0xFF00)
     cpu.registers = INITIAL_REGISTERS
     cpu.flags = INITIAL_FLAGS
     cpu.stack_pointer = 0xFA
@@ -177,8 +177,8 @@ def TEST_0xBA_TSX_NEGATIVE_FLAG_SET():
         return True
     except AssertionError:
         print(f'{bcolors.FAIL}FAILED{bcolors.ENDC}', end='\n')
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        cpu.print_log()
+        cpu.memory_dump(startingAddress=0xFF00, endingAddress=0xFF02)
         print(f'Cycles: {cpu.cycles-1}')
         print(f'Expected Registers: {EXPECTED_REGISTERS}')
         raise

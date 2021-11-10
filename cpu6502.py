@@ -16,7 +16,7 @@ if monitoring:
     log = open('time.txt', 'w')
 
 
-def timetrack(func):
+def time_track(func):
     if not monitoring:
         return func
 
@@ -153,8 +153,8 @@ class CPU6502:
     SIXTEEN_BIT_HIGH_BYTE_MASK = 0b1111111100000000
     SIXTEEN_BIT_LOW_BYTE_MASK = 0b0000000011111111
     OPCODES_WRITE_TO_MEMORY = ('STA', 'STX', 'STY', 'ROL', 'ROR', 'ASL', 'LSR', 'INC', 'DEC')
-    # Instruction: [Flag, Value to Test]
     OPCODES_BRANCHING_TABLE = {
+        # Instruction: [Flag, Value to Test]
         'BEQ': ['Z', 1],
         'BNE': ['Z', 0],
         'BCC': ['C', 0],
@@ -362,12 +362,12 @@ class CPU6502:
 
         self.logging = logging
         if logFile:
-            self.logFile = open(logFile, 'w')
+            self.log_file = open(logFile, 'w')
         else:
-            self.logFile = None
+            self.log_file = None
 
         self.action = []
-        self.printActivity = printActivity
+        self.print_activity = printActivity
 
         self.registers = {
             'A': 0,
@@ -386,9 +386,9 @@ class CPU6502:
             'N': 0   # Negative flag
         }
 
-        self.initializeMemory()
+        self.initialize_memory()
         self.cycles = 0
-        self.initializeLog()
+        self.initialize_log()
 
         self.hooks = {
             'KBD': 0xD010,
@@ -397,14 +397,14 @@ class CPU6502:
             'DSPCR': 0xD013
         }
 
-    def initializeMemory(self):
+    def initialize_memory(self):
         self.memory = [0x00] * CPU6502.MAX_MEMORY_SIZE
         # self.value = 0x0D
 
     def getMemory(self):
         return self.memory
 
-    def memoryDump(self, startingAddress=None, endingAddress=None, display_format='Hex'):
+    def memory_dump(self, startingAddress=None, endingAddress=None, display_format='Hex'):
         # print('\nMemory Dump:\n')
         print()
         line = ''  # to clear issues with pylance
@@ -422,80 +422,80 @@ class CPU6502:
             print(line)
             startingAddress += ITEMS_PER_ROW
 
-    @timetrack
+    @time_track
     def extraFunctions(self):
         pass
 
-    @timetrack
-    def cycleInc(self):
+    @time_track
+    def cycle(self):
         if self.logging:
-            self.logState()
-            if self.printActivity:
-                self.printState()
+            self.log_state()
+            if self.print_activity:
+                self.print_state()
             self.action = []
         self.cycles += 1
 
-    def logAction(self, action=''):
+    def log_action(self, action=''):
         if self.logging:
             self.action.append(action)
 
-    @timetrack
-    def programCounterInc(self):
+    @time_track
+    def program_counter_increment(self):
         self.program_counter += 1
         if self.program_counter >= CPU6502.MAX_MEMORY_SIZE:
             self.program_counter = 0
 
-    @timetrack
-    def stackPointerDec(self):
+    @time_track
+    def stack_pointer_decrement(self):
         self.stack_pointer -= 1
         if self.stack_pointer < 0x00:
             self.stack_pointer = 0xFF
 
-    @timetrack
-    def stackPointerInc(self):
-        self.cycleInc()
+    @time_track
+    def stack_pointer_increment(self):
+        self.cycle()
         self.stack_pointer += 1
         if self.stack_pointer > 0xFF:
             self.stack_pointer = 0x00
 
-    @timetrack
-    def getStackPointerAddress(self):
+    @time_track
+    def get_stack_pointer_address(self):
         return self.stack_pointer | 0x0100
 
-    @timetrack
-    def savePCAtStackPointer(self):
+    @time_track
+    def save_pc_at_stack_pointer(self):
         if self.INS == 'BRK':
             hi_byte = ((self.program_counter) & CPU6502.SIXTEEN_BIT_HIGH_BYTE_MASK) >> 8
             lo_byte = (self.program_counter) & CPU6502.SIXTEEN_BIT_LOW_BYTE_MASK
         else:
             hi_byte = ((self.program_counter - 1) & CPU6502.SIXTEEN_BIT_HIGH_BYTE_MASK) >> 8
             lo_byte = (self.program_counter - 1) & CPU6502.SIXTEEN_BIT_LOW_BYTE_MASK
-        self.writeMemory(data=hi_byte, address=self.getStackPointerAddress(), bytes=1)
-        self.stackPointerDec()
-        self.writeMemory(data=lo_byte, address=self.getStackPointerAddress(), bytes=1)
-        self.stackPointerDec()
+        self.write_memory(data=hi_byte, address=self.get_stack_pointer_address(), bytes=1)
+        self.stack_pointer_decrement()
+        self.write_memory(data=lo_byte, address=self.get_stack_pointer_address(), bytes=1)
+        self.stack_pointer_decrement()
 
-    @timetrack
-    def saveByteAtStackPointer(self, data=None):
+    @time_track
+    def save_byte_at_stack_pointer(self, data=None):
         # Enforce 1 byte size
         assert(0x00 <= data <= 0xFF)
         assert(data is not None)
-        self.writeMemory(data=data, address=self.getStackPointerAddress(), bytes=1)
-        self.stackPointerDec()
+        self.write_memory(data=data, address=self.get_stack_pointer_address(), bytes=1)
+        self.stack_pointer_decrement()
 
-    @timetrack
-    def loadPCFromStackPointer(self):
-        self.stackPointerInc()
-        lo_byte = self.readMemory(increment_pc=False, address=self.getStackPointerAddress(), bytes=1)
-        self.stackPointerInc()
-        hi_byte = self.readMemory(increment_pc=False, address=self.getStackPointerAddress(), bytes=1)
+    @time_track
+    def load_pc_from_stack_pointer(self):
+        self.stack_pointer_increment()
+        lo_byte = self.read_memory(increment_pc=False, address=self.get_stack_pointer_address(), bytes=1)
+        self.stack_pointer_increment()
+        hi_byte = self.read_memory(increment_pc=False, address=self.get_stack_pointer_address(), bytes=1)
         self.program_counter = lo_byte
         self.program_counter += (hi_byte << 8)
 
-    @timetrack
-    def loadByteFromStackPointer(self):
-        self.stackPointerInc()
-        byte = self.readMemory(increment_pc=False, address=self.getStackPointerAddress(), bytes=1)
+    @time_track
+    def load_byte_from_stack_pointer(self):
+        self.stack_pointer_increment()
+        byte = self.read_memory(increment_pc=False, address=self.get_stack_pointer_address(), bytes=1)
         return byte
 
     def reset(self, program_counter=0xFFFE):
@@ -511,24 +511,24 @@ class CPU6502:
         self.flags['U'] = 1
         # self.flags['B'] = 1
 
-    @timetrack
-    def readMemory(self, increment_pc=True, address=None, bytes=1) -> int:
+    @time_track
+    def read_memory(self, increment_pc=True, address=None, bytes=1) -> int:
         if address:
             assert(0x0000 <= address <= 0xFFFF)
         data = 0
         for byte in range(bytes):
-            self.cycleInc()
+            self.cycle()
             if not address:
                 data += (self.memory[self.program_counter] * (0x100 ** byte))
                 if self.logging:
-                    self.logAction(f'Read  memory address [{self.program_counter:04X}] : value [{self.memory[self.program_counter]:02X}]')
+                    self.log_action(f'Read  memory address [{self.program_counter:04X}] : value [{self.memory[self.program_counter]:02X}]')
             else:
                 data += (self.memory[address + byte] * (0x100 ** byte))
                 if self.logging:
-                    self.logAction(f'Read  memory address [{(address + byte):04X}] : value [{self.memory[address + byte]:02X}]')
+                    self.log_action(f'Read  memory address [{(address + byte):04X}] : value [{self.memory[address + byte]:02X}]')
 
             if increment_pc:
-                self.programCounterInc()
+                self.program_counter_increment()
 
             # Begin Apple I hooks
             if address is not None and (address + byte) == self.hooks['KBD']:  # Reading KBD clears b7 on KBDCR
@@ -536,38 +536,38 @@ class CPU6502:
 
         return data
 
-    @timetrack
-    def writeMemory(self, data, address, bytes=1):
+    @time_track
+    def write_memory(self, data, address, bytes=1):
         if address:
             assert(0x0000 <= address <= 0xFFFF)
 
         for byte in range(bytes):
-            self.cycleInc()
+            self.cycle()
             self.memory[address + byte] = data
             if self.logging:
-                self.logAction(f'Write memory address [{address + byte:04X}] : value [{data:02X}]')
+                self.log_action(f'Write memory address [{address + byte:04X}] : value [{data:02X}]')
 
             # Begin Apple I hooks
             if (address + byte) == self.hooks['DSP']:
                 self.memory[self.hooks['DSP']] = self.memory[self.hooks['DSP']] | 0b10000000
 
-    @timetrack
-    def setFlagsByRegister(self, register=None, flags=[]):
+    @time_track
+    def set_flags_by_register(self, register=None, flags=[]):
         if 'Z' in flags:
             if self.registers[register] == 0:
                 self.flags['Z'] = 1
             else:
                 self.flags['Z'] = 0
             if self.logging:
-                self.logAction(action=f'Setting Z flag based on register [{register}] : value [{self.registers[register]:02X}]')
+                self.log_action(action=f'Setting Z flag based on register [{register}] : value [{self.registers[register]:02X}]')
 
         if 'N' in flags:
             self.flags['N'] = self.registers[register] >> 7 & 1
             if self.logging:
-                self.logAction(action=f'Setting N flag based on register [{register}] : value [{self.registers[register]:>08b}]')
+                self.log_action(action=f'Setting N flag based on register [{register}] : value [{self.registers[register]:>08b}]')
 
-    @timetrack
-    def setFlagsByValue(self, value=None, flags=[]):
+    @time_track
+    def set_flags_by_value(self, value=None, flags=[]):
         if value is None or len(flags) == 0:
             return
 
@@ -577,7 +577,7 @@ class CPU6502:
             else:
                 self.flags['Z'] = 0
             if self.logging:
-                self.logAction(action=f'Setting Z flag based on value [{value:02X}]')
+                self.log_action(action=f'Setting Z flag based on value [{value:02X}]')
 
         if 'N' in flags:
             if value & 0b10000000 > 0:
@@ -585,87 +585,87 @@ class CPU6502:
             else:
                 self.flags['N'] = 0
             if self.logging:
-                self.logAction(action=f'Setting N flag based on value [{value:>08b}]')
+                self.log_action(action=f'Setting N flag based on value [{value:>08b}]')
 
-    @timetrack
-    def setFlagsManually(self, flags=[], value=None):
+    @time_track
+    def set_flags_manually(self, flags=[], value=None):
         if value is None or value < 0 or value > 1:
             return
         for flag in flags:
             self.flags[flag] = value
             if self.logging:
-                self.logAction(action=f'Setting {flag} flag manually to [{value}]')
+                self.log_action(action=f'Setting {flag} flag manually to [{value}]')
 
-    @timetrack
-    def determineAddress(self, mode):
+    @time_track
+    def determine_address(self, mode):
         address = 0
         if mode == 'IM':
             address = self.program_counter
-            self.programCounterInc()
+            self.program_counter_increment()
             return address
         elif mode == 'ZP':
-            address = self.readMemory()
+            address = self.read_memory()
             return address
         elif mode == 'ZP_X':
-            address = self.readMemory()
+            address = self.read_memory()
             address += self.registers['X']
             # Zero Page address wraps around if the value exceeds 0xFF
             address = address % 0x100
-            self.cycleInc()
+            self.cycle()
             return address
         elif mode == 'ZP_Y':
-            address = self.readMemory()
+            address = self.read_memory()
             address += self.registers['Y']
             # Zero Page address wraps around if the value exceeds 0xFF
             address = address % 0x100
-            self.cycleInc()
+            self.cycle()
             return address
         elif mode == 'ABS':
-            address = self.readMemory(bytes=2)
+            address = self.read_memory(bytes=2)
             return address
         elif mode == 'ABS_X':
-            address = self.readMemory(bytes=2)
+            address = self.read_memory(bytes=2)
             address += self.registers['X']
             if int(address / 0x100) != int((address - self.registers['X']) / 0x100) or (self.INS[0:3] in CPU6502.OPCODES_WRITE_TO_MEMORY):
-                self.cycleInc()  # Only if PAGE crossed or instruction writes to memory
+                self.cycle()  # Only if PAGE crossed or instruction writes to memory
             return address
         elif mode == 'ABS_Y':
-            address = self.readMemory(bytes=2)
+            address = self.read_memory(bytes=2)
             address += self.registers['Y']
             if (int(address / 0x100) != int((address - self.registers['Y']) / 0x100)) or (self.INS[0:3] in CPU6502.OPCODES_WRITE_TO_MEMORY):
-                self.cycleInc()  # Only if PAGE crossed or instruction writes to memory
+                self.cycle()  # Only if PAGE crossed or instruction writes to memory
             return address
         elif mode == 'IND':  # Indirect
-            address = self.readMemory(bytes=2)
+            address = self.read_memory(bytes=2)
             return address
         elif mode == 'IND_X':
-            address = self.readMemory()
+            address = self.read_memory()
             address += self.registers['X']
             # Zero Page address wraps around if the value exceeds 0xFF
             address = address % 0x100
-            self.cycleInc()
-            address = self.readMemory(address=address, increment_pc=False, bytes=2)
+            self.cycle()
+            address = self.read_memory(address=address, increment_pc=False, bytes=2)
             return address
         elif mode == 'IND_Y':
-            address = self.readMemory()
-            address = self.readMemory(address=address, increment_pc=False, bytes=2)
+            address = self.read_memory()
+            address = self.read_memory(address=address, increment_pc=False, bytes=2)
             address += self.registers['Y']
             if int(address / 0x100) != int((address - self.registers['Y']) / 0x100) or (self.INS[0:3] in CPU6502.OPCODES_WRITE_TO_MEMORY):
-                self.cycleInc()  # Only if PAGE crossed or instruction writes to memory
+                self.cycle()  # Only if PAGE crossed or instruction writes to memory
             return address
 
         return address
 
-    @timetrack
-    def getProcessorStatus(self) -> int:
+    @time_track
+    def get_processor_status(self) -> int:
         order = ['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N']
         state = 0
         for shift, flag in enumerate(order):
             state += (self.flags[flag] << shift)
         return state
 
-    @timetrack
-    def getProcessorStatusString(self) -> str:
+    @time_track
+    def get_processor_status_string(self) -> str:
         order = ['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N']
         flag_string = ''
         for shift, flag in enumerate(reversed(order)):
@@ -674,24 +674,24 @@ class CPU6502:
             flag_string += flag.upper() if self.flags.get(flag, 1) == 1 else flag.lower()
         return flag_string
 
-    @timetrack
-    def setProcessorStatus(self, flags: int):
+    @time_track
+    def set_processor_status(self, flags: int):
         order = ['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N']
         for shift, flag in enumerate(order):
             flag_value = (flags >> shift) & 0b00000001
-            self.setFlagsManually(flags=[flag], value=flag_value)
+            self.set_flags_manually(flags=[flag], value=flag_value)
 
     def handleBRK(self):
         address = self.memory[0xFFFF] << 8
         address += self.memory[0xFFFE]
         self.program_counter = address
 
-    def handleSingleByteInstruction(self):
-        self.cycleInc()
+    def handle_single_byte_instruction(self):
+        self.cycle()
         # self.readMemory()
 
-    def readNextInstruction(self) -> bool:
-        self.OPCODE = self.readMemory()
+    def read_next_instruction(self) -> bool:
+        self.OPCODE = self.read_memory()
         self.INS = CPU6502.OPCODES.get(self.OPCODE, None)
         if self.INS:
             self.INS_FAMILY = '_'.join(('INS', self.INS[0:3]))
@@ -707,20 +707,20 @@ class CPU6502:
 
     def INS_ADC(self) -> None:
         orig_A_register_value = self.registers['A']
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        value = self.read_memory(address=address, increment_pc=False, bytes=1)
         if self.flags['D'] == 0:
             orig_value = value
             value += self.registers['A'] + self.flags['C']
             self.registers['A'] = value & 0b0000000011111111
-            self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+            self.set_flags_by_register(register='A', flags=['Z', 'N'])
             carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
-            self.setFlagsManually(flags=['C'], value=carry_flag)
+            self.set_flags_manually(flags=['C'], value=carry_flag)
             overflow_flag = 0
             if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
                 if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
                     overflow_flag = 1
-            self.setFlagsManually(flags=['V'], value=overflow_flag)
+            self.set_flags_manually(flags=['V'], value=overflow_flag)
         elif self.flags['D'] == 1:
             c = (self.registers['A'] & 0x0f) + (value & 0x0f) + (self.flags['C'])
             if c > 0x09:
@@ -730,60 +730,60 @@ class CPU6502:
             if (c > 0x99):
                 c += 0x60
             self.registers['A'] = c & 0xFF
-            self.setFlagsByRegister(register='A', flags=['N', 'Z'])
-            self.setFlagsManually(flags='C', value=0)
+            self.set_flags_by_register(register='A', flags=['N', 'Z'])
+            self.set_flags_manually(flags='C', value=0)
             if c > 0xFF:
-                self.setFlagsManually(flags='C', value=1)
+                self.set_flags_manually(flags='C', value=1)
             if (((self.registers['A'] ^ value) & 0x80) != 0):
                 v = 0
-            self.setFlagsManually(flags='V', value=1 if v > 0 else 0)
+            self.set_flags_manually(flags='V', value=1 if v > 0 else 0)
 
     def INS_AND(self) -> None:
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        value = self.read_memory(address=address, increment_pc=False, bytes=1)
         result = self.registers['A'] & value
         self.registers['A'] = result
-        self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+        self.set_flags_by_register(register='A', flags=['Z', 'N'])
 
-    def handleBranchingOpcodes(self) -> None:
+    def handle_branching_opcodes(self) -> None:
         """
         Covers BCC, BCS, BEQ, BMI, BNE, BPL, BVC, BVS"""
-        offset = self.readMemory()
+        offset = self.read_memory()
         flag, test_value = CPU6502.OPCODES_BRANCHING_TABLE[self.INS]
         if self.flags[flag] == test_value:
             if offset > 127:
                 offset = (256 - offset) * (-1)
             self.program_counter += offset
-            self.cycleInc()
+            self.cycle()
             if self.logging:
-                self.logAction(f'Branch test passed. Jumping to location [{self.program_counter:04X}] offset [{offset}] bytes')
+                self.log_action(f'Branch test passed. Jumping to location [{self.program_counter:04X}] offset [{offset}] bytes')
             # Check if page was crossed
             if ((self.program_counter & CPU6502.SIXTEEN_BIT_HIGH_BYTE_MASK) != ((self.program_counter - offset) & CPU6502.SIXTEEN_BIT_HIGH_BYTE_MASK)):
-                self.cycleInc()
+                self.cycle()
 
     def INS_BCC(self) -> None:
-        self.handleBranchingOpcodes()
+        self.handle_branching_opcodes()
 
     def INS_BCS(self) -> None:
-        self.handleBranchingOpcodes()
+        self.handle_branching_opcodes()
 
     def INS_BEQ(self) -> None:
-        self.handleBranchingOpcodes()
+        self.handle_branching_opcodes()
 
     def INS_BMI(self) -> None:
-        self.handleBranchingOpcodes()
+        self.handle_branching_opcodes()
 
     def INS_BNE(self) -> None:
-        self.handleBranchingOpcodes()
+        self.handle_branching_opcodes()
 
     def INS_BPL(self) -> None:
-        self.handleBranchingOpcodes()
+        self.handle_branching_opcodes()
 
     def INS_BVC(self) -> None:
-        self.handleBranchingOpcodes()
+        self.handle_branching_opcodes()
 
     def INS_BVS(self) -> None:
-        self.handleBranchingOpcodes()
+        self.handle_branching_opcodes()
 
     def INS_ASL(self) -> None:
         if self.ADDRESS_MODE == 'ACC':
@@ -792,194 +792,194 @@ class CPU6502:
             value = value << 1
             value = value & 0b0000000011111110
             self.registers['A'] = value
-            self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-            self.setFlagsManually(flags=['C'], value=carry_flag)
-            self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+            self.set_flags_by_register(register='A', flags=['Z', 'N'])
+            self.set_flags_manually(flags=['C'], value=carry_flag)
+            self.handle_single_byte_instruction()  # 1 byte instruction -- read next byte and ignore
         else:
-            address = self.determineAddress(mode=self.ADDRESS_MODE)
-            value = self.readMemory(address=address, increment_pc=False, bytes=1)
+            address = self.determine_address(mode=self.ADDRESS_MODE)
+            value = self.read_memory(address=address, increment_pc=False, bytes=1)
             carry_flag = 1 if (value & 0b10000000) > 0 else 0
             value = value << 1
             value = value & 0b0000000011111110
-            self.cycleInc()  # Extra cycle for modify stage in RMW instruction per note at top.
-            self.writeMemory(data=value, address=address, bytes=1)
-            self.setFlagsByValue(value=value, flags=['Z', 'N'])
-            self.setFlagsManually(flags=['C'], value=carry_flag)
+            self.cycle()  # Extra cycle for modify stage in RMW instruction per note at top.
+            self.write_memory(data=value, address=address, bytes=1)
+            self.set_flags_by_value(value=value, flags=['Z', 'N'])
+            self.set_flags_manually(flags=['C'], value=carry_flag)
 
     def INS_BIT(self) -> None:
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        value = self.read_memory(address=address, increment_pc=False, bytes=1)
         zero_flag = 1 if (self.registers['A'] & value) == 0 else 0
-        self.setFlagsManually(flags=['Z'], value=zero_flag)
-        self.setFlagsByValue(value=value, flags=['N'])
+        self.set_flags_manually(flags=['Z'], value=zero_flag)
+        self.set_flags_by_value(value=value, flags=['N'])
         overflow_flag = (value & 0b01000000) >> 6
-        self.setFlagsManually(flags=['V'], value=overflow_flag)
+        self.set_flags_manually(flags=['V'], value=overflow_flag)
 
     def INS_BRK(self) -> None:
         # Reference wiki.nesdev.com/w/index.php/Status_flags
         # Possibly need a readMemory() call here according to http://nesdev.com/the%20%27B%27%20flag%20&%20BRK%20instruction.txt
-        self.readMemory()  # BRK is 2 byte instruction - this byte is read and ignored
+        self.read_memory()  # BRK is 2 byte instruction - this byte is read and ignored
         # Save program counter to stack
-        self.savePCAtStackPointer()
+        self.save_pc_at_stack_pointer()
         # Save flags to stack
-        value = self.getProcessorStatus()
+        value = self.get_processor_status()
         # Manually set bits 4 and 5 to 1
         value = value | 0b00110000
-        self.saveByteAtStackPointer(data=value)
+        self.save_byte_at_stack_pointer(data=value)
         # Set B flag
-        self.setFlagsManually(['B'], 1)
+        self.set_flags_manually(['B'], 1)
         # Set interrupt disable flag
-        self.setFlagsManually(['I'], 1)
+        self.set_flags_manually(['I'], 1)
         # Manually change PC to 0xFFFE
         self.handleBRK()
 
     def INS_CLC(self) -> None:
-        self.setFlagsManually(flags=[self.INS[2]], value=0)
-        self.handleSingleByteInstruction()
+        self.set_flags_manually(flags=[self.INS[2]], value=0)
+        self.handle_single_byte_instruction()
 
     def INS_CLD(self) -> None:
-        self.setFlagsManually(flags=[self.INS[2]], value=0)
-        self.handleSingleByteInstruction()
+        self.set_flags_manually(flags=[self.INS[2]], value=0)
+        self.handle_single_byte_instruction()
 
     def INS_CLI(self) -> None:
-        self.setFlagsManually(flags=[self.INS[2]], value=0)
-        self.handleSingleByteInstruction()
+        self.set_flags_manually(flags=[self.INS[2]], value=0)
+        self.handle_single_byte_instruction()
 
     def INS_CLV(self) -> None:
-        self.setFlagsManually(flags=[self.INS[2]], value=0)
-        self.handleSingleByteInstruction()
+        self.set_flags_manually(flags=[self.INS[2]], value=0)
+        self.handle_single_byte_instruction()
 
-    def handleComparisonOpcodes(self, compare: int, value: int) -> None:
-        self.setFlagsManually(['C'], 0)
-        self.setFlagsManually(['Z'], 0)
+    def handle_comparison_opcodes(self, compare: int, value: int) -> None:
+        self.set_flags_manually(['C'], 0)
+        self.set_flags_manually(['Z'], 0)
         if compare >= value:
-            self.setFlagsManually(['C'], 1)
+            self.set_flags_manually(['C'], 1)
             # self.setFlagsManually(['Z'], 0)
         if compare == value:
             # self.setFlagsManually(['C'], 0)
-            self.setFlagsManually(['Z'], 1)
+            self.set_flags_manually(['Z'], 1)
         # if compare < value:
         result = (compare - value) & CPU6502.EIGHT_BIT_MASK
-        self.setFlagsByValue(value=result, flags=['N'])
+        self.set_flags_by_value(value=result, flags=['N'])
 
     def INS_CMP(self) -> None:
         target = 'A' if self.INS[2] not in ['X', 'Y'] else self.INS[2]
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        value = self.read_memory(address=address, increment_pc=False, bytes=1)
         compare = self.registers[target]
-        self.handleComparisonOpcodes(compare=compare, value=value)
+        self.handle_comparison_opcodes(compare=compare, value=value)
 
     def INS_CPX(self) -> None:
         target = 'A' if self.INS[2] not in ['X', 'Y'] else self.INS[2]
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        value = self.read_memory(address=address, increment_pc=False, bytes=1)
         compare = self.registers[target]
-        self.handleComparisonOpcodes(compare=compare, value=value)
+        self.handle_comparison_opcodes(compare=compare, value=value)
 
     def INS_CPY(self) -> None:
         target = 'A' if self.INS[2] not in ['X', 'Y'] else self.INS[2]
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        value = self.read_memory(address=address, increment_pc=False, bytes=1)
         compare = self.registers[target]
-        self.handleComparisonOpcodes(compare=compare, value=value)
+        self.handle_comparison_opcodes(compare=compare, value=value)
 
     def INS_DEC(self) -> None:
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        value = self.read_memory(address=address, increment_pc=False, bytes=1)
         value -= 1
         if value < 0:
             value = 0xFF
-        self.cycleInc()  # Is this really necessary? -- apparently, yes
-        self.writeMemory(data=value, address=address, bytes=1)
-        self.setFlagsByValue(value=value, flags=['N', 'Z'])
+        self.cycle()  # Is this really necessary? -- apparently, yes
+        self.write_memory(data=value, address=address, bytes=1)
+        self.set_flags_by_value(value=value, flags=['N', 'Z'])
 
     def INS_DEX(self) -> None:
-        self.handleSingleByteInstruction()
+        self.handle_single_byte_instruction()
         value = self.registers[self.INS[2]]
         value -= 1
         if value < 0:
             value = 0xFF
         self.registers[self.INS[2]] = value
-        self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
+        self.set_flags_by_register(register=self.INS[2], flags=['N', 'Z'])
 
     def INS_DEY(self) -> None:
-        self.handleSingleByteInstruction()
+        self.handle_single_byte_instruction()
         value = self.registers[self.INS[2]]
         value -= 1
         if value < 0:
             value = 0xFF
         self.registers[self.INS[2]] = value
-        self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
+        self.set_flags_by_register(register=self.INS[2], flags=['N', 'Z'])
 
     def INS_EOR(self) -> None:
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        value = self.read_memory(address=address, increment_pc=False, bytes=1)
         result = self.registers['A'] ^ value
         self.registers['A'] = result
-        self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+        self.set_flags_by_register(register='A', flags=['Z', 'N'])
 
     def INS_INC(self) -> None:
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        value = self.read_memory(address=address, increment_pc=False, bytes=1)
         value += 1
         value = value % 0x100
-        self.cycleInc()  # Is this really necessary? -- apparently, yes
-        self.writeMemory(data=value, address=address, bytes=1)
-        self.setFlagsByValue(value=value, flags=['N', 'Z'])
+        self.cycle()  # Is this really necessary? -- apparently, yes
+        self.write_memory(data=value, address=address, bytes=1)
+        self.set_flags_by_value(value=value, flags=['N', 'Z'])
 
     def INS_INX(self) -> None:
         value = self.registers[self.INS[2]]
         value += 1
         value = value % 0x100
-        self.cycleInc()  # Is this really necessary?
+        self.cycle()  # Is this really necessary?
         self.registers[self.INS[2]] = value
-        self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
+        self.set_flags_by_register(register=self.INS[2], flags=['N', 'Z'])
 
     def INS_INY(self) -> None:
         value = self.registers[self.INS[2]]
         value += 1
         value = value % 0x100
-        self.cycleInc()  # Is this really necessary?
+        self.cycle()  # Is this really necessary?
         self.registers[self.INS[2]] = value
-        self.setFlagsByRegister(register=self.INS[2], flags=['N', 'Z'])
+        self.set_flags_by_register(register=self.INS[2], flags=['N', 'Z'])
 
     def INS_JMP(self) -> None:
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
         if self.ADDRESS_MODE == 'IND':
-            address = self.readMemory(address=address, increment_pc=False, bytes=2)
+            address = self.read_memory(address=address, increment_pc=False, bytes=2)
 
         self.program_counter = address
         if self.logging:
-            self.logAction(f'Jumping to location [{self.program_counter:04X}]')
+            self.log_action(f'Jumping to location [{self.program_counter:04X}]')
 
     def INS_JSR(self) -> None:
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        self.savePCAtStackPointer()
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        self.save_pc_at_stack_pointer()
         self.program_counter = address
         if self.logging:
-            self.logAction(f'Jumping to location [{self.program_counter:04X}]')
-        self.cycleInc()
+            self.log_action(f'Jumping to location [{self.program_counter:04X}]')
+        self.cycle()
 
     def INS_LDA(self) -> None:
         register = self.INS_SET[0][2]
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        data = self.readMemory(address=address, increment_pc=False)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        data = self.read_memory(address=address, increment_pc=False)
         self.registers[register] = data
-        self.setFlagsByRegister(register=register, flags=['Z', 'N'])
+        self.set_flags_by_register(register=register, flags=['Z', 'N'])
 
     def INS_LDX(self) -> None:
         register = self.INS_SET[0][2]
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        data = self.readMemory(address=address, increment_pc=False)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        data = self.read_memory(address=address, increment_pc=False)
         self.registers[register] = data
-        self.setFlagsByRegister(register=register, flags=['Z', 'N'])
+        self.set_flags_by_register(register=register, flags=['Z', 'N'])
 
     def INS_LDY(self) -> None:
         register = self.INS_SET[0][2]
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        data = self.readMemory(address=address, increment_pc=False)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        data = self.read_memory(address=address, increment_pc=False)
         self.registers[register] = data
-        self.setFlagsByRegister(register=register, flags=['Z', 'N'])
+        self.set_flags_by_register(register=register, flags=['Z', 'N'])
 
     def INS_LSR(self) -> None:
         """
@@ -989,8 +989,8 @@ class CPU6502:
         if self.ADDRESS_MODE == 'ACC':
             value = self.registers['A']
         else:
-            address = self.determineAddress(mode=self.ADDRESS_MODE)
-            value = self.readMemory(address=address, increment_pc=False, bytes=1)
+            address = self.determine_address(mode=self.ADDRESS_MODE)
+            value = self.read_memory(address=address, increment_pc=False, bytes=1)
 
         carry_flag = 1 if (value & 0b00000001) > 0 else 0
         value = value >> 1
@@ -998,17 +998,17 @@ class CPU6502:
 
         if self.ADDRESS_MODE == 'ACC':
             self.registers['A'] = value
-            self.setFlagsByRegister(register='A', flags=['Z', 'N'])
-            self.setFlagsManually(flags=['C'], value=carry_flag)
-            self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+            self.set_flags_by_register(register='A', flags=['Z', 'N'])
+            self.set_flags_manually(flags=['C'], value=carry_flag)
+            self.handle_single_byte_instruction()  # 1 byte instruction -- read next byte and ignore
         else:
-            self.cycleInc()  # Extra cycle for modify stage in RMW instruction per note at top.
-            self.writeMemory(data=value, address=address, bytes=1)
-            self.setFlagsByValue(value=value, flags=['Z', 'N'])
-            self.setFlagsManually(flags=['C'], value=carry_flag)
+            self.cycle()  # Extra cycle for modify stage in RMW instruction per note at top.
+            self.write_memory(data=value, address=address, bytes=1)
+            self.set_flags_by_value(value=value, flags=['Z', 'N'])
+            self.set_flags_manually(flags=['C'], value=carry_flag)
 
     def INS_NOP(self) -> None:
-        self.handleSingleByteInstruction()
+        self.handle_single_byte_instruction()
 
     def INS_PHA(self) -> None:
         """
@@ -1016,36 +1016,36 @@ class CPU6502:
         IF THE BIG TEST BREAKS, THIS IS WHY!!!
         """
         value = self.registers['A']
-        self.saveByteAtStackPointer(data=value)
-        self.handleSingleByteInstruction()
+        self.save_byte_at_stack_pointer(data=value)
+        self.handle_single_byte_instruction()
 
     def INS_PHP(self) -> None:
         """
         May need to move self.handleSingleByteInstruction() to beginning
         IF THE BIG TEST BREAKS, THIS IS WHY!!!
         """
-        value = self.getProcessorStatus()
+        value = self.get_processor_status()
         # Manually set bits 4 and 5 to 1
         value = value | 0b00110000
-        self.saveByteAtStackPointer(data=value)
-        self.handleSingleByteInstruction()
+        self.save_byte_at_stack_pointer(data=value)
+        self.handle_single_byte_instruction()
 
     def INS_PLA(self) -> None:
         """
         May need to move self.handleSingleByteInstruction() to beginning
         IF THE BIG TEST BREAKS, THIS IS WHY!!!
         """
-        value = self.loadByteFromStackPointer()
+        value = self.load_byte_from_stack_pointer()
         self.registers['A'] = value
-        self.setFlagsByRegister(register='A', flags=['N', 'Z'])
-        self.handleSingleByteInstruction()
+        self.set_flags_by_register(register='A', flags=['N', 'Z'])
+        self.handle_single_byte_instruction()
 
     def INS_PLP(self) -> None:
         # Pull
         # PLP and BRK should ignore bits 4 & 5
-        flags = self.loadByteFromStackPointer()
-        self.setProcessorStatus(flags=flags)
-        self.handleSingleByteInstruction()
+        flags = self.load_byte_from_stack_pointer()
+        self.set_processor_status(flags=flags)
+        self.handle_single_byte_instruction()
 
     def INS_ROL(self) -> None:
         """
@@ -1054,10 +1054,10 @@ class CPU6502:
         """
         if self.ADDRESS_MODE == 'ACC':
             value = self.registers['A']
-            self.handleSingleByteInstruction()
+            self.handle_single_byte_instruction()
         else:
-            address = self.determineAddress(mode=self.ADDRESS_MODE)
-            value = self.readMemory(address=address, increment_pc=False, bytes=1)
+            address = self.determine_address(mode=self.ADDRESS_MODE)
+            value = self.read_memory(address=address, increment_pc=False, bytes=1)
 
         # Carry flag
         determine_carry_flag = (value & 0b10000000) >> 7
@@ -1066,17 +1066,17 @@ class CPU6502:
         value = value & CPU6502.EIGHT_BIT_MASK  # 8 bit mask
         value = value | 0b00000001 if current_carry_flag == 1 else value & 0b11111110
         if self.ADDRESS_MODE != 'ACC':
-            self.cycleInc()  # Necessary according to notes above
+            self.cycle()  # Necessary according to notes above
 
-        self.setFlagsManually(value=determine_carry_flag, flags=['C'])
+        self.set_flags_manually(value=determine_carry_flag, flags=['C'])
 
         # Negative flag and Zero flag
-        self.setFlagsByValue(value=value, flags=['N', 'Z'])
+        self.set_flags_by_value(value=value, flags=['N', 'Z'])
 
         if self.ADDRESS_MODE == 'ACC':
             self.registers['A'] = value
         else:
-            self.writeMemory(data=value, address=address, bytes=1)
+            self.write_memory(data=value, address=address, bytes=1)
 
     def INS_ROR(self) -> None:
         """
@@ -1085,10 +1085,10 @@ class CPU6502:
         """
         if self.ADDRESS_MODE == 'ACC':
             value = self.registers['A']
-            self.handleSingleByteInstruction()
+            self.handle_single_byte_instruction()
         else:
-            address = self.determineAddress(mode=self.ADDRESS_MODE)
-            value = self.readMemory(address=address, increment_pc=False, bytes=1)
+            address = self.determine_address(mode=self.ADDRESS_MODE)
+            value = self.read_memory(address=address, increment_pc=False, bytes=1)
 
         # Carry flag
         determine_carry_flag = value & 0b00000001
@@ -1097,52 +1097,52 @@ class CPU6502:
         value = value & CPU6502.EIGHT_BIT_MASK  # 8 bit mask
         value = value | 0b10000000 if current_carry_flag == 1 else value & 0b01111111
         if self.ADDRESS_MODE != 'ACC':
-            self.cycleInc()  # Necessary according to notes above
-        self.setFlagsManually(value=determine_carry_flag, flags=['C'])
+            self.cycle()  # Necessary according to notes above
+        self.set_flags_manually(value=determine_carry_flag, flags=['C'])
 
         # Negative flag and Zero flag
-        self.setFlagsByValue(value=value, flags=['N', 'Z'])
+        self.set_flags_by_value(value=value, flags=['N', 'Z'])
 
         if self.ADDRESS_MODE == 'ACC':
             self.registers['A'] = value
         else:
-            self.writeMemory(data=value, address=address, bytes=1)
+            self.write_memory(data=value, address=address, bytes=1)
 
     def INS_RTI(self) -> None:
         # Set flags from stack
-        flags = self.loadByteFromStackPointer()
+        flags = self.load_byte_from_stack_pointer()
         # PLP and BRK should ignore bits 4 & 5
-        self.setProcessorStatus(flags=flags)
+        self.set_processor_status(flags=flags)
         # Get PC from stack
-        self.loadPCFromStackPointer()
+        self.load_pc_from_stack_pointer()
 
     def INS_RTS(self) -> None:
         """
         May need to move self.handleSingleByteInstruction() to beginning
         IF THE BIG TEST BREAKS, THIS IS WHY!!!
         """
-        self.handleSingleByteInstruction()
-        self.loadPCFromStackPointer()
-        self.programCounterInc()
+        self.handle_single_byte_instruction()
+        self.load_pc_from_stack_pointer()
+        self.program_counter_increment()
 
     def INS_SBC(self) -> None:
         orig_A_register_value = self.registers['A']
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        value = self.read_memory(address=address, increment_pc=False, bytes=1)
 
         if self.flags['D'] == 0:
             value = 0b11111111 - value
             orig_value = value
             value += self.registers['A'] + self.flags['C']
             self.registers['A'] = value & 0b0000000011111111
-            self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+            self.set_flags_by_register(register='A', flags=['Z', 'N'])
             carry_flag = 1 if (value & 0b1111111100000000) > 0 else 0
-            self.setFlagsManually(flags=['C'], value=carry_flag)
+            self.set_flags_manually(flags=['C'], value=carry_flag)
             overflow_flag = 0
             if (orig_A_register_value & 0b10000000) == (orig_value & 0b10000000):
                 if ((self.registers['A'] & 0b10000000) != (orig_A_register_value & 0b10000000)) or ((self.registers['A'] & 0b10000000) != (orig_value & 0b10000000)):
                     overflow_flag = 1
-            self.setFlagsManually(flags=['V'], value=overflow_flag)
+            self.set_flags_manually(flags=['V'], value=overflow_flag)
         elif self.flags['D'] == 1:
             value = value ^ 0xFF
             c = (self.registers['A'] & 0x0f) + (value & 0x0f) + (self.flags['C'])
@@ -1153,52 +1153,52 @@ class CPU6502:
             if (c < 0x100):
                 c = (c + 0xa0) & 0xff
             self.registers['A'] = c & 0xFF
-            self.setFlagsByRegister(register='A', flags=['N', 'Z'])
-            self.setFlagsManually(flags='C', value=0)
+            self.set_flags_by_register(register='A', flags=['N', 'Z'])
+            self.set_flags_manually(flags='C', value=0)
             if c > 0xFF:
-                self.setFlagsManually(flags='C', value=1)
+                self.set_flags_manually(flags='C', value=1)
             if (((self.registers['A'] ^ value) & 0x80) != 0):
                 v = 0
-            self.setFlagsManually(flags='V', value=1 if v > 0 else 0)
+            self.set_flags_manually(flags='V', value=1 if v > 0 else 0)
 
     def INS_SEC(self) -> None:
         """
         May need to move self.handleSingleByteInstruction() to beginning
         IF THE BIG TEST BREAKS, THIS IS WHY!!!
         """
-        self.setFlagsManually(flags=[self.INS[2]], value=1)
-        self.handleSingleByteInstruction()
+        self.set_flags_manually(flags=[self.INS[2]], value=1)
+        self.handle_single_byte_instruction()
 
     def INS_SED(self) -> None:
         """
         May need to move self.handleSingleByteInstruction() to beginning
         IF THE BIG TEST BREAKS, THIS IS WHY!!!
         """
-        self.setFlagsManually(flags=[self.INS[2]], value=1)
-        self.handleSingleByteInstruction()
+        self.set_flags_manually(flags=[self.INS[2]], value=1)
+        self.handle_single_byte_instruction()
 
     def INS_SEI(self) -> None:
         """
         May need to move self.handleSingleByteInstruction() to beginning
         IF THE BIG TEST BREAKS, THIS IS WHY!!!
         """
-        self.setFlagsManually(flags=[self.INS[2]], value=1)
-        self.handleSingleByteInstruction()
+        self.set_flags_manually(flags=[self.INS[2]], value=1)
+        self.handle_single_byte_instruction()
 
     def INS_STA(self) -> None:
         target = self.INS_SET[0][2]
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        self.writeMemory(data=self.registers[target], address=address, bytes=1)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        self.write_memory(data=self.registers[target], address=address, bytes=1)
 
     def INS_STX(self) -> None:
         target = self.INS_SET[0][2]
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        self.writeMemory(data=self.registers[target], address=address, bytes=1)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        self.write_memory(data=self.registers[target], address=address, bytes=1)
 
     def INS_STY(self) -> None:
         target = self.INS_SET[0][2]
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        self.writeMemory(data=self.registers[target], address=address, bytes=1)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        self.write_memory(data=self.registers[target], address=address, bytes=1)
 
     def INS_TAX(self) -> None:
         """
@@ -1208,8 +1208,8 @@ class CPU6502:
         source = self.INS[1]
         dest = self.INS[2]
         self.registers[dest] = self.registers[source]
-        self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
-        self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+        self.set_flags_by_register(register=dest, flags=['N', 'Z'])
+        self.handle_single_byte_instruction()  # 1 byte instruction -- read next byte and ignore
 
     def INS_TAY(self) -> None:
         """
@@ -1219,8 +1219,8 @@ class CPU6502:
         source = self.INS[1]
         dest = self.INS[2]
         self.registers[dest] = self.registers[source]
-        self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
-        self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+        self.set_flags_by_register(register=dest, flags=['N', 'Z'])
+        self.handle_single_byte_instruction()  # 1 byte instruction -- read next byte and ignore
 
     def INS_TXA(self) -> None:
         """
@@ -1230,8 +1230,8 @@ class CPU6502:
         source = self.INS[1]
         dest = self.INS[2]
         self.registers[dest] = self.registers[source]
-        self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
-        self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+        self.set_flags_by_register(register=dest, flags=['N', 'Z'])
+        self.handle_single_byte_instruction()  # 1 byte instruction -- read next byte and ignore
 
     def INS_TXS(self) -> None:
         """
@@ -1239,7 +1239,7 @@ class CPU6502:
         IF THE BIG TEST BREAKS, THIS IS WHY!!!
         """
         self.stack_pointer = self.registers['X']
-        self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+        self.handle_single_byte_instruction()  # 1 byte instruction -- read next byte and ignore
 
     def INS_TSX(self) -> None:
         """
@@ -1247,8 +1247,8 @@ class CPU6502:
         IF THE BIG TEST BREAKS, THIS IS WHY!!!
         """
         self.registers['X'] = self.stack_pointer
-        self.setFlagsByRegister(register='X', flags=['N', 'Z'])
-        self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+        self.set_flags_by_register(register='X', flags=['N', 'Z'])
+        self.handle_single_byte_instruction()  # 1 byte instruction -- read next byte and ignore
 
     def INS_TYA(self) -> None:
         """
@@ -1258,17 +1258,17 @@ class CPU6502:
         source = self.INS[1]
         dest = self.INS[2]
         self.registers[dest] = self.registers[source]
-        self.setFlagsByRegister(register=dest, flags=['N', 'Z'])
-        self.handleSingleByteInstruction()  # 1 byte instruction -- read next byte and ignore
+        self.set_flags_by_register(register=dest, flags=['N', 'Z'])
+        self.handle_single_byte_instruction()  # 1 byte instruction -- read next byte and ignore
 
     def INS_ORA(self) -> None:
-        address = self.determineAddress(mode=self.ADDRESS_MODE)
-        value = self.readMemory(address=address, increment_pc=False, bytes=1)
+        address = self.determine_address(mode=self.ADDRESS_MODE)
+        value = self.read_memory(address=address, increment_pc=False, bytes=1)
         result = self.registers['A'] | value
         self.registers['A'] = result
-        self.setFlagsByRegister(register='A', flags=['Z', 'N'])
+        self.set_flags_by_register(register='A', flags=['Z', 'N'])
 
-    @timetrack
+    @time_track
     def execute(self):
         try:
             if not self.start_time:
@@ -1276,7 +1276,7 @@ class CPU6502:
             # Set starting position based on 0xFFFE/F
             # self.handleBRK()
 
-            while self.readNextInstruction() and self.cycles <= self.cycle_limit:
+            while self.read_next_instruction() and self.cycles <= self.cycle_limit:
 
                 self.__getattribute__(self.INS_FAMILY)()
 
@@ -1290,71 +1290,71 @@ class CPU6502:
         finally:
             self.execution_time = datetime.datetime.now() - self.start_time
 
-    @timetrack
-    def getLogString(self):
+    @time_track
+    def get_log_string(self):
         combined = {**{'%-10s' % 'Cycle': '%-10s' % str(self.cycles),
                     '%-10s' % 'INS': '%-10s' % self.INS},
                     **self.registers,
                     **self.flags,
-                    **{'SP': '0x{0:0{1}X}'.format(self.getStackPointerAddress(), 4),
+                    **{'SP': '0x{0:0{1}X}'.format(self.get_stack_pointer_address(), 4),
                     'PC': '0x{0:0{1}X}'.format(self.program_counter, 4),
                         'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2),
-                        '%-10s' % 'FLAGS': '%-10s' % self.getProcessorStatusString()
+                        '%-10s' % 'FLAGS': '%-10s' % self.get_processor_status_string()
                        },
                     '%-20s' % 'ACTION': '%-20s' % ' -> '.join(self.action)
                     }
         return combined
 
-    @timetrack
-    def getLogHeaderString(self):
-        combined = self.getLogString()
+    @time_track
+    def get_log_header_string(self):
+        combined = self.get_log_string()
         # headerString = bcolors.OKBLUE + '\t'.join(combined.keys()) + bcolors.ENDC
         headerString = '\t'.join(combined.keys())
         return headerString
 
-    @timetrack
-    def printState(self):
-        combined = self.getLogString()
-        headerString = self.getLogHeaderString()
+    @time_track
+    def print_state(self):
+        combined = self.get_log_string()
+        headerString = self.get_log_header_string()
         valueString = '\t'.join(str(v) for v in combined.values())
         if self.cycles == 0:
             print(headerString)
         print(valueString)
 
-    @timetrack
-    def initializeLog(self):
+    @time_track
+    def initialize_log(self):
         self.log = []
-        headerString = self.getLogHeaderString()
+        headerString = self.get_log_header_string()
         self.log.append(headerString)
-        if self.logFile:
-            self.logFile.write(headerString)
+        if self.log_file:
+            self.log_file.write(headerString)
 
-    @timetrack
-    def logState(self):
+    @time_track
+    def log_state(self):
         if self.logging:
-            combined = self.getLogString()
+            combined = self.get_log_string()
             # valueString = bcolors.ENDC + '\t'.join(str(v) for v in combined.values()) + bcolors.ENDC
             valueString = '\t'.join(str(v) for v in combined.values())
             self.log.append(valueString)
-            if self.logFile:
+            if self.log_file:
                 if self.cycles % 250000 == 0:
-                    self.logFile.close()
-                    self.logFile = open(self.logFile.name, 'w')
+                    self.log_file.close()
+                    self.log_file = open(self.log_file.name, 'w')
                     self.log = []
-                self.logFile.write(valueString + '\n')
+                self.log_file.write(valueString + '\n')
 
-    def printLog(self):
+    def print_log(self):
         for line in self.log:
             print(line)
 
-    def benchmarkInfo(self) -> str:
+    def benchmark_info(self) -> str:
         return f'\nCycles: {self.cycles - 1:,} :: Elapsed time: {self.execution_time} :: Cycles/sec: {(self.cycles - 1) / (.0001 + self.execution_time.total_seconds()):0,.2f}'
 
     def printBenchmarkInfo(self):
-        print(self.benchmarkInfo())
+        print(self.benchmark_info())
 
-    @timetrack
-    def loadProgram(self, instructions=[], memoryAddress=0x0000, mainProgram=True):
+    @time_track
+    def load_program(self, instructions=[], memoryAddress=0x0000, mainProgram=True):
         if mainProgram:
             # self.memory[0xFFFE] = memoryAddress & 0b0000000011111111
             # self.memory[0xFFFF] = (memoryAddress >> 8) & 0b0000000011111111

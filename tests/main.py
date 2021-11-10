@@ -98,14 +98,14 @@ def TEST_0x08_PHP_PLA_COMBINED_TEST():
         cpu = CPU6502(cycle_limit=100)
         cpu.reset(program_counter=0xFF00)
         push_program = [0x08, 0x00]
-        cpu.loadProgram(instructions=push_program, memoryAddress=0xFF00)
+        cpu.load_program(instructions=push_program, memoryAddress=0xFF00)
         cpu.registers = INITIAL_REGISTERS.copy()
         cpu.flags = INITIAL_FLAGS.copy()
         cpu.flags[flag] = 1
         cpu.execute()
 
         pull_program = [0x28, 0x00]
-        cpu.loadProgram(instructions=pull_program, memoryAddress=0xFF02)
+        cpu.load_program(instructions=pull_program, memoryAddress=0xFF02)
         cpu.program_counter = 0xFF02
         cpu.registers = INITIAL_REGISTERS.copy()
         cpu.flags = INITIAL_FLAGS.copy()
@@ -126,8 +126,8 @@ def TEST_0x08_PHP_PLA_COMBINED_TEST():
                 print(f'\t{bcolors.FAIL}CYCLE COUNT DOES NOT MATCH{bcolors.ENDC}', end='\n')
                 print(f'Cycles: {cpu.cycles-1} Expected Cycles: {EXPECTED_CYCLES}')
 
-            cpu.printLog()
-            cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF03)
+            cpu.print_log()
+            cpu.memory_dump(startingAddress=0xFF00, endingAddress=0xFF03)
             errors = True
         else:
             print(f'{bcolors.OKGREEN}PASSED{bcolors.ENDC}', end='\n')
@@ -171,7 +171,7 @@ def TEST_0x68_PLA_IMP_ZERO_FLAG_SET():
     cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
     cpu.reset(program_counter=0xFF00)
     program = [0x68, 0x00]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.load_program(instructions=program, memoryAddress=0xFF00)
     cpu.registers = INITIAL_REGISTERS
     cpu.flags = INITIAL_FLAGS
     cpu.memory[0x01FF] = EXPECTED_VALUE
@@ -185,9 +185,9 @@ def TEST_0x68_PLA_IMP_ZERO_FLAG_SET():
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         return True
     except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        cpu.memoryDump(startingAddress=0x01F8, endingAddress=0x01FF)
+        cpu.print_log()
+        cpu.memory_dump(startingAddress=0xFF00, endingAddress=0xFF02)
+        cpu.memory_dump(startingAddress=0x01F8, endingAddress=0x01FF)
         print(f'Cycles: {cpu.cycles-1}')
         print(f'Expected Flags: {EXPECTED_FLAGS}')
         raise
@@ -228,7 +228,7 @@ def TEST_0x68_PLA_IMP_NEGATIVE_FLAG_SET():
     cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
     cpu.reset(program_counter=0xFF00)
     program = [0x68, 0x00]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.load_program(instructions=program, memoryAddress=0xFF00)
     cpu.registers = INITIAL_REGISTERS
     cpu.flags = INITIAL_FLAGS
     cpu.memory[0x01FF] = EXPECTED_VALUE
@@ -242,9 +242,9 @@ def TEST_0x68_PLA_IMP_NEGATIVE_FLAG_SET():
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         return True
     except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        cpu.memoryDump(startingAddress=0x01F8, endingAddress=0x01FF)
+        cpu.print_log()
+        cpu.memory_dump(startingAddress=0xFF00, endingAddress=0xFF02)
+        cpu.memory_dump(startingAddress=0x01F8, endingAddress=0x01FF)
         print(f'Cycles: {cpu.cycles-1}')
         print(f'Expected Flags: {EXPECTED_FLAGS}')
         raise
@@ -285,7 +285,7 @@ def TEST_0x68_PLA_IMP():
     cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
     cpu.reset(program_counter=0xFF00)
     program = [0x68, 0x00]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.load_program(instructions=program, memoryAddress=0xFF00)
     cpu.registers = INITIAL_REGISTERS
     cpu.flags = INITIAL_FLAGS
     cpu.memory[0x01FF] = EXPECTED_VALUE
@@ -299,9 +299,9 @@ def TEST_0x68_PLA_IMP():
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         return True
     except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        cpu.memoryDump(startingAddress=0x01F8, endingAddress=0x01FF)
+        cpu.print_log()
+        cpu.memory_dump(startingAddress=0xFF00, endingAddress=0xFF02)
+        cpu.memory_dump(startingAddress=0x01F8, endingAddress=0x01FF)
         print(f'Cycles: {cpu.cycles-1}')
         print(f'Expected Flags: {EXPECTED_FLAGS}')
         raise
@@ -342,7 +342,7 @@ def TEST_0x48_PHA_IMP():
     cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
     cpu.reset(program_counter=0xFF00)
     program = [0x48, 0x00]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.load_program(instructions=program, memoryAddress=0xFF00)
     cpu.registers = INITIAL_REGISTERS
     cpu.flags = INITIAL_FLAGS
     cpu.execute()
@@ -355,9 +355,9 @@ def TEST_0x48_PHA_IMP():
         assert(cpu.cycles - 1 == EXPECTED_CYCLES)
         return True
     except AssertionError:
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        cpu.memoryDump(startingAddress=0x01F8, endingAddress=0x01FF)
+        cpu.print_log()
+        cpu.memory_dump(startingAddress=0xFF00, endingAddress=0xFF02)
+        cpu.memory_dump(startingAddress=0x01F8, endingAddress=0x01FF)
         print(f'Cycles: {cpu.cycles-1}')
         print(f'Expected Flags: {EXPECTED_FLAGS}')
         raise

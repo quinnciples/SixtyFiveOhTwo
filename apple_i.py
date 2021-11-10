@@ -69,10 +69,10 @@ import programs.lunar_lander
   200 END
 """
 
-cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
-cpu.loadProgram(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
+cpu.load_program(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
+cpu.load_program(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
 for tape in programs.lunar_lander.tapes:
-        cpu.loadProgram(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
+        cpu.load_program(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
 cpu.program_counter = wozmon_address
 print(f'Running {programs.apple_1_basic.name}...')
 print(programs.apple_1_basic.description)

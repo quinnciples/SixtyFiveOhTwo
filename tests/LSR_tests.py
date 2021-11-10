@@ -62,7 +62,7 @@ def TEST_0xEA_LSR_ACC_MODE_TESTS():
         EXPECTED_CYCLES = program[1]
         cpu = CPU6502(cycle_limit=100)
         cpu.reset(program_counter=0xFF00)
-        cpu.loadProgram(instructions=PROGRAM, memoryAddress=0xFF00)
+        cpu.load_program(instructions=PROGRAM, memoryAddress=0xFF00)
         cpu.registers = INITIAL_REGISTERS.copy()
         cpu.flags = INITIAL_FLAGS.copy()
         if ZP_ADDRESS is not None and VALUE_IN_MEMORY is not None:
@@ -101,11 +101,11 @@ def TEST_0xEA_LSR_ACC_MODE_TESTS():
                 or (INITIAL_MEMORY is not None and INITIAL_MEMORY != cpu.memory):
                 print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
 
-            cpu.printLog()
-            cpu.memoryDump(startingAddress=0xFF00, endingAddress=(0xFF00 + len(program)))
-            cpu.memoryDump(startingAddress=ZP_ADDRESS, endingAddress=ZP_ADDRESS + 1)
-            cpu.memoryDump(startingAddress=IND_ZP_ADDRESS, endingAddress=IND_ZP_ADDRESS + 1)
-            cpu.memoryDump(startingAddress=FULL_ADDRESS, endingAddress=FULL_ADDRESS + 1)
+            cpu.print_log()
+            cpu.memory_dump(startingAddress=0xFF00, endingAddress=(0xFF00 + len(program)))
+            cpu.memory_dump(startingAddress=ZP_ADDRESS, endingAddress=ZP_ADDRESS + 1)
+            cpu.memory_dump(startingAddress=IND_ZP_ADDRESS, endingAddress=IND_ZP_ADDRESS + 1)
+            cpu.memory_dump(startingAddress=FULL_ADDRESS, endingAddress=FULL_ADDRESS + 1)
 
             print(f'Program: ' + ', '.join('0x{0:0{1}X}'.format(x, 2) for x in program[0]))
             print(f'Cycles: {cpu.cycles-1} Expected Cycles: {EXPECTED_CYCLES}')
@@ -180,7 +180,7 @@ def TEST_0xEA_LSR_ADDRESS_MODE_TESTS():
         EXPECTED_CYCLES = program[1]
         cpu = CPU6502(cycle_limit=100)
         cpu.reset(program_counter=0xFF00)
-        cpu.loadProgram(instructions=PROGRAM, memoryAddress=0xFF00)
+        cpu.load_program(instructions=PROGRAM, memoryAddress=0xFF00)
         cpu.registers = INITIAL_REGISTERS.copy()
         cpu.flags = INITIAL_FLAGS.copy()
         if ZP_ADDRESS is not None and VALUE_IN_MEMORY is not None:
@@ -219,11 +219,11 @@ def TEST_0xEA_LSR_ADDRESS_MODE_TESTS():
                 or (INITIAL_MEMORY is not None and INITIAL_MEMORY != cpu.memory):
                 print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
 
-            cpu.printLog()
-            cpu.memoryDump(startingAddress=0xFF00, endingAddress=(0xFF00 + len(program)))
-            cpu.memoryDump(startingAddress=ZP_ADDRESS, endingAddress=ZP_ADDRESS + 1)
-            cpu.memoryDump(startingAddress=IND_ZP_ADDRESS, endingAddress=IND_ZP_ADDRESS + 1)
-            cpu.memoryDump(startingAddress=FULL_ADDRESS, endingAddress=FULL_ADDRESS + 1)
+            cpu.print_log()
+            cpu.memory_dump(startingAddress=0xFF00, endingAddress=(0xFF00 + len(program)))
+            cpu.memory_dump(startingAddress=ZP_ADDRESS, endingAddress=ZP_ADDRESS + 1)
+            cpu.memory_dump(startingAddress=IND_ZP_ADDRESS, endingAddress=IND_ZP_ADDRESS + 1)
+            cpu.memory_dump(startingAddress=FULL_ADDRESS, endingAddress=FULL_ADDRESS + 1)
 
             print(f'Program: ' + ', '.join('0x{0:0{1}X}'.format(x, 2) for x in program[0]))
             print(f'Cycles: {cpu.cycles-1} Expected Cycles: {EXPECTED_CYCLES}')
@@ -298,7 +298,7 @@ def TEST_0xEA_LSR_ADDRESS_MODE_TESTS_ZERO_FLAG_SET():
         EXPECTED_CYCLES = program[1]
         cpu = CPU6502(cycle_limit=100)
         cpu.reset(program_counter=0xFF00)
-        cpu.loadProgram(instructions=PROGRAM, memoryAddress=0xFF00)
+        cpu.load_program(instructions=PROGRAM, memoryAddress=0xFF00)
         cpu.registers = INITIAL_REGISTERS.copy()
         cpu.flags = INITIAL_FLAGS.copy()
         if ZP_ADDRESS is not None and VALUE_IN_MEMORY is not None:
@@ -337,11 +337,11 @@ def TEST_0xEA_LSR_ADDRESS_MODE_TESTS_ZERO_FLAG_SET():
                 or (INITIAL_MEMORY is not None and INITIAL_MEMORY != cpu.memory):
                 print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
 
-            cpu.printLog()
-            cpu.memoryDump(startingAddress=0xFF00, endingAddress=(0xFF00 + len(program)))
-            cpu.memoryDump(startingAddress=ZP_ADDRESS, endingAddress=ZP_ADDRESS + 1)
-            cpu.memoryDump(startingAddress=IND_ZP_ADDRESS, endingAddress=IND_ZP_ADDRESS + 1)
-            cpu.memoryDump(startingAddress=FULL_ADDRESS, endingAddress=FULL_ADDRESS + 1)
+            cpu.print_log()
+            cpu.memory_dump(startingAddress=0xFF00, endingAddress=(0xFF00 + len(program)))
+            cpu.memory_dump(startingAddress=ZP_ADDRESS, endingAddress=ZP_ADDRESS + 1)
+            cpu.memory_dump(startingAddress=IND_ZP_ADDRESS, endingAddress=IND_ZP_ADDRESS + 1)
+            cpu.memory_dump(startingAddress=FULL_ADDRESS, endingAddress=FULL_ADDRESS + 1)
 
             print(f'Program: ' + ', '.join('0x{0:0{1}X}'.format(x, 2) for x in program[0]))
             print(f'Cycles: {cpu.cycles-1} Expected Cycles: {EXPECTED_CYCLES}')
@@ -416,7 +416,7 @@ def TEST_0xEA_LSR_ADDRESS_MODE_TESTS_CARRY_FLAG_SET():
         EXPECTED_CYCLES = program[1]
         cpu = CPU6502(cycle_limit=100)
         cpu.reset(program_counter=0xFF00)
-        cpu.loadProgram(instructions=PROGRAM, memoryAddress=0xFF00)
+        cpu.load_program(instructions=PROGRAM, memoryAddress=0xFF00)
         cpu.registers = INITIAL_REGISTERS.copy()
         cpu.flags = INITIAL_FLAGS.copy()
         if ZP_ADDRESS is not None and VALUE_IN_MEMORY is not None:
@@ -455,11 +455,11 @@ def TEST_0xEA_LSR_ADDRESS_MODE_TESTS_CARRY_FLAG_SET():
                 or (INITIAL_MEMORY is not None and INITIAL_MEMORY != cpu.memory):
                 print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
 
-            cpu.printLog()
-            cpu.memoryDump(startingAddress=0xFF00, endingAddress=(0xFF00 + len(program)))
-            cpu.memoryDump(startingAddress=ZP_ADDRESS, endingAddress=ZP_ADDRESS + 1)
-            cpu.memoryDump(startingAddress=IND_ZP_ADDRESS, endingAddress=IND_ZP_ADDRESS + 1)
-            cpu.memoryDump(startingAddress=FULL_ADDRESS, endingAddress=FULL_ADDRESS + 1)
+            cpu.print_log()
+            cpu.memory_dump(startingAddress=0xFF00, endingAddress=(0xFF00 + len(program)))
+            cpu.memory_dump(startingAddress=ZP_ADDRESS, endingAddress=ZP_ADDRESS + 1)
+            cpu.memory_dump(startingAddress=IND_ZP_ADDRESS, endingAddress=IND_ZP_ADDRESS + 1)
+            cpu.memory_dump(startingAddress=FULL_ADDRESS, endingAddress=FULL_ADDRESS + 1)
 
             print(f'Program: ' + ', '.join('0x{0:0{1}X}'.format(x, 2) for x in program[0]))
             print(f'Cycles: {cpu.cycles-1} Expected Cycles: {EXPECTED_CYCLES}')
