@@ -3,6 +3,8 @@ import datetime
 import time
 # from bcolors import bcolors as bcolors
 import traceback
+import os
+os.system("cls")
 
 
 global tabcount
@@ -463,11 +465,11 @@ class CPU6502:
     @timetrack
     def savePCAtStackPointer(self):
         if self.INS == 'BRK':
-            hi_byte = ((self.program_counter) & 0b1111111100000000) >> 8
-            lo_byte = (self.program_counter) & 0b0000000011111111
+            hi_byte = ((self.program_counter) & CPU6502.SIXTEEN_BIT_HIGH_BYTE_MASK) >> 8
+            lo_byte = (self.program_counter) & CPU6502.SIXTEEN_BIT_LOW_BYTE_MASK
         else:
-            hi_byte = ((self.program_counter - 1) & 0b1111111100000000) >> 8
-            lo_byte = (self.program_counter - 1) & 0b0000000011111111
+            hi_byte = ((self.program_counter - 1) & CPU6502.SIXTEEN_BIT_HIGH_BYTE_MASK) >> 8
+            lo_byte = (self.program_counter - 1) & CPU6502.SIXTEEN_BIT_LOW_BYTE_MASK
         self.writeMemory(data=hi_byte, address=self.getStackPointerAddress(), bytes=1)
         self.stackPointerDec()
         self.writeMemory(data=lo_byte, address=self.getStackPointerAddress(), bytes=1)
@@ -1356,8 +1358,8 @@ class CPU6502:
         if mainProgram:
             # self.memory[0xFFFE] = memoryAddress & 0b0000000011111111
             # self.memory[0xFFFF] = (memoryAddress >> 8) & 0b0000000011111111
-            self.memory[0xFFFE] = memoryAddress & CPU6502.SIXTEEN_BIT_LOW_BYTE_MASK
-            self.memory[0xFFFF] = memoryAddress & CPU6502.SIXTEEN_BIT_HIGH_BYTE_MASK
+            self.memory[0xFFFE] = memoryAddress & CPU6502.EIGHT_BIT_MASK
+            self.memory[0xFFFF] = (memoryAddress >> 8) & CPU6502.EIGHT_BIT_MASK
         for ins in instructions:
             self.memory[memoryAddress] = ins
             memoryAddress += 1

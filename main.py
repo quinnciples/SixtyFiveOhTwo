@@ -449,7 +449,31 @@ def startrek():
     cpu.execute()
 
 
+def decimal_mode_test():
+    cpu = None
+    cpu = CPU6502(cycle_limit=40, printActivity=False, enableBRK=False, logging=True)
+
+    program = [
+        0xA9, 0x09,  # LDA
+        0x8D, 0x00, 0x88,  # STA ABS
+        0x69, 0x01,  # ADC IM
+        0x8D, 0x01, 0x88,  # STA ABS
+        0xF8,  # SED
+        0xA9, 0x09,  # LDA
+        0x8D, 0x02, 0x88,  # STA ABS
+        0x69, 0x01,  # ADC IM
+        0x8D, 0x03, 0x88,  # STA ABS
+
+    ]
+    cpu.loadProgram(instructions=program, memoryAddress=0x8000, mainProgram=True)
+    cpu.program_counter = 0x8000
+    cpu.execute()
+    cpu.printLog()
+    cpu.memoryDump(startingAddress=0x8800, endingAddress=0x8807)
+
+
 if __name__ == '__main__':
+    decimal_mode_test()
     # run()
     # fibonacci_test()
     # print()
@@ -457,7 +481,7 @@ if __name__ == '__main__':
     # print()
     # flags_test()
     # print()
-    functional_test_program()
+    # functional_test_program()
     # print()
     # runBenchmark()
     # print()
