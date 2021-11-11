@@ -1268,6 +1268,12 @@ class CPU6502:
         self.registers['A'] = result
         self.set_flags_by_register(register='A', flags=['Z', 'N'])
 
+    ################################################################
+    #
+    # END INSTRUCTION METHODS
+    #
+    ################################################################
+
     @time_track
     def execute(self):
         try:
