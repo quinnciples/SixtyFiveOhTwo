@@ -465,7 +465,7 @@ def sort_test_8_bits() -> bool:
         # print(f'\tTesting sort of {NUMBER_SEQUENCE_LENGTH} elements: Expected {EXPECTED_DATA[1:]} / got {cpu.memory[0x4401:0x4401 + NUMBER_SEQUENCE_LENGTH]} -- ', end='')
         print(f'\tTesting sort of {NUMBER_SEQUENCE_LENGTH} elements: ', end='')
         if cpu.memory[0x4401:0x4401 + NUMBER_SEQUENCE_LENGTH] == EXPECTED_DATA[1:]:
-            print(f'{bcolors.OKGREEN}PASS{bcolors.ENDC} -- {cpu.cycles - 1:,} cycles. {cpu.execution_time}', end='\n')
+            print(f'{bcolors.OKGREEN}PASS{bcolors.ENDC} -- {cpu.cycles - 1:,} cycles. {cpu.execution_time} -- {(cpu.cycles - 1) / (cpu.execution_time.total_seconds() + 0.00001):0,.2f} cycles / sec', end='\n')
         else:
             print(f'{bcolors.FAIL}FAIL{bcolors.ENDC} -- {cpu.cycles - 1:,} cycles.', end='\n')
             cpu.memory_dump(startingAddress=0x4400, endingAddress=0x4400 + len(data) - 1, display_format='Dec')
@@ -708,7 +708,7 @@ def sort_test_16_bits() -> bool:
         # print(f'\tTesting sort of {NUMBER_SEQUENCE_LENGTH} elements: Expected {EXPECTED_DATA[1:]} / got {cpu.memory[0x4401:0x4401 + NUMBER_SEQUENCE_LENGTH]} -- ', end='')
         print(f'\tTesting sort of {NUMBER_SEQUENCE_LENGTH} elements: ', end='')
         if cpu.memory[0x4401:0x4401 + NUMBER_SEQUENCE_LENGTH * 2] == EXPECTED_DATA[1:]:
-            print(f'{bcolors.OKGREEN}PASS{bcolors.ENDC} -- {cpu.cycles - 1:,} cycles. {cpu.execution_time}', end='\n')
+            print(f'{bcolors.OKGREEN}PASS{bcolors.ENDC} -- {cpu.cycles - 1:,} cycles. {cpu.execution_time} -- {(cpu.cycles - 1) / (cpu.execution_time.total_seconds() + 0.00001):0,.2f} cycles / sec', end='\n')
         else:
             print(f'{bcolors.FAIL}FAIL{bcolors.ENDC} -- {cpu.cycles - 1:,} cycles.', end='\n')
             cpu.memory_dump(startingAddress=0x4400, endingAddress=0x4400 + len(data) - 1, display_format='Dec')
