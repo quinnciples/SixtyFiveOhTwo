@@ -49,7 +49,7 @@ import programs.apple_1_basic
 basic_program = programs.apple_1_basic.program
 basic_address = programs.apple_1_basic.starting_address
 
-import programs.lunar_lander
+import programs.codebreaker
 
 """ SAMPLE PROGRAM
     5 P=500
@@ -71,13 +71,13 @@ import programs.lunar_lander
 
 cpu.load_program(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
 cpu.load_program(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
-for tape in programs.lunar_lander.tapes:
+for tape in programs.codebreaker.tapes:
         cpu.load_program(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
 cpu.program_counter = wozmon_address
 print(f'Running {programs.apple_1_basic.name}...')
 print(programs.apple_1_basic.description)
 print(programs.apple_1_basic.instructions)
-print(programs.lunar_lander.instructions)
+print(programs.codebreaker.instructions)
 
 try:
     while True:

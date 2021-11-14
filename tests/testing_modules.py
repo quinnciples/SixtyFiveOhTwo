@@ -47,17 +47,17 @@ def generateProgram(instruction: str, registers: dict, immediate_value: int, zp_
             program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
 
         if address_mode == 'ABS' and address_mode in CYCLE_COUNTS.keys():
-            instructions = [opcode, sixteen_bit_address & 0b0000000011111111, (sixteen_bit_address & 0b1111111100000000) >> 8]
+            instructions = [opcode, sixteen_bit_address & CPU6502.SIXTEEN_BIT_LOW_BYTE_MASK, (sixteen_bit_address & CPU6502.SIXTEEN_BIT_HIGH_BYTE_MASK) >> 8]
             program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
 
         if address_mode == 'ABS_X' and address_mode in CYCLE_COUNTS.keys():
             target_sixteen_bit_address = sixteen_bit_address - registers.get('X', 0)
-            instructions = [opcode, target_sixteen_bit_address & 0b0000000011111111, (target_sixteen_bit_address & 0b1111111100000000) >> 8]
+            instructions = [opcode, target_sixteen_bit_address & CPU6502.SIXTEEN_BIT_LOW_BYTE_MASK, (target_sixteen_bit_address & CPU6502.SIXTEEN_BIT_HIGH_BYTE_MASK) >> 8]
             program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
 
         if address_mode == 'ABS_Y' and address_mode in CYCLE_COUNTS.keys():
             target_sixteen_bit_address = sixteen_bit_address - registers.get('Y', 0)
-            instructions = [opcode, target_sixteen_bit_address & 0b0000000011111111, (target_sixteen_bit_address & 0b1111111100000000) >> 8]
+            instructions = [opcode, target_sixteen_bit_address & CPU6502.SIXTEEN_BIT_LOW_BYTE_MASK, (target_sixteen_bit_address & CPU6502.SIXTEEN_BIT_HIGH_BYTE_MASK) >> 8]
             program[address_mode] = [instructions, CYCLE_COUNTS[address_mode]]
 
         if address_mode == 'IND_X' and address_mode in CYCLE_COUNTS.keys():
