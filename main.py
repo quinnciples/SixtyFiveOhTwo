@@ -1,4 +1,6 @@
 from cpu6502 import CPU6502
+import os
+os.system("cls")
 
 
 def run():
@@ -132,7 +134,7 @@ def functional_test_program():
 
     finally:
         # print(f'{cpu.cycles:,} cycles. Elapesd time {cpu.execution_time}.')
-        cpu.printBenchmarkInfo()
+        cpu.print_benchmark_info()
 
 
 def runBenchmark():
@@ -472,8 +474,128 @@ def decimal_mode_test():
     cpu.memory_dump(startingAddress=0x8800, endingAddress=0x8807)
 
 
+def count_set_bits_test():
+    """
+    int countSetBits(int a) {
+        int count = 0;
+        while (a) {
+            count++;
+            a &= (a - 1);
+        }
+        return count
+    }
+    """
+    cpu = None
+    cpu = CPU6502(cycle_limit=100_000, printActivity=False, enableBRK=False, logging=True)
+    # BEQ F0
+    # INC EE
+    # DEC CE
+    # AND 2D
+    # JMP 4C
+
+    # 0x4000 stores the number of bits
+    # 0x0000 stores the numbers
+    """
+        # Write out values in ZP table
+        0xA2, 0x00,  # LDX 0
+        0xA0, 0x00,  # LDY 0
+        0x96, 0x00,  # STX,Y ZP 0x00
+        0xE8,  # INX
+        0xC8,  # INY
+        0xD0, 0xFA,  # BNE -6
+
+        0xA9, 0x00,  # LDA 0
+        0xA2, 0x00,  # LDX 0
+        0xA0, 0x00,  # LDY 0
+        0x8D, 0x00, 0x40,  # STA ABS 0x4000
+        0xA9, 0xFF,  # LDA 255
+        0x8D, 0x00, 0x50,  # STA ABS 0x5000
+        # START
+        0xF0, 0x0F,  # BEQ to re-write table code
+        0xEE, 0x00, 0x40,  # INC ABS 0x4000
+        0xCE, 0x00, 0x50,  # DEC ABS 0x5000
+        0x2D, 0x00, 0x50,  # AND ABS 0x5000
+        0x8D, 0x00, 0x50,  # STA ABS 0x5000
+        0x4C, 0x18, 0x80,  # JMP ABS 0x8014
+
+        # Re-write out values in ZP table
+        0xA2, 0x00,  # LDX 0
+        0xA0, 0x00,  # LDY 0
+        0x96, 0x00,  # STX,Y ZP 0x00
+        0xE8,  # INX
+        0xC8,  # INY
+        0xD0, 0xFA,  # BNE -6
+    """
+    program = [
+        # Write out values in ZP table
+        0xA2, 0x00,  # LDX 0
+        0xA0, 0x00,  # LDY 0
+        0x96, 0x00,  # STX,Y ZP 0x00
+        0xE8,  # INX
+        0xC8,  # INY
+        0xD0, 0xFA,  # BNE -6
+
+        0xA9, 0x00,  # LDA 0
+        0xA2, 0x01,  # LDX 1
+        0xA0, 0x01,  # LDY 1
+        0x8D, 0x00, 0x40,  # STA ABS 0x4000
+        # LOAD NUMBER TO PROCESS
+        0xB5, 0x00,  # LDA ZP,X -- 0x8013
+        0x8D, 0x00, 0x50,  # STA ABS 0x5000
+        # START
+        0xF0, 0x0F,  # BEQ to re-write table code
+        0xFE, 0x00, 0x40,  # INC ABS,X 0x4000
+        0xDE, 0x00, 0x00,  # DEC ABS,X 0x0000
+        0x3D, 0x00, 0x00,  # AND ABS,X 0x0000
+        0x9D, 0x00, 0x00,  # STA ABS,X 0x0000
+        0x4C, 0x13, 0x80,  # JMP ABS 0x8013
+
+        # Re-write out values in ZP table
+        0xE8,  # INX - Check to see if we've done all 255 slots
+        0xD0, 0xE7,  # BNE BACK TO LOAD NUMBER TO PROCESS
+
+        0xA2, 0x00,  # LDX 0
+        0xA0, 0x00,  # LDY 0
+        0x96, 0x00,  # STX,Y ZP 0x00
+        0xE8,  # INX
+        0xC8,  # INY
+        0xD0, 0xFA,  # BNE -6
+
+
+
+
+    ]
+    cpu.load_program(instructions=program, memoryAddress=0x8000, mainProgram=True)
+    cpu.program_counter = 0x8000
+    cpu.execute()
+    # cpu.print_log()
+    cpu.memory_dump(startingAddress=0x0000, endingAddress=0x00FF, display_format='Dec')
+    cpu.memory_dump(startingAddress=0x4000, endingAddress=0x40FF, display_format='Dec')
+    # cpu.memory_dump(startingAddress=0x5000, endingAddress=0x5007, display_format='Dec')
+    cpu.print_benchmark_info()
+
+    from PIL import Image
+
+    SCALE = 4
+    ITEMS_PER_ROW = 256
+    img = Image.new('RGB', (ITEMS_PER_ROW * SCALE, CPU6502.MAX_MEMORY_SIZE // ITEMS_PER_ROW * SCALE), "black")  # Create a new black image
+    pixels = img.load()  # Create the pixel map
+    print('x', img.size[0], 'y', img.size[1])
+    for i, pix in enumerate(cpu.memory):
+        # print(i, i % 16, i // 16)
+        color_value = pix
+        for x_offset in range(SCALE):
+            for y_offset in range(SCALE):
+                pixels[(i % ITEMS_PER_ROW) * SCALE + x_offset, (i // ITEMS_PER_ROW) * SCALE + y_offset] = (color_value, color_value, color_value)  # Set the colour accordingly
+            # pixels[(i % 256) * SCALE + 1, (i // 256) * SCALE] = (color_value, color_value, color_value)  # Set the colour accordingly
+            # pixels[(i % 256) * SCALE, (i // 256) * SCALE + 1] = (color_value, color_value, color_value)  # Set the colour accordingly
+            # pixels[(i % 256) * SCALE + 1, (i // 256) * SCALE + 1] = (color_value, color_value, color_value)  # Set the colour accordingly
+    img.show()
+
+
 if __name__ == '__main__':
-    decimal_mode_test()
+    # decimal_mode_test()
+    count_set_bits_test()
     # run()
     # fibonacci_test()
     # print()

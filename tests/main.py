@@ -93,7 +93,7 @@ def TEST_0x08_PHP_PLA_COMBINED_TEST():
 
     print(f'{bcolors.UNDERLINE}Running {TEST_NAME}{bcolors.ENDC}')
     errors = False
-    for flag in INITIAL_FLAGS.keys():
+    for flag in INITIAL_FLAGS:
         print(f'\tTesting {flag}... ', end='')
         cpu = CPU6502(cycle_limit=100)
         cpu.reset(program_counter=0xFF00)
@@ -132,9 +132,7 @@ def TEST_0x08_PHP_PLA_COMBINED_TEST():
         else:
             print(f'{bcolors.OKGREEN}PASSED{bcolors.ENDC}', end='\n')
 
-    if errors:
-        return False
-    return True
+    return not errors
 
 
 def TEST_0x68_PLA_IMP_ZERO_FLAG_SET():
@@ -438,10 +436,10 @@ if __name__ == '__main__':
     print('TEST SUMMARY')
     for result in results:
         if result:
-            print(f"{bcolors.OKGREEN}{'▓'}{bcolors.ENDC}", end='')
+            print(f'{bcolors.OKGREEN}▓{bcolors.ENDC}', end='')
             passed += 1
         else:
-            print(f"{bcolors.FAIL}{'▓'}{bcolors.ENDC}", end='')
+            print(f'{bcolors.FAIL}▓{bcolors.ENDC}', end='')
             failed += 1
     print()
     print(f'{passed} TESTS {bcolors.OKGREEN}PASSED{bcolors.ENDC}', end='')

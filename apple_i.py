@@ -37,7 +37,7 @@ class PIA():
 
 
 cpu = CPU6502(cycle_limit=100_000_000, printActivity=False, enableBRK=False, logging=False, continuous=False)
-mem = cpu.getMemory()
+mem = cpu.get_memory()
 pia = PIA(memory=mem)
 
 
@@ -72,7 +72,7 @@ import programs.codebreaker
 cpu.load_program(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
 cpu.load_program(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
 for tape in programs.codebreaker.tapes:
-        cpu.load_program(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
+    cpu.load_program(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
 cpu.program_counter = wozmon_address
 print(f'Running {programs.apple_1_basic.name}...')
 print(programs.apple_1_basic.description)
@@ -88,7 +88,7 @@ except Exception as e:
     print(e)
 
 finally:
-    cpu.printBenchmarkInfo()
+    cpu.print_benchmark_info()
     from PIL import Image
 
     SCALE = 4

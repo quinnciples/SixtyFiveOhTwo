@@ -3,6 +3,8 @@ from testing_modules import generateProgram
 import sys
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
 from cpu6502 import CPU6502
+import pyjion
+pyjion.enable()
 
 
 def square_root_test() -> bool:
@@ -316,9 +318,7 @@ def square_root_test() -> bool:
         else:
             print(f'{bcolors.FAIL}FAIL{bcolors.ENDC}', end='\n')
             errors = True
-    if errors:
-        return False
-    return True
+    return not errors
 
 
 def fibonacci_test():
@@ -726,10 +726,7 @@ def custom_tests():
         sort_test_8_bits,
         sort_test_16_bits,
     ]
-    results = []
-    for test in tests:
-        results.append(test())
-    return results
+    return [test() for test in tests]
 
 
 if __name__ == '__main__':

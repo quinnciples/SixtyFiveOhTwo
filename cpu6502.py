@@ -4,6 +4,8 @@ import time
 # from bcolors import bcolors as bcolors
 import traceback
 import os
+import pyjion
+pyjion.enable()
 os.system("cls")
 
 
@@ -361,11 +363,7 @@ class CPU6502:
             CPU6502.OPCODES[0x00] = 'BRK'
 
         self.logging = logging
-        if logFile:
-            self.log_file = open(logFile, 'w')
-        else:
-            self.log_file = None
-
+        self.log_file = open(logFile, 'w') if logFile else None
         self.action = []
         self.print_activity = printActivity
 
@@ -401,7 +399,7 @@ class CPU6502:
         self.memory = [0x00] * CPU6502.MAX_MEMORY_SIZE
         # self.value = 0x0D
 
-    def getMemory(self):
+    def get_memory(self):
         return self.memory
 
     def memory_dump(self, startingAddress=None, endingAddress=None, display_format='Hex'):
@@ -410,7 +408,7 @@ class CPU6502:
         line = ''  # to clear issues with pylance
         header = ''
         row = ''
-        ITEMS_PER_ROW = 8
+        ITEMS_PER_ROW = 16
         while startingAddress <= endingAddress and startingAddress <= CPU6502.MAX_MEMORY_SIZE:
             if display_format == 'Hex':
                 header = '0x{0:0{1}X}:'.format(startingAddress, 4) + '\t'
@@ -495,8 +493,9 @@ class CPU6502:
     @time_track
     def load_byte_from_stack_pointer(self):
         self.stack_pointer_increment()
-        byte = self.read_memory(increment_pc=False, address=self.get_stack_pointer_address(), bytes=1)
-        return byte
+        return self.read_memory(
+            increment_pc=False, address=self.get_stack_pointer_address(), bytes=1
+        )
 
     def reset(self, program_counter=0xFFFE):
         self.program_counter = program_counter
@@ -554,10 +553,7 @@ class CPU6502:
     @time_track
     def set_flags_by_register(self, register=None, flags=[]):
         if 'Z' in flags:
-            if self.registers[register] == 0:
-                self.flags['Z'] = 1
-            else:
-                self.flags['Z'] = 0
+            self.flags['Z'] = 1 if self.registers[register] == 0 else 0
             if self.logging:
                 self.log_action(action=f'Setting Z flag based on register [{register}] : value [{self.registers[register]:02X}]')
 
@@ -572,18 +568,12 @@ class CPU6502:
             return
 
         if 'Z' in flags:
-            if value == 0:
-                self.flags['Z'] = 1
-            else:
-                self.flags['Z'] = 0
+            self.flags['Z'] = 1 if value == 0 else 0
             if self.logging:
                 self.log_action(action=f'Setting Z flag based on value [{value:02X}]')
 
         if 'N' in flags:
-            if value & 0b10000000 > 0:
-                self.flags['N'] = 1
-            else:
-                self.flags['N'] = 0
+            self.flags['N'] = 1 if value & 0b10000000 > 0 else 0
             if self.logging:
                 self.log_action(action=f'Setting N flag based on value [{value:>08b}]')
 
@@ -659,20 +649,15 @@ class CPU6502:
     @time_track
     def get_processor_status(self) -> int:
         order = ['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N']
-        state = 0
-        for shift, flag in enumerate(order):
-            state += (self.flags[flag] << shift)
-        return state
+        return sum((self.flags[flag] << shift) for shift, flag in enumerate(order))
 
     @time_track
     def get_processor_status_string(self) -> str:
         order = ['C', 'Z', 'I', 'D', 'B', 'U', 'V', 'N']
-        flag_string = ''
-        for shift, flag in enumerate(reversed(order)):
-            # flag_string += bcolors.CBLUEBG + flag.upper() + bcolors.ENDC if self.flags[flag] == 1 else bcolors.CGREY + flag.lower() + bcolors.ENDC
-            # flag_string += flag.upper() if self.flags[flag] == 1 else flag.lower()
-            flag_string += flag.upper() if self.flags.get(flag, 1) == 1 else flag.lower()
-        return flag_string
+        return ''.join(
+            flag.upper() if self.flags.get(flag, 1) == 1 else flag.lower()
+            for shift, flag in enumerate(reversed(order))
+        )
 
     @time_track
     def set_processor_status(self, flags: int):
@@ -696,7 +681,7 @@ class CPU6502:
         if self.INS:
             self.INS_FAMILY = '_'.join(('INS', self.INS[0:3]))
             self.INS_SET = self.INS.split('_')
-            self.ADDRESS_MODE = '_'.join(_ for _ in self.INS_SET[1:])
+            self.ADDRESS_MODE = '_'.join(self.INS_SET[1:])
         return self.INS is not None
 
     ################################################################
@@ -747,7 +732,8 @@ class CPU6502:
 
     def handle_branching_opcodes(self) -> None:
         """
-        Covers BCC, BCS, BEQ, BMI, BNE, BPL, BVC, BVS"""
+        Covers BCC, BCS, BEQ, BMI, BNE, BPL, BVC, BVS
+        """
         offset = self.read_memory()
         flag, test_value = CPU6502.OPCODES_BRANCHING_TABLE[self.INS]
         if self.flags[flag] == test_value:
@@ -760,6 +746,9 @@ class CPU6502:
             # Check if page was crossed
             if ((self.program_counter & CPU6502.SIXTEEN_BIT_HIGH_BYTE_MASK) != ((self.program_counter - offset) & CPU6502.SIXTEEN_BIT_HIGH_BYTE_MASK)):
                 self.cycle()
+        else:
+            if self.logging:
+                self.log_action(f'Branch test failed')
 
     def INS_BCC(self) -> None:
         self.handle_branching_opcodes()
@@ -1298,25 +1287,26 @@ class CPU6502:
 
     @time_track
     def get_log_string(self):
-        combined = {**{'%-10s' % 'Cycle': '%-10s' % str(self.cycles),
-                    '%-10s' % 'INS': '%-10s' % self.INS},
-                    **self.registers,
-                    **self.flags,
-                    **{'SP': '0x{0:0{1}X}'.format(self.get_stack_pointer_address(), 4),
-                    'PC': '0x{0:0{1}X}'.format(self.program_counter, 4),
-                        'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2),
-                        '%-10s' % 'FLAGS': '%-10s' % self.get_processor_status_string()
-                       },
-                    '%-20s' % 'ACTION': '%-20s' % ' -> '.join(self.action)
-                    }
-        return combined
+        return {
+            **{
+                '%-10s' % 'Cycle': '%-10s' % str(self.cycles),
+                '%-10s' % 'INS': '%-10s' % self.INS,
+            },
+            **self.registers,
+            **self.flags,
+            **{
+                'SP': '0x{0:0{1}X}'.format(self.get_stack_pointer_address(), 4),
+                'PC': '0x{0:0{1}X}'.format(self.program_counter, 4),
+                'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2),
+                '%-10s' % 'FLAGS': '%-10s' % self.get_processor_status_string(),
+            },
+            '%-20s' % 'ACTION': '%-20s' % ' -> '.join(self.action),
+        }
 
     @time_track
     def get_log_header_string(self):
         combined = self.get_log_string()
-        # headerString = bcolors.OKBLUE + '\t'.join(combined.keys()) + bcolors.ENDC
-        headerString = '\t'.join(combined.keys())
-        return headerString
+        return '\t'.join(combined.keys())
 
     @time_track
     def print_state(self):
@@ -1356,7 +1346,7 @@ class CPU6502:
     def benchmark_info(self) -> str:
         return f'\nCycles: {self.cycles - 1:,} :: Elapsed time: {self.execution_time} :: Cycles/sec: {(self.cycles - 1) / (.0001 + self.execution_time.total_seconds()):0,.2f}'
 
-    def printBenchmarkInfo(self):
+    def print_benchmark_info(self):
         print(self.benchmark_info())
 
     @time_track
