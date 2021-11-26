@@ -1,6 +1,8 @@
 from cpu6502 import CPU6502
 import os
+import pyjion
 os.system("cls")
+pyjion.enable()
 
 
 def run():
@@ -108,14 +110,11 @@ def functional_test_program():
 
     try:
 
-        program = []
         print('Loading in binary file...')
         with open('binary/6502_functional_test.bin', 'rb') as f:
             data = f.read()
         print('Converting to text...')
-        for d in data:
-            program.append(d)
-
+        program = [d for d in data]
         # print(program[0x03F6: 0x040F])
         # print(len(program))
 
@@ -560,37 +559,30 @@ def count_set_bits_test():
         0xE8,  # INX
         0xC8,  # INY
         0xD0, 0xFA,  # BNE -6
-
-
-
-
     ]
     cpu.load_program(instructions=program, memoryAddress=0x8000, mainProgram=True)
     cpu.program_counter = 0x8000
     cpu.execute()
     # cpu.print_log()
-    cpu.memory_dump(startingAddress=0x0000, endingAddress=0x00FF, display_format='Dec')
-    cpu.memory_dump(startingAddress=0x4000, endingAddress=0x40FF, display_format='Dec')
+    cpu.memory_dump(startingAddress=0x0000, endingAddress=0x00FF, display_format='Dec', items_per_row=16)
+    cpu.memory_dump(startingAddress=0x4000, endingAddress=0x40FF, display_format='Dec', items_per_row=16)
     # cpu.memory_dump(startingAddress=0x5000, endingAddress=0x5007, display_format='Dec')
     cpu.print_benchmark_info()
 
-    from PIL import Image
+    # from PIL import Image
 
-    SCALE = 4
-    ITEMS_PER_ROW = 256
-    img = Image.new('RGB', (ITEMS_PER_ROW * SCALE, CPU6502.MAX_MEMORY_SIZE // ITEMS_PER_ROW * SCALE), "black")  # Create a new black image
-    pixels = img.load()  # Create the pixel map
-    print('x', img.size[0], 'y', img.size[1])
-    for i, pix in enumerate(cpu.memory):
-        # print(i, i % 16, i // 16)
-        color_value = pix
-        for x_offset in range(SCALE):
-            for y_offset in range(SCALE):
-                pixels[(i % ITEMS_PER_ROW) * SCALE + x_offset, (i // ITEMS_PER_ROW) * SCALE + y_offset] = (color_value, color_value, color_value)  # Set the colour accordingly
-            # pixels[(i % 256) * SCALE + 1, (i // 256) * SCALE] = (color_value, color_value, color_value)  # Set the colour accordingly
-            # pixels[(i % 256) * SCALE, (i // 256) * SCALE + 1] = (color_value, color_value, color_value)  # Set the colour accordingly
-            # pixels[(i % 256) * SCALE + 1, (i // 256) * SCALE + 1] = (color_value, color_value, color_value)  # Set the colour accordingly
-    img.show()
+    # SCALE = 4
+    # ITEMS_PER_ROW = 256
+    # img = Image.new('RGB', (ITEMS_PER_ROW * SCALE, CPU6502.MAX_MEMORY_SIZE // ITEMS_PER_ROW * SCALE), "black")  # Create a new black image
+    # pixels = img.load()  # Create the pixel map
+    # print('x', img.size[0], 'y', img.size[1])
+    # for i, pix in enumerate(cpu.memory):
+    #     # print(i, i % 16, i // 16)
+    #     color_value = pix
+    #     for x_offset in range(SCALE):
+    #         for y_offset in range(SCALE):
+    #             pixels[(i % ITEMS_PER_ROW) * SCALE + x_offset, (i // ITEMS_PER_ROW) * SCALE + y_offset] = (color_value, color_value, color_value)  # Set the colour accordingly
+    # img.show()
 
 
 if __name__ == '__main__':
@@ -633,4 +625,3 @@ if __name__ == '__main__':
     # print()
     # apple_30th()
     # startrek()
-    pass

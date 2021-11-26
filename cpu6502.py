@@ -402,23 +402,22 @@ class CPU6502:
     def get_memory(self):
         return self.memory
 
-    def memory_dump(self, startingAddress=None, endingAddress=None, display_format='Hex'):
+    def memory_dump(self, startingAddress=None, endingAddress=None, display_format='Hex', items_per_row: int = 8):
         # print('\nMemory Dump:\n')
         print()
         line = ''  # to clear issues with pylance
         header = ''
         row = ''
-        ITEMS_PER_ROW = 16
         while startingAddress <= endingAddress and startingAddress <= CPU6502.MAX_MEMORY_SIZE:
             if display_format == 'Hex':
                 header = '0x{0:0{1}X}:'.format(startingAddress, 4) + '\t'
-                row = '\t'.join('0x{0:0{1}X}'.format(self.memory[v], 2) for v in range(startingAddress, min(startingAddress + ITEMS_PER_ROW, CPU6502.MAX_MEMORY_SIZE)))
+                row = '\t'.join('0x{0:0{1}X}'.format(self.memory[v], 2) for v in range(startingAddress, min(startingAddress + items_per_row, CPU6502.MAX_MEMORY_SIZE)))
             elif display_format == 'Dec':
                 header = '0x{0:0{1}X}:'.format(startingAddress, 4) + '\t'
-                row = '\t'.join('%-5s' % str(self.memory[v]) for v in range(startingAddress, min(startingAddress + ITEMS_PER_ROW, CPU6502.MAX_MEMORY_SIZE)))
+                row = '\t'.join('%-5s' % str(self.memory[v]) for v in range(startingAddress, min(startingAddress + items_per_row, CPU6502.MAX_MEMORY_SIZE)))
             line = header + row
             print(line)
-            startingAddress += ITEMS_PER_ROW
+            startingAddress += items_per_row
 
     @time_track
     def extraFunctions(self):
@@ -746,9 +745,8 @@ class CPU6502:
             # Check if page was crossed
             if ((self.program_counter & CPU6502.SIXTEEN_BIT_HIGH_BYTE_MASK) != ((self.program_counter - offset) & CPU6502.SIXTEEN_BIT_HIGH_BYTE_MASK)):
                 self.cycle()
-        else:
-            if self.logging:
-                self.log_action(f'Branch test failed')
+        elif self.logging:
+            self.log_action('Branch test failed')
 
     def INS_BCC(self) -> None:
         self.handle_branching_opcodes()
