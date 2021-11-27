@@ -562,9 +562,8 @@ def count_set_bits_test():
     cpu.program_counter = 0x8000
     cpu.execute()
     # cpu.print_log()
-    cpu.memory_dump(startingAddress=0x0000, endingAddress=0x00FF, display_format='Dec', items_per_row=16)
-    cpu.memory_dump(startingAddress=0x4000, endingAddress=0x40FF, display_format='Dec', items_per_row=16)
-    # cpu.memory_dump(startingAddress=0x5000, endingAddress=0x5007, display_format='Dec')
+    # cpu.memory_dump(startingAddress=0x0000, endingAddress=0x00FF, display_format='Dec', items_per_row=16)
+    # cpu.memory_dump(startingAddress=0x4000, endingAddress=0x40FF, display_format='Dec', items_per_row=16)
     cpu.print_benchmark_info()
 
     # from PIL import Image

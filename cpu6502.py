@@ -436,26 +436,22 @@ class CPU6502:
         if self.logging:
             self.action.append(action)
 
-    @time_track
     def program_counter_increment(self):
         self.program_counter += 1
         if self.program_counter >= CPU6502.MAX_MEMORY_SIZE:
             self.program_counter = 0
 
-    @time_track
     def stack_pointer_decrement(self):
         self.stack_pointer -= 1
         if self.stack_pointer < 0x00:
             self.stack_pointer = 0xFF
 
-    @time_track
     def stack_pointer_increment(self):
         self.cycle()
         self.stack_pointer += 1
         if self.stack_pointer > 0xFF:
             self.stack_pointer = 0x00
 
-    @time_track
     def get_stack_pointer_address(self):
         return self.stack_pointer | 0x0100
 
@@ -1293,9 +1289,9 @@ class CPU6502:
             **self.registers,
             **self.flags,
             **{
-                'SP': '0x{0:0{1}X}'.format(self.get_stack_pointer_address(), 4),
-                'PC': '0x{0:0{1}X}'.format(self.program_counter, 4),
-                'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2),
+                '%-6s' % 'SP': '0x{0:0{1}X}'.format(self.get_stack_pointer_address(), 4),
+                '%-6s' % 'PC': '0x{0:0{1}X}'.format(self.program_counter, 4),
+                '%-6s' % 'MEM': '0x{0:0{1}X}'.format(self.memory[self.program_counter], 2),
                 '%-10s' % 'FLAGS': '%-10s' % self.get_processor_status_string(),
             },
             '%-20s' % 'ACTION': '%-20s' % ' -> '.join(self.action),
@@ -1315,13 +1311,13 @@ class CPU6502:
             print(headerString)
         print(valueString)
 
-    @time_track
     def initialize_log(self):
         self.log = []
-        headerString = self.get_log_header_string()
-        self.log.append(headerString)
-        if self.log_file:
-            self.log_file.write(headerString)
+        header_string = self.get_log_header_string()
+        self.log.append(header_string)
+        if self.log_file is not None:
+            self.log_file.write(header_string)
+            self.log_file.write('\n')
 
     @time_track
     def log_state(self):
@@ -1331,10 +1327,9 @@ class CPU6502:
             valueString = '\t'.join(str(v) for v in combined.values())
             self.log.append(valueString)
             if self.log_file:
-                if self.cycles % 250000 == 0:
-                    self.log_file.close()
-                    self.log_file = open(self.log_file.name, 'w')
-                    self.log = []
+                # self.log_file.close()
+                # self.log_file = open(self.log_file.name, 'w')
+                # self.log = []
                 self.log_file.write(valueString + '\n')
 
     def print_log(self):
@@ -1347,7 +1342,6 @@ class CPU6502:
     def print_benchmark_info(self):
         print(self.benchmark_info())
 
-    @time_track
     def load_program(self, instructions=[], memoryAddress=0x0000, mainProgram=True):
         if mainProgram:
             # self.memory[0xFFFE] = memoryAddress & 0b0000000011111111
