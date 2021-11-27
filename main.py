@@ -1,8 +1,6 @@
 from cpu6502 import CPU6502
 import os
 import pyjion
-os.system("cls")
-pyjion.enable()
 
 
 def run():
@@ -485,7 +483,7 @@ def count_set_bits_test():
     }
     """
     cpu = None
-    cpu = CPU6502(cycle_limit=100_000, printActivity=False, enableBRK=False, logging=True)
+    cpu = CPU6502(cycle_limit=100_000, printActivity=False, enableBRK=False, logging=True, logFile='log.txt')
     # BEQ F0
     # INC EE
     # DEC CE
@@ -586,6 +584,8 @@ def count_set_bits_test():
 
 
 if __name__ == '__main__':
+    os.system("cls")
+    pyjion.enable()
     # decimal_mode_test()
     count_set_bits_test()
     # run()
