@@ -472,6 +472,7 @@ def decimal_mode_test():
 
 
 def count_set_bits_test():
+    pyjion.enable()
     """
     int countSetBits(int a) {
         int count = 0;
@@ -483,7 +484,7 @@ def count_set_bits_test():
     }
     """
     cpu = None
-    cpu = CPU6502(cycle_limit=100_000, printActivity=False, enableBRK=False, logging=True, logFile='log.txt')
+    cpu = CPU6502(cycle_limit=100_000, printActivity=False, enableBRK=False, logging=False, logFile='log.txt')
     # BEQ F0
     # INC EE
     # DEC CE
@@ -562,8 +563,8 @@ def count_set_bits_test():
     cpu.program_counter = 0x8000
     cpu.execute()
     # cpu.print_log()
-    # cpu.memory_dump(startingAddress=0x0000, endingAddress=0x00FF, display_format='Dec', items_per_row=16)
-    # cpu.memory_dump(startingAddress=0x4000, endingAddress=0x40FF, display_format='Dec', items_per_row=16)
+    cpu.memory_dump(startingAddress=0x0000, endingAddress=0x00FF, display_format='Dec', items_per_row=16)
+    cpu.memory_dump(startingAddress=0x4000, endingAddress=0x40FF, display_format='Dec', items_per_row=16)
     cpu.print_benchmark_info()
 
     # from PIL import Image
@@ -583,8 +584,7 @@ def count_set_bits_test():
 
 
 if __name__ == '__main__':
-    os.system("cls")
-    pyjion.enable()
+    os.system('cls' if os.name == 'nt' else 'clear')
     # decimal_mode_test()
     count_set_bits_test()
     # run()
