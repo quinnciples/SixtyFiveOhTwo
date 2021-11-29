@@ -358,10 +358,6 @@ class CPU6502:
         self.INS = None
         self.start_time = None
 
-        self.enableBRK = enableBRK
-        if self.enableBRK:
-            CPU6502.OPCODES[0x00] = 'BRK'
-
         self.logging = logging
         self.log_file = open(logFile, 'w') if logFile else None
         self.action = []
@@ -548,6 +544,11 @@ class CPU6502:
         self.OPCODES_MAP[0x11] = ('ORA_IND_Y', self.INS_ORA, 'INS_ORA', ['ORA', 'IND_Y'], 'IND_Y')
 
         self.INS_FUNC = None
+
+        self.enableBRK = enableBRK
+            if self.enableBRK:
+                CPU6502.OPCODES[0x00] = 'BRK'
+                self.OPCODES_MAP[0x00] = ('BRK', self.INS_BRK, 'INS_BRK', ['BRK', ''], None)
 
     def initialize_memory(self):
         self.memory = [0x00] * CPU6502.MAX_MEMORY_SIZE
