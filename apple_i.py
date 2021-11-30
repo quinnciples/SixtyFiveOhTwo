@@ -36,8 +36,8 @@ class PIA():
             self.memory[self.hooks['KBDCR']] = self.memory[self.hooks['KBDCR']] | 0b10000000
 
 
-cpu = CPU6502(cycle_limit=100_000, printActivity=False, enableBRK=False, logging=False)
-mem = cpu.getMemory()
+cpu = CPU6502(cycle_limit=100_000_000, printActivity=False, enableBRK=False, logging=False, continuous=False)
+mem = cpu.get_memory()
 pia = PIA(memory=mem)
 
 
@@ -48,6 +48,8 @@ wozmon_address = programs.wozmon.starting_address
 import programs.apple_1_basic
 basic_program = programs.apple_1_basic.program
 basic_address = programs.apple_1_basic.starting_address
+
+import programs.codebreaker
 
 """ SAMPLE PROGRAM
     5 P=500
@@ -67,12 +69,15 @@ basic_address = programs.apple_1_basic.starting_address
   200 END
 """
 
-cpu.loadProgram(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
-cpu.loadProgram(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
+cpu.load_program(instructions=wozmon_program, memoryAddress=wozmon_address, mainProgram=False)
+cpu.load_program(instructions=basic_program, memoryAddress=basic_address, mainProgram=False)
+# for tape in programs.codebreaker.tapes:
+#     cpu.load_program(instructions=tape['data'], memoryAddress=tape['starting_address'], mainProgram=False)
 cpu.program_counter = wozmon_address
 print(f'Running {programs.apple_1_basic.name}...')
 print(programs.apple_1_basic.description)
 print(programs.apple_1_basic.instructions)
+# print(programs.codebreaker.instructions)
 
 try:
     while True:
@@ -83,6 +88,19 @@ except Exception as e:
     print(e)
 
 finally:
-    cpu.printBenchmarkInfo()
-    import sys
-    sys.exit()
+    cpu.print_benchmark_info()
+    from PIL import Image
+
+    SCALE = 4
+    ITEMS_PER_ROW = 256
+    img = Image.new('RGB', (ITEMS_PER_ROW * SCALE, CPU6502.MAX_MEMORY_SIZE // ITEMS_PER_ROW * SCALE), "black")  # Create a new black image
+    pixels = img.load()  # Create the pixel map
+    print('x', img.size[0], 'y', img.size[1])
+    for i, pix in enumerate(mem):
+        # print(i, i % 16, i // 16)
+        color_value = pix
+        for x_offset in range(SCALE):
+            for y_offset in range(SCALE):
+                pixels[(i % ITEMS_PER_ROW) * SCALE + x_offset, (i // ITEMS_PER_ROW) * SCALE + y_offset] = (color_value, color_value, color_value)  # Set the colour accordingly
+    # img.show()
+    # img.save('memory.png')

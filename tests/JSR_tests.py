@@ -2,7 +2,7 @@ from testing_modules import bcolors
 from testing_modules import generateProgram
 import sys
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
-from SixtyFiveOhTwo import CPU6502
+from cpu6502 import CPU6502
 
 
 def TEST_0x20_JSR_ABS():
@@ -43,9 +43,9 @@ def TEST_0x20_JSR_ABS():
     cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
     cpu.reset(program_counter=0xFF00)
     program = [0x20, 0x05, 0xE3]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.load_program(instructions=program, memoryAddress=0xFF00)
     program = [0xA9, 0x35]
-    cpu.loadProgram(instructions=program, memoryAddress=0xE305, mainProgram=False)
+    cpu.load_program(instructions=program, memoryAddress=0xE305, mainProgram=False)
     cpu.registers = INITIAL_REGISTERS
     cpu.flags = INITIAL_FLAGS
     cpu.execute()
@@ -61,9 +61,9 @@ def TEST_0x20_JSR_ABS():
         return True
     except AssertionError:
         print(f'{bcolors.FAIL}FAILED{bcolors.ENDC}', end='\n')
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0x01F0, endingAddress=0x01FF)
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        cpu.print_log()
+        cpu.memory_dump(startingAddress=0x01F0, endingAddress=0x01FF)
+        cpu.memory_dump(startingAddress=0xFF00, endingAddress=0xFF02)
         print(f'Cycles: {cpu.cycles-1}')
         raise
     return False

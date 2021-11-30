@@ -2,7 +2,7 @@ from testing_modules import bcolors
 from testing_modules import generateProgram
 import sys
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
-from SixtyFiveOhTwo import CPU6502
+from cpu6502 import CPU6502
 
 
 def TEST_0x4C_JMP_ABS():
@@ -30,9 +30,9 @@ def TEST_0x4C_JMP_ABS():
     cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
     cpu.reset(program_counter=0xFF00)
     program = [0xA9, 0x45]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF10)
+    cpu.load_program(instructions=program, memoryAddress=0xFF10)
     program = [0x4C, 0x10, 0xFF]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.load_program(instructions=program, memoryAddress=0xFF00)
     cpu.execute()
 
     try:
@@ -43,8 +43,8 @@ def TEST_0x4C_JMP_ABS():
         return True
     except AssertionError:
         print(f'{bcolors.FAIL}FAILED{bcolors.ENDC}', end='\n')
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
+        cpu.print_log()
+        cpu.memory_dump(startingAddress=0xFF00, endingAddress=0xFF02)
         raise
     return False
 
@@ -74,11 +74,11 @@ def TEST_0x6C_JMP_IND():
     cpu = CPU6502(cycle_limit=EXPECTED_CYCLES)
     cpu.reset(program_counter=0xFF00)
     program = [0x6C, 0x10, 0xFF]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF00)
+    cpu.load_program(instructions=program, memoryAddress=0xFF00)
     program = [0x20, 0xFF]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF10, mainProgram=False)
+    cpu.load_program(instructions=program, memoryAddress=0xFF10, mainProgram=False)
     program = [0xA9, 0xFE]
-    cpu.loadProgram(instructions=program, memoryAddress=0xFF20, mainProgram=False)
+    cpu.load_program(instructions=program, memoryAddress=0xFF20, mainProgram=False)
     cpu.execute()
 
     try:
@@ -89,10 +89,10 @@ def TEST_0x6C_JMP_IND():
         return True
     except AssertionError:
         print(f'{bcolors.FAIL}FAILED{bcolors.ENDC}', end='\n')
-        cpu.printLog()
-        cpu.memoryDump(startingAddress=0xFF00, endingAddress=0xFF02)
-        cpu.memoryDump(startingAddress=0xFF10, endingAddress=0xFF12)
-        cpu.memoryDump(startingAddress=0xFF20, endingAddress=0xFF22)
+        cpu.print_log()
+        cpu.memory_dump(startingAddress=0xFF00, endingAddress=0xFF02)
+        cpu.memory_dump(startingAddress=0xFF10, endingAddress=0xFF12)
+        cpu.memory_dump(startingAddress=0xFF20, endingAddress=0xFF22)
         raise
     return False
 

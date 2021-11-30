@@ -2,7 +2,9 @@ from testing_modules import bcolors
 from testing_modules import generateProgram
 import sys
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
-from SixtyFiveOhTwo import CPU6502
+from cpu6502 import CPU6502
+import pyjion
+pyjion.enable()
 
 
 def square_root_test() -> bool:
@@ -306,7 +308,7 @@ def square_root_test() -> bool:
     for test_value, expected_value in zip(numbers_to_test, expected_values):
         cpu = CPU6502(cycle_limit=1200, printActivity=False)
         cpu.reset(program_counter=0x0600)
-        cpu.loadProgram(instructions=all_in_one, memoryAddress=0x0600, mainProgram=True)
+        cpu.load_program(instructions=all_in_one, memoryAddress=0x0600, mainProgram=True)
         cpu.memory[0x00F0] = test_value
         cpu.memory[0x00F1] = 0x00  # Number to find square root of high byte
         cpu.execute()
@@ -316,9 +318,7 @@ def square_root_test() -> bool:
         else:
             print(f'{bcolors.FAIL}FAIL{bcolors.ENDC}', end='\n')
             errors = True
-    if errors:
-        return False
-    return True
+    return not errors
 
 
 def fibonacci_test():
@@ -344,7 +344,7 @@ def fibonacci_test():
                0xA5, 0x20,          # LDA_ZP [0x20]
                0x4C, 0x08, 0x00     # JMP 0x0008
                ]
-    cpu.loadProgram(instructions=program, memoryAddress=0x0000)
+    cpu.load_program(instructions=program, memoryAddress=0x0000)
     cpu.execute()
 
     EXPECTED_VALUES = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233]
@@ -452,8 +452,8 @@ def sort_test_8_bits() -> bool:
             0xca, 0xd0, 0xe6, 0x24, 0x32, 0x30, 0xd9, 0x60
         ]
 
-        cpu.loadProgram(instructions=program, memoryAddress=0x0600, mainProgram=True)
-        cpu.loadProgram(instructions=data, memoryAddress=0x4400, mainProgram=False)
+        cpu.load_program(instructions=program, memoryAddress=0x0600, mainProgram=True)
+        cpu.load_program(instructions=data, memoryAddress=0x4400, mainProgram=False)
         cpu.memory[0x0030] = 0x00
         cpu.memory[0x0031] = 0x44
         # cpu.memoryDump(startingAddress=0x4400, endingAddress=0x4400 + len(data) - 1, display_format='Dec')
@@ -465,10 +465,10 @@ def sort_test_8_bits() -> bool:
         # print(f'\tTesting sort of {NUMBER_SEQUENCE_LENGTH} elements: Expected {EXPECTED_DATA[1:]} / got {cpu.memory[0x4401:0x4401 + NUMBER_SEQUENCE_LENGTH]} -- ', end='')
         print(f'\tTesting sort of {NUMBER_SEQUENCE_LENGTH} elements: ', end='')
         if cpu.memory[0x4401:0x4401 + NUMBER_SEQUENCE_LENGTH] == EXPECTED_DATA[1:]:
-            print(f'{bcolors.OKGREEN}PASS{bcolors.ENDC} -- {cpu.cycles - 1:,} cycles. {cpu.execution_time}', end='\n')
+            print(f'{bcolors.OKGREEN}PASS{bcolors.ENDC} -- {cpu.cycles - 1:,} cycles. {cpu.execution_time} -- {(cpu.cycles - 1) / (cpu.execution_time.total_seconds() + 0.00001):0,.2f} cycles / sec', end='\n')
         else:
             print(f'{bcolors.FAIL}FAIL{bcolors.ENDC} -- {cpu.cycles - 1:,} cycles.', end='\n')
-            cpu.memoryDump(startingAddress=0x4400, endingAddress=0x4400 + len(data) - 1, display_format='Dec')
+            cpu.memory_dump(startingAddress=0x4400, endingAddress=0x4400 + len(data) - 1, display_format='Dec')
             errors = True
 
     if errors:
@@ -695,8 +695,8 @@ def sort_test_16_bits() -> bool:
             0x85, 0x32, 0xc0, 0x04, 0xf0, 0xba, 0x88, 0x88, 0x4c, 0x07, 0x06
         ]
 
-        cpu.loadProgram(instructions=program, memoryAddress=0x0600, mainProgram=True)
-        cpu.loadProgram(instructions=data, memoryAddress=0x4400, mainProgram=False)
+        cpu.load_program(instructions=program, memoryAddress=0x0600, mainProgram=True)
+        cpu.load_program(instructions=data, memoryAddress=0x4400, mainProgram=False)
         cpu.memory[0x0030] = 0x00
         cpu.memory[0x0031] = 0x44
         # cpu.memoryDump(startingAddress=0x4400, endingAddress=0x4400 + len(data) - 1, display_format='Dec')
@@ -708,10 +708,10 @@ def sort_test_16_bits() -> bool:
         # print(f'\tTesting sort of {NUMBER_SEQUENCE_LENGTH} elements: Expected {EXPECTED_DATA[1:]} / got {cpu.memory[0x4401:0x4401 + NUMBER_SEQUENCE_LENGTH]} -- ', end='')
         print(f'\tTesting sort of {NUMBER_SEQUENCE_LENGTH} elements: ', end='')
         if cpu.memory[0x4401:0x4401 + NUMBER_SEQUENCE_LENGTH * 2] == EXPECTED_DATA[1:]:
-            print(f'{bcolors.OKGREEN}PASS{bcolors.ENDC} -- {cpu.cycles - 1:,} cycles. {cpu.execution_time}', end='\n')
+            print(f'{bcolors.OKGREEN}PASS{bcolors.ENDC} -- {cpu.cycles - 1:,} cycles. {cpu.execution_time} -- {(cpu.cycles - 1) / (cpu.execution_time.total_seconds() + 0.00001):0,.2f} cycles / sec', end='\n')
         else:
             print(f'{bcolors.FAIL}FAIL{bcolors.ENDC} -- {cpu.cycles - 1:,} cycles.', end='\n')
-            cpu.memoryDump(startingAddress=0x4400, endingAddress=0x4400 + len(data) - 1, display_format='Dec')
+            cpu.memory_dump(startingAddress=0x4400, endingAddress=0x4400 + len(data) - 1, display_format='Dec')
             errors = True
 
     if errors:
@@ -726,10 +726,7 @@ def custom_tests():
         sort_test_8_bits,
         sort_test_16_bits,
     ]
-    results = []
-    for test in tests:
-        results.append(test())
-    return results
+    return [test() for test in tests]
 
 
 if __name__ == '__main__':

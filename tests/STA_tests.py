@@ -2,7 +2,7 @@ from testing_modules import bcolors
 from testing_modules import generateProgram
 import sys
 sys.path.insert(0, '..\\SixtyFiveOhTwo')
-from SixtyFiveOhTwo import CPU6502
+from cpu6502 import CPU6502
 
 
 def STA_ADDRESS_MODE_TESTS() -> bool:
@@ -68,7 +68,7 @@ def STA_ADDRESS_MODE_TESTS() -> bool:
         EXPECTED_CYCLES = program[1]
         cpu = CPU6502(cycle_limit=100)
         cpu.reset(program_counter=0xFF00)
-        cpu.loadProgram(instructions=PROGRAM, memoryAddress=0xFF00)
+        cpu.load_program(instructions=PROGRAM, memoryAddress=0xFF00)
         cpu.registers = INITIAL_REGISTERS.copy()
         cpu.flags = INITIAL_FLAGS.copy()
         # cpu.memory[ZP_ADDRESS] = VALUE_TO_TEST  # ZP, ZP_X, and ZP_Y Location
@@ -105,11 +105,11 @@ def STA_ADDRESS_MODE_TESTS() -> bool:
                 or (EXPECTED_VALUE is not None and label in ['IND_Y'] and cpu.memory[FULL_ADDRESS + INITIAL_REGISTERS['Y']] != EXPECTED_VALUE):
                 print(f'\t{bcolors.FAIL}MEMORY CONTENTS DO NOT MATCH{bcolors.ENDC}', end='\n')
 
-            cpu.printLog()
-            cpu.memoryDump(startingAddress=0xFF00, endingAddress=(0xFF00 + len(program)))
-            cpu.memoryDump(startingAddress=ZP_ADDRESS, endingAddress=ZP_ADDRESS + 1)
-            cpu.memoryDump(startingAddress=IND_ZP_ADDRESS, endingAddress=IND_ZP_ADDRESS + 1)
-            cpu.memoryDump(startingAddress=FULL_ADDRESS, endingAddress=FULL_ADDRESS + 1)
+            cpu.print_log()
+            cpu.memory_dump(startingAddress=0xFF00, endingAddress=(0xFF00 + len(program)))
+            cpu.memory_dump(startingAddress=ZP_ADDRESS, endingAddress=ZP_ADDRESS + 1)
+            cpu.memory_dump(startingAddress=IND_ZP_ADDRESS, endingAddress=IND_ZP_ADDRESS + 1)
+            cpu.memory_dump(startingAddress=FULL_ADDRESS, endingAddress=FULL_ADDRESS + 1)
 
             print(f'Program: ' + ', '.join('0x{0:0{1}X}'.format(x, 2) for x in program[0]))
             print(f'Cycles: {cpu.cycles-1} Expected Cycles: {EXPECTED_CYCLES}')
