@@ -546,9 +546,9 @@ class CPU6502:
         self.INS_FUNC = None
 
         self.enableBRK = enableBRK
-            if self.enableBRK:
-                CPU6502.OPCODES[0x00] = 'BRK'
-                self.OPCODES_MAP[0x00] = ('BRK', self.INS_BRK, 'INS_BRK', ['BRK', ''], None)
+        if self.enableBRK:
+            CPU6502.OPCODES[0x00] = 'BRK'
+            self.OPCODES_MAP[0x00] = ('BRK', self.INS_BRK, 'INS_BRK', ['BRK', ''], None)
 
     def initialize_memory(self):
         self.memory = [0x00] * CPU6502.MAX_MEMORY_SIZE

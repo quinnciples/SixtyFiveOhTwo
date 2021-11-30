@@ -102,8 +102,5 @@ finally:
         for x_offset in range(SCALE):
             for y_offset in range(SCALE):
                 pixels[(i % ITEMS_PER_ROW) * SCALE + x_offset, (i // ITEMS_PER_ROW) * SCALE + y_offset] = (color_value, color_value, color_value)  # Set the colour accordingly
-            # pixels[(i % 256) * SCALE + 1, (i // 256) * SCALE] = (color_value, color_value, color_value)  # Set the colour accordingly
-            # pixels[(i % 256) * SCALE, (i // 256) * SCALE + 1] = (color_value, color_value, color_value)  # Set the colour accordingly
-            # pixels[(i % 256) * SCALE + 1, (i // 256) * SCALE + 1] = (color_value, color_value, color_value)  # Set the colour accordingly
-    img.show()
+    # img.show()
     # img.save('memory.png')
